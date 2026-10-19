@@ -1,0 +1,71 @@
+<nav class="bg-white border-b border-gray-100 dark:bg-gray-900 dark:border-gray-800 transition-colors" aria-label="Main Navigation">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-16">
+      <!-- Left: Brand Logo -->
+      <div class="flex items-center">
+        <a href="{% url 'core:home' %}" class="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-md p-1">
+          <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-600 text-white font-bold text-lg shadow-sm">
+            T
+          </span>
+          <span class="font-extrabold text-xl tracking-tight text-gray-900 dark:text-white">
+            Teaching<span class="text-indigo-600">Platform</span>
+          </span>
+        </a>
+      </div>
+
+      <!-- Center/Right: Desktop Navigation Links -->
+      <div class="hidden md:flex md:items-center md:space-x-6">
+        <a href="{% url 'core:home' %}" class="text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-gray-200 dark:hover:text-indigo-400 transition-colors">
+          Courses
+        </a>
+        <a href="{% url 'core:healthz' %}" class="text-xs px-2.5 py-1 rounded-full font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800">
+          ● System Active
+        </a>
+        {% if user.is_authenticated %}
+          <span class="text-sm text-gray-600 dark:text-gray-300">
+            {{ user.email }}
+          </span>
+        {% else %}
+          <a href="#" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
+            Log in with Google
+          </a>
+        {% endif %}
+      </div>
+
+      <!-- Mobile menu button -->
+      <div class="flex items-center md:hidden">
+        <button 
+          type="button" 
+          onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" 
+          class="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+          aria-controls="mobile-menu" 
+          aria-expanded="false"
+          aria-label="Toggle navigation menu"
+        >
+          <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile menu, show/hide based on menu state -->
+  <div class="hidden md:hidden border-t border-gray-200 dark:border-gray-800" id="mobile-menu">
+    <div class="px-2 pt-2 pb-3 space-y-1">
+      <a href="{% url 'core:home' %}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800">
+        Courses
+      </a>
+      <a href="{% url 'core:healthz' %}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800">
+        System Health
+      </a>
+      {% if not user.is_authenticated %}
+        <div class="pt-2 px-3">
+          <a href="#" class="block w-full text-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+            Log in with Google
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</nav>

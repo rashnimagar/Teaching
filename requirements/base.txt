@@ -1,0 +1,6 @@
+django==5.2.18
+django-environ==0.14.0
+pillow==13.0.0
+django-tailwind-cli==4.8.1
+whitenoise==6.12.0
+django-ratelimit==4.1.0

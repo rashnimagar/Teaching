@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50 text-gray-900 antialiased">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  
+  <!-- SEO & Social Meta Tags -->
+  <title>{% block title %}Teaching Platform — Modern Video Courses & Assignments{% endblock title %}</title>
+  <meta name="description" content="{% block meta_description %}A focused, production-grade learning platform for students and teachers with interactive video lessons and timed assignments.{% endblock meta_description %}">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{% block og_title %}Teaching Platform — Modern Video Courses{% endblock og_title %}">
+  <meta property="og:description" content="{% block og_description %}Interactive video lessons, progress tracking, and timed assignment submissions.{% endblock og_description %}">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block twitter_title %}Teaching Platform{% endblock twitter_title %}">
+  <meta name="twitter:description" content="{% block twitter_description %}Interactive video lessons and assignments.{% endblock twitter_description %}">
+
+  {% block meta %}{% endblock meta %}
+
+  <!-- Stylesheet: Loads compiled Tailwind CSS from static/css/dist/tailwind.css -->
+  <link rel="stylesheet" href="{% static 'css/dist/tailwind.css' %}">
+
+  {% block extra_head %}{% endblock extra_head %}
+</head>
+<body class="min-h-full flex flex-col bg-gray-50 dark:bg-gray-950 font-sans">
+  <!-- Accessibility: Skip to Content Link -->
+  <a 
+    href="#main-content" 
+    class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 z-50 bg-indigo-600 text-white px-4 py-2 rounded-md shadow-lg outline-none ring-2 ring-indigo-400"
+  >
+    Skip to main content
+  </a>
+
+  <!-- Global Navigation Header -->
+  {% include "includes/navbar.html" %}
+
+  <!-- Dismissible Messages & Toasts -->
+  {% include "includes/messages.html" %}
+
+  <!-- Main Landmark -->
+  <main id="main-content" class="flex-grow focus:outline-none" tabindex="-1">
+    {% block content %}{% endblock content %}
+  </main>
+
+  <!-- Global Footer -->
+  {% include "includes/footer.html" %}
+
+  {% block scripts %}{% endblock scripts %}
+</body>
+</html>
