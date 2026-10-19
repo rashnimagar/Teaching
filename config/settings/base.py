@@ -109,6 +109,15 @@ STORAGES = {
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
+    "private": {
+        "BACKEND": env(
+            "PRIVATE_STORAGE_BACKEND", default="django.core.files.storage.FileSystemStorage"
+        ),
+        "OPTIONS": {
+            "location": str(BASE_DIR / "private_media"),
+            "base_url": None,
+        },
+    },
 }
 
 # Media files

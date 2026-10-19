@@ -42,6 +42,7 @@ env/
 *.sqlite3
 db.sqlite3-journal
 /media/
+/private_media/
 /static/css/dist/
 
 # Static collection & WhiteNoise cache
