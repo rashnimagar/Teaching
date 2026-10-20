@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Terms of Service — Teaching Platform{% endblock title %}
+
+{% block content %}
+<div class="py-12 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="bg-white dark:bg-gray-900 rounded-2xl p-8 sm:p-12 border border-gray-100 dark:border-gray-800 shadow-sm">
+    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-6">
+      Terms of Service
+    </h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
+      Last updated: {% now "F j, Y" %}
+    </p>
+
+    <div class="space-y-6 text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+      <section>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-2">1. Acceptance of Terms</h2>
+        <p>
+          By accessing and enrolling in courses on this teaching platform, you agree to abide by these terms,
+          our code of conduct, and all assignment submission deadlines.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-2">2. Academic Integrity & Deadlines</h2>
+        <p>
+          Course assignments must represent your own authentic work. Deadlines are verified and enforced server-side.
+          Submissions received after the established deadline are subject to late flags or rejection unless late submissions are explicitly enabled by the instructor.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-2">3. Course Content & Intellectual Property</h2>
+        <p>
+          All lesson videos, instructional handouts, and assignment prompts are the intellectual property of the instructor.
+          Unauthorized redistribution, recording, or publishing of course materials is strictly prohibited.
+        </p>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock content %}

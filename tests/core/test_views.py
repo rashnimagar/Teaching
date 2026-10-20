@@ -12,8 +12,6 @@ class TestCoreViews:
         assert response.status_code == 200
         content = response.content.decode("utf-8")
         assert "Teaching" in content
-        assert "Platform" in content
-        assert "Phase 1 Foundation Ready" in content
         assert "core/home.html" in [t.name for t in response.templates]
         assert "base.html" in [t.name for t in response.templates]
 

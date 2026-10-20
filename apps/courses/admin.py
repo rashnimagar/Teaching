@@ -42,9 +42,21 @@ class CourseAdmin(admin.ModelAdmin):
     search_fields = ["title", "short_description", "description", "slug"]
     prepopulated_fields = {"slug": ("title",)}
     inlines = [LessonInline]
-    readonly_fields = ["created_at", "updated_at"]
+    readonly_fields = ["thumbnail_webp", "created_at", "updated_at"]
     fieldsets = (
-        (None, {"fields": ("title", "slug", "short_description", "description", "thumbnail")}),
+        (
+            None,
+            {
+                "fields": (
+                    "title",
+                    "slug",
+                    "short_description",
+                    "description",
+                    "thumbnail",
+                    "thumbnail_webp",
+                )
+            },
+        ),
         (
             _("Visibility & Archival"),
             {"fields": ("is_published", "is_featured", "is_archived", "requires_approval")},

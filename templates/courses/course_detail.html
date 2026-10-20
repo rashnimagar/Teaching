@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ course.title }} — {{ site_settings.site_name }}{% endblock title %}
+{% block meta_description %}{{ course.short_description|default:course.title }}{% endblock meta_description %}
+
+{% block og_title %}{{ course.title }}{% endblock og_title %}
+{% block og_description %}{{ course.short_description|default:course.title }}{% endblock og_description %}
+{% block og_image %}
+  {% if course.thumbnail %}
+    <meta property="og:image" content="{{ SITE_URL }}{{ course.thumbnail.url }}">
+  {% endif %}
+{% endblock og_image %}
+
+{% block extra_head %}
+<!-- Course JSON-LD Structured Data (Safely Escaped via serialize_json_ld) -->
+<script type="application/ld+json">
+{{ json_ld_raw|safe }}
+</script>
+{% endblock extra_head %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">
+    <a href="{% url 'core:home' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400">Home</a>
+    <span>/</span>
+    <a href="{% url 'courses:list' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400">Courses</a>
+    <span>/</span>
+    <span class="text-slate-900 dark:text-white font-medium truncate max-w-xs">{{ course.title }}</span>
+  </nav>
+
+  <!-- Top Hero Banner -->
+  <div class="card-surface overflow-hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center p-6 sm:p-10 lg:p-12">
+      <!-- Media / Thumbnail (Col 5) -->
+      <div class="lg:col-span-5 aspect-video rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shadow-md">
+        {% if course.thumbnail %}
+          <picture>
+            {% if course.thumbnail_webp %}
+              <source srcset="{{ course.thumbnail_webp.url }}" type="image/webp">
+            {% endif %}
+            <img
+              src="{{ course.thumbnail.url }}"
+              alt="{{ course.title }}"
+              width="640"
+              height="360"
+              class="w-full h-full object-cover"
+            >
+          </picture>
+        {% else %}
+          <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 p-6">
+            <svg class="w-16 h-16 stroke-current mb-2" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span class="text-xs font-semibold">Video Course</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Course Meta & Enrollment Action (Col 7) -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="flex flex-wrap items-center gap-2">
+          {% if course.is_featured %}
+            <span class="badge-featured">Featured Course</span>
+          {% endif %}
+          {% if course.is_free %}
+            <span class="badge-free">Free Course</span>
+          {% else %}
+            <span class="badge-paid">{{ course.currency }} {{ course.price }}</span>
+          {% endif %}
+          <span class="inline-flex items-center text-xs font-medium text-slate-500 dark:text-slate-400 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800">
+            {{ lesson_count }} lesson{{ lesson_count|pluralize }}
+          </span>
+        </div>
+
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white font-display">
+          {{ course.title }}
+        </h1>
+
+        {% if course.short_description %}
+          <p class="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
+            {{ course.short_description }}
+          </p>
+        {% endif %}
+
+        <!-- Enrollment Call to Action State Machine -->
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+          {% if not user.is_authenticated %}
+            <!-- State 1: Unauthenticated -->
+            <div class="space-y-3">
+              <a
+                href="{% url 'account_login' %}?next={{ request.path }}"
+                class="btn-primary text-base px-8 py-3 w-full sm:w-auto"
+              >
+                Sign In with Google to Enroll
+              </a>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Authentication required to track lesson progress and submit assignments.
+              </p>
+            </div>
+
+          {% elif user_enrollment.status == 'revoked' %}
+            <!-- State 2: Revoked (Cannot re-enroll) -->
+            <div class="p-4 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/80 text-red-800 dark:text-red-200 text-sm flex items-center gap-3" role="alert">
+              <svg class="w-5 h-5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>Access removed, please contact the teacher.</span>
+            </div>
+
+          {% elif user_enrollment.status == 'active' %}
+            <!-- State 3: Active Enrollment -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <a
+                href="{% url 'dashboard:student' %}"
+                class="btn-primary text-base px-8 py-3"
+              >
+                Go to Course in Dashboard &rarr;
+              </a>
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                You are enrolled
+              </span>
+            </div>
+
+          {% elif user_enrollment.status == 'pending' %}
+            <!-- State 4: Pending Approval -->
+            <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/80 text-amber-800 dark:text-amber-200 text-sm flex items-center gap-3">
+              <svg class="w-5 h-5 flex-shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Enrollment Pending Approval — Your enrollment request is under review by the instructor.</span>
+            </div>
+
+          {% else %}
+            <!-- State 5: Authenticated but Not Enrolled -->
+            {% if course.is_free %}
+              <form method="post" action="{% url 'courses:enroll' slug=course.slug %}">
+                {% csrf_token %}
+                {% if course.requires_approval %}
+                  <button type="submit" class="btn-primary text-base px-8 py-3">
+                    Request Access
+                  </button>
+                  <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    This course requires instructor approval before lessons unlock.
+                  </p>
+                {% else %}
+                  <button type="submit" class="btn-primary text-base px-8 py-3">
+                    Enroll for Free &rarr;
+                  </button>
+                  <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Free instant enrollment with immediate lesson access.
+                  </p>
+                {% endif %}
+              </form>
+            {% else %}
+              <!-- State 6: Paid Course -->
+              <div class="space-y-3">
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  class="btn-secondary text-base px-8 py-3 opacity-60 cursor-not-allowed"
+                >
+                  Enrollment opens soon
+                </button>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  Paid enrollment will open soon. For manual provisioning, contact the instructor.
+                </p>
+              </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Course Content: Description & Public Syllabus -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+    <!-- Main Left: Description & Syllabus (Col 8) -->
+    <div class="lg:col-span-8 space-y-12">
+      <!-- Full Description -->
+      {% if course.description %}
+        <section aria-labelledby="about-heading" class="card-surface p-8">
+          <h2 id="about-heading" class="text-2xl font-bold text-slate-900 dark:text-white font-display mb-4">
+            About this Course
+          </h2>
+          <div class="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed space-y-4">
+            {{ course.description|linebreaks }}
+          </div>
+        </section>
+      {% endif %}
+
+      <!-- Public Syllabus -->
+      <section aria-labelledby="syllabus-heading" class="card-surface p-8">
+        <div class="flex items-center justify-between mb-6">
+          <h2 id="syllabus-heading" class="text-2xl font-bold text-slate-900 dark:text-white font-display">
+            Course Syllabus
+          </h2>
+          <span class="text-xs text-slate-500 dark:text-slate-400">
+            {{ lesson_count }} lesson{{ lesson_count|pluralize }}
+          </span>
+        </div>
+
+        {% if syllabus_lessons %}
+          <div class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for lesson in syllabus_lessons %}
+              <div class="py-4 flex items-start justify-between gap-4">
+                <div class="flex items-start gap-3">
+                  <span class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                    {{ lesson.order }}
+                  </span>
+                  <div>
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">
+                      {{ lesson.title }}
+                    </h3>
+                    {% if lesson.description %}
+                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                        {{ lesson.description }}
+                      </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Access Indicator (Zero video_id exposure for non-preview lessons) -->
+                <div class="flex-shrink-0">
+                  {% if lesson.is_preview %}
+                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-full border border-indigo-200/60 dark:border-indigo-800/60">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Preview Available
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500 px-2.5 py-1" title="Locked lesson">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      Locked
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-sm text-slate-500 dark:text-slate-400 py-4">
+            Detailed syllabus is being finalized.
+          </p>
+        {% endif %}
+      </section>
+    </div>
+
+    <!-- Sidebar Right: Key Highlights (Col 4) -->
+    <div class="lg:col-span-4 space-y-6">
+      <div class="card-surface p-6 space-y-4">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white font-display">
+          Course Features
+        </h3>
+        <ul class="space-y-3 text-xs text-slate-600 dark:text-slate-300">
+          <li class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Complete video lectures</span>
+          </li>
+          <li class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Timed assignments & grading</span>
+          </li>
+          <li class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Direct instructor evaluation</span>
+          </li>
+          <li class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Self-paced access</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock content %}

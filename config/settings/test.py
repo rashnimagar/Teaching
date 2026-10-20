@@ -30,3 +30,8 @@ CACHES = {
 STORAGES["staticfiles"] = {
     "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
 }
+
+# Isolate external OAuth provider credentials in test environment
+GOOGLE_CLIENT_ID = ""
+GOOGLE_CLIENT_SECRET = ""
+SOCIALACCOUNT_PROVIDERS["google"]["APPS"] = []

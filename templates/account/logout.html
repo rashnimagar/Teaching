@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Out — Teaching Platform{% endblock title %}
+
+{% block content %}
+<div class="min-h-[70vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
+    <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 mb-4">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+      </svg>
+    </div>
+    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+      Sign Out
+    </h1>
+    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+      Are you sure you want to end your session?
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="bg-white dark:bg-gray-900 py-8 px-6 shadow-sm border border-gray-100 dark:border-gray-800 rounded-2xl sm:px-10">
+      <form method="post" action="{% url 'account_logout' %}">
+        {% csrf_token %}
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button
+            type="submit"
+            class="w-full inline-flex justify-center py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm transition-all"
+          >
+            Confirm Sign Out
+          </button>
+          <a
+            href="{% url 'core:home' %}"
+            class="w-full inline-flex justify-center py-2.5 px-4 rounded-xl border border-gray-300 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 text-center transition-all"
+          >
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock content %}

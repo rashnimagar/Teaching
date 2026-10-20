@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard — {{ site_settings.site_name }}{% endblock title %}
+
+{% block meta %}
+<meta name="robots" content="noindex, nofollow">
+{% endblock meta %}
+
+{% block content %}
+<div class="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="md:flex md:items-center md:justify-between mb-8 pb-6 border-b border-gray-200 dark:border-gray-800">
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+          Student Portal
+        </h1>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+          Enrolled Student
+        </span>
+      </div>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        Welcome back, <span class="font-medium text-gray-900 dark:text-white">{{ user.first_name|default:user.email }}</span>. Continue your coursework below.
+      </p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+      <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold mb-4">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">My Enrolled Courses</h3>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        Access your active course syllabus, watch sequential video lessons, and resume playback.
+      </p>
+      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+        <span class="text-xs font-medium text-indigo-600 dark:text-indigo-400">Phase 5 Integration Ready</span>
+      </div>
+    </div>
+
+    <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+      <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold mb-4">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Assignments & Submissions</h3>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        Track active deadlines, submit code and documents, and review grades with teacher feedback.
+      </p>
+      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+        <span class="text-xs font-medium text-amber-600 dark:text-amber-400">Phase 6 Integration Ready</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

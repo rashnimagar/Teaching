@@ -78,7 +78,44 @@ Visit [http://127.0.0.1:8000/](http://127.0.0.1:8000/) to access the platform.
 | `EMAIL_HOST_PASSWORD` | SMTP password | *(empty)* | SMTP credentials |
 | `EMAIL_USE_TLS` | Enable TLS encryption | `True` | `True` |
 | `DEFAULT_FROM_EMAIL` | Sender address for system emails | `Teaching Platform <...>` | Valid sender address |
+| `GOOGLE_CLIENT_ID` | Google OAuth 2.0 Client ID | *(empty)* | **Yes** (from GCP Console) |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 Client Secret | *(empty)* | **Yes** (from GCP Console) |
+| `RATELIMIT_IP_META_KEY` | Request header for client IP extraction | `REMOTE_ADDR` | `HTTP_X_FORWARDED_FOR` (behind proxy) |
 | `SENTRY_DSN` | Sentry telemetry DSN | *(empty)* | Optional DSN |
+
+---
+
+## Google OAuth 2.0 Configuration
+
+Authentication is powered by Google Single Sign-On via `django-allauth`. Students authenticate exclusively with their Google accounts (local password signup is closed).
+
+### 1. Google Cloud Console Setup
+1. Go to the [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials).
+2. Create an **OAuth 2.0 Client ID** (Application type: *Web application*).
+3. Add the exact **Authorized redirect URIs**:
+   - **Local Development:**
+     - `http://127.0.0.1:8000/accounts/google/login/callback/`
+     - `http://localhost:8000/accounts/google/login/callback/`
+   - **Production:**
+     - `https://yourdomain.com/accounts/google/login/callback/`
+4. Copy the Client ID and Client Secret into your `.env` file:
+   ```env
+   GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+   GOOGLE_CLIENT_SECRET="your-client-secret"
+   ```
+
+> [!WARNING]
+> **OAuth Consent Screen: Testing vs. Production**
+> In the Google Cloud Console, newly created OAuth consent screens are set to **Testing** mode by default. In Testing mode, **only explicitly added test accounts** can log in.
+> Before launching to real students, you **must publish the app to "In production"** on the Google Cloud OAuth consent screen settings.
+
+---
+
+## Rate Limiting & Proxy Configuration
+
+- **Login Initiation:** Protected by a strict rate limit of `30/m` per IP address. Exceeding this limit returns a styled HTTP 429 page.
+- **Proxy Client IP:** In production behind a reverse proxy (Nginx, Caddy, Cloudflare, AWS ALB), set `RATELIMIT_IP_META_KEY=HTTP_X_FORWARDED_FOR` in `.env` to ensure rate limiting accurately tracks client IPs rather than the proxy IP.
+- **Shared Cache:** In production with multi-worker Gunicorn or horizontal scaling, rate limiting requires a centralized shared cache backend (e.g. Redis via `CACHE_URL=redis://...` or Django database cache) rather than in-memory storage.
 
 ---
 
@@ -119,8 +156,13 @@ ruff format .
 python manage.py check
 ```
 
-### Administrative
+### Administrative & Teacher Management
 ```powershell
-# Create a superuser / teacher administrator
+# Create a superuser / developer administrator
 python manage.py createsuperuser
+
+# Promote or pre-provision a teacher account by email
+# (Creates the account with an unusable password if it doesn't exist yet,
+#  so the teacher's first Google login seamlessly links to teacher role)
+python manage.py promote_teacher teacher@example.com
 ```

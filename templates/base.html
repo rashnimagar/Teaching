@@ -6,28 +6,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   
+  <!-- Preload Critical Above-the-Fold Fonts -->
+  <link rel="preload" href="{% static 'fonts/inter-variable-latin.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{% static 'fonts/plus-jakarta-sans-variable-latin.woff2' %}" as="font" type="font/woff2" crossorigin>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="alternate icon" href="{% static 'favicon.ico' %}">
+
+  <!-- Early Theme Controller: Prevents Flash of Unstyled Theme (FOUC) without inline script -->
+  <script src="{% static 'js/theme.js' %}"></script>
+
   <!-- SEO & Social Meta Tags -->
-  <title>{% block title %}Teaching Platform — Modern Video Courses & Assignments{% endblock title %}</title>
-  <meta name="description" content="{% block meta_description %}A focused, production-grade learning platform for students and teachers with interactive video lessons and timed assignments.{% endblock meta_description %}">
-  
+  <title>{% block title %}{{ site_settings.site_name }} — Video Courses & Assignments{% endblock title %}</title>
+  <meta name="description" content="{% block meta_description %}{{ site_settings.hero_subheadline }}{% endblock meta_description %}">
+  <link rel="canonical" href="{% block canonical %}{{ SITE_URL }}{{ request.path }}{% endblock canonical %}">
+
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="{% block og_title %}Teaching Platform — Modern Video Courses{% endblock og_title %}">
-  <meta property="og:description" content="{% block og_description %}Interactive video lessons, progress tracking, and timed assignment submissions.{% endblock og_description %}">
-  
+  <meta property="og:site_name" content="{{ site_settings.site_name }}">
+  <meta property="og:title" content="{% block og_title %}{{ site_settings.site_name }}{% endblock og_title %}">
+  <meta property="og:description" content="{% block og_description %}{{ site_settings.hero_subheadline }}{% endblock og_description %}">
+  <meta property="og:url" content="{{ SITE_URL }}{{ request.path }}">
+  {% block og_image %}{% endblock og_image %}
+
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="{% block twitter_title %}Teaching Platform{% endblock twitter_title %}">
-  <meta name="twitter:description" content="{% block twitter_description %}Interactive video lessons and assignments.{% endblock twitter_description %}">
+  <meta name="twitter:title" content="{% block twitter_title %}{{ site_settings.site_name }}{% endblock twitter_title %}">
+  <meta name="twitter:description" content="{% block twitter_description %}{{ site_settings.hero_subheadline }}{% endblock twitter_description %}">
 
   {% block meta %}{% endblock meta %}
 
-  <!-- Stylesheet: Loads compiled Tailwind CSS from static/css/dist/tailwind.css -->
+  <!-- Stylesheet: Loads compiled Tailwind CSS with self-hosted woff2 fonts -->
   <link rel="stylesheet" href="{% static 'css/dist/tailwind.css' %}">
 
   {% block extra_head %}{% endblock extra_head %}
 </head>
-<body class="min-h-full flex flex-col bg-gray-50 dark:bg-gray-950 font-sans">
+<body class="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-150">
   <!-- Accessibility: Skip to Content Link -->
   <a 
     href="#main-content" 

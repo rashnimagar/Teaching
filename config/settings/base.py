@@ -27,8 +27,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sitemaps",
     # Third-party apps
     "django_tailwind_cli",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     # Project apps
     "apps.core.apps.CoreConfig",
     "apps.accounts.apps.AccountsConfig",
@@ -44,6 +49,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",  # Required by django-allauth
+    "apps.core.middleware.RatelimitMiddleware",  # Intercepts 429 Ratelimited
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -61,16 +68,71 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.core.context_processors.site_settings",
             ],
         },
     },
 ]
+
+SITE_URL = env("SITE_URL", default="http://127.0.0.1:8000").rstrip("/")
 
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 # Custom User Model
 AUTH_USER_MODEL = "accounts.User"
+
+# Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    # Default backend for Django admin superuser login
+    "django.contrib.auth.backends.ModelBackend",
+    # Allauth authentication backend for social login
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+# Authentication & Redirect URLs
+LOGIN_URL = "account_login"
+LOGIN_REDIRECT_URL = "dashboard:student"
+ACCOUNT_LOGOUT_REDIRECT_URL = "core:home"
+
+# Allauth Account Settings
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_SIGNUP_FIELDS = ["email*"]
+ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_LOGOUT_ON_GET = False
+ACCOUNT_ADAPTER = "apps.accounts.adapters.CustomAccountAdapter"
+
+# Allauth Social Account Settings
+SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CustomSocialAccountAdapter"
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_LOGIN_ON_GET = False
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
+# Google OAuth Provider Settings
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="")
+GOOGLE_CLIENT_SECRET = env("GOOGLE_CLIENT_SECRET", default="")
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+        "VERIFIED_EMAIL": True,
+        "APPS": [
+            {
+                "client_id": GOOGLE_CLIENT_ID,
+                "secret": GOOGLE_CLIENT_SECRET,
+                "key": "",
+            }
+        ]
+        if GOOGLE_CLIENT_ID
+        else [],
+    }
+}
+
+# Rate Limiting Configuration
+RATELIMIT_IP_META_KEY = env("RATELIMIT_IP_META_KEY", default="REMOTE_ADDR")
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

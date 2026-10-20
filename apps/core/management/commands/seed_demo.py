@@ -7,6 +7,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from apps.assignments.models import Assignment, Submission
+from apps.core.models import FAQItem, SiteSettings
 from apps.courses.models import Course, Enrollment, Lesson, LessonProgress
 
 User = get_user_model()
@@ -268,4 +269,39 @@ class Command(BaseCommand):
         )
 
         self.stdout.write("  [OK] Submissions recorded (1 on-time & graded, 1 late & pending)")
+
+        # 6. Site Settings (neutral placeholders)
+        SiteSettings.get_solo()
+        self.stdout.write("  [OK] Site settings ensured")
+
+        # 7. FAQ Items
+        faqs = [
+            (
+                "How do I access course videos and lessons?",
+                "Once enrolled in a course, all published lessons become available in your student dashboard. You can stream high-definition videos anytime at your own pace.",
+                1,
+            ),
+            (
+                "How do timed assignments and submissions work?",
+                "Courses may include assignments with clear start times and submission deadlines. You can submit your work directly through the platform and receive feedback once graded.",
+                2,
+            ),
+            (
+                "What are the prerequisites to enroll in courses?",
+                "Prerequisites vary by course and are detailed on each course's overview page. All you need to get started is a Google account.",
+                3,
+            ),
+            (
+                "Can I learn on mobile devices?",
+                "Yes, the platform is designed to be fully responsive and works smoothly across mobile phones, tablets, and desktop computers.",
+                4,
+            ),
+        ]
+        for q, a, order in faqs:
+            FAQItem.objects.update_or_create(
+                question=q,
+                defaults={"answer": a, "order": order, "is_published": True},
+            )
+        self.stdout.write("  [OK] Frequently Asked Questions seeded")
+
         self.stdout.write(self.style.SUCCESS("Successfully seeded demo data!"))

@@ -6,7 +6,9 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.image_utils import generate_webp_variant
 from apps.core.models import TimeStampedModel
+from apps.core.validators import validate_image_file
 
 
 class Course(TimeStampedModel):
@@ -19,7 +21,17 @@ class Course(TimeStampedModel):
     short_description = models.CharField(_("short description"), max_length=200, blank=True)
     description = models.TextField(_("description"), blank=True)
     thumbnail = models.ImageField(
-        _("thumbnail"), upload_to="courses/thumbnails/", blank=True, null=True
+        _("thumbnail"),
+        upload_to="courses/thumbnails/",
+        blank=True,
+        null=True,
+        validators=[validate_image_file],
+    )
+    thumbnail_webp = models.ImageField(
+        _("thumbnail (WebP variant)"),
+        upload_to="courses/thumbnails/webp/",
+        blank=True,
+        null=True,
     )
     is_published = models.BooleanField(_("is published"), default=False, db_index=True)
     is_featured = models.BooleanField(_("is featured"), default=False, db_index=True)
@@ -52,6 +64,15 @@ class Course(TimeStampedModel):
         super().clean()
         if not self.is_free and (self.price is None or self.price <= 0):
             raise ValidationError({"price": _("Paid courses must specify a positive price.")})
+
+    def save(self, *args, **kwargs):
+        if self.thumbnail:
+            filename, webp_file = generate_webp_variant(
+                self.thumbnail, max_width=1200, max_height=800
+            )
+            if webp_file:
+                self.thumbnail_webp.save(filename, webp_file, save=False)
+        super().save(*args, **kwargs)
 
 
 class Lesson(TimeStampedModel):

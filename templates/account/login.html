@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load socialaccount %}
+
+{% block title %}Sign In — Teaching Platform{% endblock title %}
+
+{% block content %}
+<div class="min-h-[75vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
+    <span class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-600 text-white font-bold text-2xl shadow-md mb-4">
+      T
+    </span>
+    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+      Welcome Back
+    </h1>
+    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+      Access your enrolled courses, video lessons, and timed assignments.
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="bg-white dark:bg-gray-900 py-8 px-6 shadow-sm border border-gray-100 dark:border-gray-800 rounded-2xl sm:px-10">
+      
+      {% if has_google_credentials %}
+        <!-- Single Google Login Form (POST with CSRF) -->
+        <form method="post" action="{% provider_login_url 'google' %}">
+          {% csrf_token %}
+          {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+          {% endif %}
+
+          <button
+            type="submit"
+            class="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all"
+          >
+            <!-- Official Google "G" SVG -->
+            <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span>Continue with Google</span>
+          </button>
+        </form>
+      {% else %}
+        <!-- Friendly Notice when Google Credentials are Missing -->
+        <div class="rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 p-5 text-center">
+          <svg class="w-8 h-8 mx-auto text-amber-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-200">Google Sign-In Unavailable</h3>
+          <p class="mt-1.5 text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+            Authentication credentials have not been configured for this environment. Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.
+          </p>
+        </div>
+      {% endif %}
+
+      <div class="mt-6 text-center">
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          Fast, passwordless sign-in. New accounts are automatically created as student profiles.
+        </p>
+      </div>
+
+      <div class="mt-6 border-t border-gray-100 dark:border-gray-800 pt-6 text-center">
+        <p class="text-xs text-gray-400 dark:text-gray-500">
+          By signing in, you agree to our
+          <a href="{% url 'core:terms' %}" class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 font-medium">Terms of Service</a>
+          and
+          <a href="{% url 'core:privacy' %}" class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 font-medium">Privacy Policy</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

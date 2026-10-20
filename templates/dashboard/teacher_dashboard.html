@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Dashboard — {{ site_settings.site_name }}{% endblock title %}
+
+{% block meta %}
+<meta name="robots" content="noindex, nofollow">
+{% endblock meta %}
+
+{% block content %}
+<div class="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="md:flex md:items-center md:justify-between mb-8 pb-6 border-b border-gray-200 dark:border-gray-800">
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+          Teacher Administration Portal
+        </h1>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
+          Teacher / Staff
+        </span>
+      </div>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        Logged in as <span class="font-medium text-gray-900 dark:text-white">{{ user.first_name|default:user.email }}</span>. Manage courses, review submissions, and view student progress.
+      </p>
+    </div>
+    <div class="mt-4 md:mt-0 flex gap-3">
+      <a
+        href="/admin/"
+        class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-xl shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750"
+      >
+        Django Admin
+      </a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Courses & Lessons</h3>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        Create, edit, and organize video lessons across Bunny, Vimeo, and YouTube.
+      </p>
+      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+        <span class="text-xs font-medium text-indigo-600 dark:text-indigo-400">Phase 7 Integration Ready</span>
+      </div>
+    </div>
+
+    <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Submissions & Grading</h3>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        Review student files and text submissions, assign scores, and leave constructive feedback.
+      </p>
+      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+        <span class="text-xs font-medium text-indigo-600 dark:text-indigo-400">Phase 7 Integration Ready</span>
+      </div>
+    </div>
+
+    <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Student Enrollments</h3>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        Approve pending requests, review active students, and monitor video completion rates.
+      </p>
+      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+        <span class="text-xs font-medium text-indigo-600 dark:text-indigo-400">Phase 7 Integration Ready</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

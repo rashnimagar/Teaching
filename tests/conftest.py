@@ -1,7 +1,16 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 
 User = get_user_model()
+
+
+@pytest.fixture(autouse=True)
+def clear_cache_between_tests():
+    """Clear Django cache between tests to prevent cross-test state leakage."""
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @pytest.fixture
