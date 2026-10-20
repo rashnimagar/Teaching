@@ -85,11 +85,19 @@ Visit [http://127.0.0.1:8000/](http://127.0.0.1:8000/) to access the platform.
 
 ---
 
-## Google OAuth 2.0 Configuration
+## Authentication & Identity
 
-Authentication is powered by Google Single Sign-On via `django-allauth`. Students authenticate exclusively with their Google accounts (local password signup is closed).
+The platform supports both **Email & Password Authentication** and **Google Single Sign-On** via `django-allauth`.
 
-### 1. Google Cloud Console Setup
+### Security & Verification Guarantees
+- **Mandatory Email Verification:** Newly registered student accounts must verify their email address before their first login (`ACCOUNT_EMAIL_VERIFICATION = "mandatory"`).
+- **Password Strength:** Minimum 10 characters with passphrase support and live client-side guidance.
+- **Pre-Hijacking Protection:** If an attacker attempts to pre-register an unverified password account for an email address, when the legitimate owner signs in via verified Google OAuth, account ownership is claimed by the Google user and the previous unverified password is automatically invalidated.
+- **Anti-Enumeration:** Password reset and registration flows provide identical feedback regardless of whether an email address is already registered in the system. Duplicate signup attempts send an alert email directly to the registered account owner.
+- **Honeypot Protection:** Registration forms include an invisible honeypot field (`website`) to deflect automated bot submissions.
+- **Role Enforcement:** All public signups are strictly pinned to `role=student`. Teacher and administrative permissions can only be granted via `python manage.py promote_teacher` or the Django admin.
+
+### Google OAuth 2.0 Configuration
 1. Go to the [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials).
 2. Create an **OAuth 2.0 Client ID** (Application type: *Web application*).
 3. Add the exact **Authorized redirect URIs**:
@@ -106,16 +114,36 @@ Authentication is powered by Google Single Sign-On via `django-allauth`. Student
 
 > [!WARNING]
 > **OAuth Consent Screen: Testing vs. Production**
-> In the Google Cloud Console, newly created OAuth consent screens are set to **Testing** mode by default. In Testing mode, **only explicitly added test accounts** can log in.
-> Before launching to real students, you **must publish the app to "In production"** on the Google Cloud OAuth consent screen settings.
+> In Google Cloud Console, newly created OAuth consent screens are set to **Testing** mode by default. In Testing mode, **only explicitly added test accounts** can log in. Publish the app to "In production" before launching to students.
+
+---
+
+## Email Delivery & SPF / DKIM Configuration
+
+- **Development:** Uses `EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"` automatically in `dev.py`. Verification links and password reset links print directly to your terminal.
+- **Production SMTP:** Driven by `.env` variables (`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, `DEFAULT_FROM_EMAIL`).
+- **SPF & DKIM Domain Authentication:** To ensure verification and password reset emails reliably reach student inboxes and do not land in spam:
+  - Configure **SPF** (`v=spf1 include:sendgrid.net ~all` or your provider's include) on your root sending domain.
+  - Add **DKIM** CNAME/TXT records provided by your SMTP service (Postmark, SendGrid, Amazon SES, Resend).
+  - Configure a basic **DMARC** policy (`v=DMARC1; p=none; rua=mailto:dmarc-reports@yourdomain.com`).
+  - Set `DEFAULT_FROM_EMAIL="Your Academy <noreply@yourdomain.com>"` matching the authenticated domain.
 
 ---
 
 ## Rate Limiting & Proxy Configuration
 
-- **Login Initiation:** Protected by a strict rate limit of `30/m` per IP address. Exceeding this limit returns a styled HTTP 429 page.
-- **Proxy Client IP:** In production behind a reverse proxy (Nginx, Caddy, Cloudflare, AWS ALB), set `RATELIMIT_IP_META_KEY=HTTP_X_FORWARDED_FOR` in `.env` to ensure rate limiting accurately tracks client IPs rather than the proxy IP.
-- **Shared Cache:** In production with multi-worker Gunicorn or horizontal scaling, rate limiting requires a centralized shared cache backend (e.g. Redis via `CACHE_URL=redis://...` or Django database cache) rather than in-memory storage.
+- **Allauth Rate Limits:** Uses built-in `ACCOUNT_RATE_LIMITS` for `login`, `login_failed`, `signup`, `reset_password`, and `confirm_email`.
+- **Admin Rate Limiting:** `/admin/login/` is wrapped with a strict `20/m` per IP rate limit.
+- **Shared Cache Requirement:** In production with multi-worker Gunicorn or horizontal scaling, rate limits **require a shared cache backend** (such as Redis via `CACHE_URL=redis://127.0.0.1:6379/1`). Local memory caching is process-isolated and will not aggregate limits across workers.
+- **Proxy Client IP:** In production behind a reverse proxy (Nginx, Caddy, Cloudflare, AWS ALB), set `RATELIMIT_IP_META_KEY=HTTP_X_FORWARDED_FOR` in `.env` to ensure rate limiting tracks real client IPs rather than the proxy IP.
+
+
+## Video Streaming & Embed Security
+
+- **Supported Providers:** Bunny Stream, Vimeo (including unlisted videos with privacy hash `video_hash`), and privacy-enhanced YouTube (`youtube-nocookie.com`).
+- **Sandboxed Iframe:** Embeds use strict iframe sandboxing (`sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox"`), lazy loading, and `referrerpolicy="strict-origin-when-cross-origin"` so provider domain checks (such as Bunny Allowed Referrers) function properly and YouTube interactive buttons open safely.
+- **Bunny Stream Signed URLs:** Optional server-side token authentication is supported via `BUNNY_STREAM_SIGNING_ENABLED=True`, using SHA-256 tokens per Bunny Stream specifications (`token_key + video_id + expires`).
+- **Playback Tracking:** Integrated with Player.js for Bunny Stream and Vimeo to automatically resume and record playback position periodically.
 
 ---
 

@@ -5,6 +5,7 @@ from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
 from django.views.generic.base import RedirectView
 
+from apps.accounts.views import rate_limited_admin_login_view
 from apps.core.sitemaps import CourseSitemap, StaticViewSitemap
 from apps.core.views import robots_txt_view
 
@@ -14,6 +15,7 @@ sitemaps = {
 }
 
 urlpatterns = [
+    path("admin/login/", rate_limited_admin_login_view, name="admin_login"),
     path("admin/", admin.site.urls),
     path(
         "favicon.ico",
@@ -23,6 +25,7 @@ urlpatterns = [
     path("accounts/", include("apps.accounts.urls")),
     path("accounts/", include("allauth.urls")),
     path("courses/", include("apps.courses.urls", namespace="courses")),
+    path("learn/", include("apps.courses.learn_urls", namespace="learn")),
     path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),
     path("robots.txt", robots_txt_view, name="robots_txt"),
     path(

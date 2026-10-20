@@ -22,14 +22,14 @@ A Django-based learning platform where a teacher uploads course videos, students
 
 | Role | How they log in | Can do |
 |---|---|---|
-| Student | Google only | Browse courses, access enrolled courses, watch lessons, submit assignments |
-| Teacher/Admin | Google (staff flag) or Django admin | Manage courses, lessons, assignments, enrollments, submissions, grades |
+| Student | Email + password (verified) or Google | Browse courses, access enrolled courses, watch lessons, submit assignments |
+| Teacher/Admin | Google (staff flag), email + password (staff), or Django admin | Manage courses, lessons, assignments, enrollments, submissions, grades |
 
 ---
 
 ## Data model (future-proof for payments)
 
-- **User** (Google identity, `role`)
+- **User** (Email identity, password, `role`)
 - **Course**: title, slug, description, thumbnail, `is_published`, `is_free` (default true), `price` (nullable), `currency`
 - **Lesson**: course, title, order, `video_provider`, `video_id`, duration, `is_preview`
 - **Assignment**: course (optional lesson), title, instructions, `opens_at`, `due_at`, max score
@@ -42,21 +42,24 @@ A Django-based learning platform where a teacher uploads course videos, students
 ---
 
 ## Phase 1 — Project setup
-- [ ] Create project and apps (`accounts`, `courses`, `assignments`, `dashboard`, `core`)
-- [ ] `.venv`, `requirements.txt`, split settings (base/dev/prod), `.env` and `.env.example`
-- [ ] Tailwind setup, base template, static/media config
-- [ ] Git init, `.gitignore`, first commit
+- [x] Create project and apps (`accounts`, `courses`, `assignments`, `dashboard`, `core`)
+- [x] `.venv`, `requirements.txt`, split settings (base/dev/prod), `.env` and `.env.example`
+- [x] Tailwind setup, base template, static/media config
+- [x] Git init, `.gitignore`, first commit
 
 ## Phase 2 — Models, admin, seed data
-- [ ] Implement the data model above with migrations
-- [ ] Register models in Django admin (backup management tool)
-- [ ] Seed command with sample courses, lessons, assignments
+- [x] Implement the data model above with migrations
+- [x] Register models in Django admin (backup management tool)
+- [x] Seed command with sample courses, lessons, assignments
 
-## Phase 3 — Authentication (Google login)
-- [ ] django-allauth with Google provider, no password signup
-- [ ] Google OAuth credentials via `.env`; redirect URIs for local and production
-- [ ] Role handling (student by default; teacher set by admin)
-- [ ] Login/logout flow and friendly error pages
+## Phase 3 — Authentication (Standard Email/Password & Google Login)
+- [x] Google OAuth provider integration, verified emails only, auto-linking to existing accounts
+- [ ] Standard email + password login and signup with "Remember me" and show/hide password
+- [ ] Mandatory email verification before first login (`ACCOUNT_EMAIL_VERIFICATION = "mandatory"`) with resend verification flow
+- [ ] Password reset flow (request, sent, reset key, complete) with branded HTML & plain-text emails
+- [ ] Console email backend in dev; configurable SMTP in production via `.env`
+- [ ] Robust rate limiting (allauth `ACCOUNT_RATE_LIMITS` + custom IP limits) and anti-enumeration defenses
+- [ ] Strict student role defaults on signup; teacher/staff accounts managed securely via `promote_teacher` and admin
 
 ## Phase 4 — Public home page
 - [ ] Hero/intro about the teacher and platform

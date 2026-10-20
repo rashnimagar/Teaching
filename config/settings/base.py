@@ -98,10 +98,28 @@ ACCOUNT_LOGOUT_REDIRECT_URL = "core:home"
 # Allauth Account Settings
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-ACCOUNT_SIGNUP_FIELDS = ["email*"]
-ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_CONFIRM_EMAIL_ON_GET = False
+ACCOUNT_PREVENT_ENUMERATION = True
 ACCOUNT_LOGOUT_ON_GET = False
+ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
 ACCOUNT_ADAPTER = "apps.accounts.adapters.CustomAccountAdapter"
+ACCOUNT_FORMS = {
+    "login": "apps.accounts.forms.CustomLoginForm",
+    "signup": "apps.accounts.forms.CustomSignupForm",
+}
+ACCOUNT_SIGNUP_FORM_HONEYPOT_FIELD = "website"
+
+# Allauth Rate Limits
+ACCOUNT_RATE_LIMITS = {
+    "login": "60/m/ip",
+    "login_failed": "10/m/ip,5/300s/key",
+    "signup": "20/m/ip",
+    "reset_password": "20/m/ip,5/m/key",
+    "reset_password_from_key": "20/m/ip",
+    "confirm_email": "10/m/ip,3/180s/key",
+}
 
 # Allauth Social Account Settings
 SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CustomSocialAccountAdapter"
@@ -134,13 +152,13 @@ SOCIALACCOUNT_PROVIDERS = {
 # Rate Limiting Configuration
 RATELIMIT_IP_META_KEY = env("RATELIMIT_IP_META_KEY", default="REMOTE_ADDR")
 
-# Password validation
+# Password validation: min 10 chars, no composition rules, allows long passphrases
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {
+            "min_length": 10,
+        },
     },
     {
         "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
@@ -148,7 +166,13 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
 ]
+
+# Default Sending Email Address
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Teaching Platform <noreply@example.com>")
 
 # Internationalization & Localization
 LANGUAGE_CODE = "en-us"
@@ -239,3 +263,8 @@ LOGGING = {
         },
     },
 }
+
+# Video Provider Configuration (Bunny Stream)
+BUNNY_STREAM_LIBRARY_ID = env("BUNNY_STREAM_LIBRARY_ID", default="")
+BUNNY_STREAM_TOKEN_KEY = env("BUNNY_STREAM_TOKEN_KEY", default="")
+BUNNY_STREAM_SIGNING_ENABLED = env.bool("BUNNY_STREAM_SIGNING_ENABLED", default=False)
