@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load socialaccount %}
 
-{% block title %}Sign In — Teaching Platform{% endblock title %}
+{% block title %}Log In — Teaching Platform{% endblock title %}
 
 {% block content %}
 <div class="min-h-[75vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -20,8 +20,121 @@
   <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
     <div class="bg-white dark:bg-gray-900 py-8 px-6 shadow-sm border border-gray-100 dark:border-gray-800 rounded-2xl sm:px-10">
       
+      <!-- Non-field error alert banner -->
+      {% if form.non_field_errors %}
+        <div class="mb-6 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 p-4">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div class="text-sm text-red-700 dark:text-red-300">
+              {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Standard Email & Password Form -->
+      <form method="post" action="{% url 'account_login' %}" class="space-y-4">
+        {% csrf_token %}
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+
+        <div>
+          <label for="id_login" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Email address
+          </label>
+          <input
+            type="email"
+            name="login"
+            id="id_login"
+            required
+            autocomplete="email"
+            value="{{ form.login.value|default:'' }}"
+            placeholder="you@example.com"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
+          >
+          {% if form.login.errors %}
+            <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ form.login.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="id_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Password
+            </label>
+            <a href="{% url 'account_reset_password' %}" class="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+              Forgot password?
+            </a>
+          </div>
+          <div class="relative">
+            <input
+              type="password"
+              name="password"
+              id="id_password"
+              required
+              autocomplete="current-password"
+              placeholder="••••••••••••"
+              class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
+            >
+            <button
+              type="button"
+              id="toggle-password-btn"
+              aria-label="Toggle password visibility"
+              class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            >
+              <svg id="eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <svg id="eye-off-icon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+              </svg>
+            </button>
+          </div>
+          {% if form.password.errors %}
+            <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ form.password.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div class="flex items-center">
+          <input
+            type="checkbox"
+            name="remember"
+            id="id_remember"
+            class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-gray-800"
+          >
+          <label for="id_remember" class="ml-2 block text-xs text-gray-700 dark:text-gray-300">
+            Remember me
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full flex items-center justify-center py-2.5 px-4 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all"
+        >
+          Log in
+        </button>
+      </form>
+
+      <!-- OR Divider -->
+      <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-200 dark:border-gray-800"></div>
+        </div>
+        <div class="relative flex justify-center text-xs uppercase">
+          <span class="bg-white dark:bg-gray-900 px-3 text-gray-400 font-medium tracking-wider">
+            or
+          </span>
+        </div>
+      </div>
+
+      <!-- Google OAuth Action -->
       {% if has_google_credentials %}
-        <!-- Single Google Login Form (POST with CSRF) -->
         <form method="post" action="{% provider_login_url 'google' %}">
           {% csrf_token %}
           {% if redirect_field_value %}
@@ -30,9 +143,8 @@
 
           <button
             type="submit"
-            class="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all"
+            class="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all"
           >
-            <!-- Official Google "G" SVG -->
             <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -43,7 +155,6 @@
           </button>
         </form>
       {% else %}
-        <!-- Friendly Notice when Google Credentials are Missing -->
         <div class="rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 p-5 text-center">
           <svg class="w-8 h-8 mx-auto text-amber-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -55,12 +166,17 @@
         </div>
       {% endif %}
 
+      <!-- Sign Up Callout -->
       <div class="mt-6 text-center">
-        <p class="text-xs text-gray-500 dark:text-gray-400">
-          Fast, passwordless sign-in. New accounts are automatically created as student profiles.
+        <p class="text-xs text-gray-600 dark:text-gray-400">
+          Don't have an account?
+          <a href="{% url 'account_signup' %}" class="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 hover:underline">
+            Sign up
+          </a>
         </p>
       </div>
 
+      <!-- Legal Footer -->
       <div class="mt-6 border-t border-gray-100 dark:border-gray-800 pt-6 text-center">
         <p class="text-xs text-gray-400 dark:text-gray-500">
           By signing in, you agree to our
@@ -72,4 +188,22 @@
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('toggle-password-btn');
+    const pwdInput = document.getElementById('id_password');
+    const eyeIcon = document.getElementById('eye-icon');
+    const eyeOffIcon = document.getElementById('eye-off-icon');
+
+    if (toggleBtn && pwdInput) {
+      toggleBtn.addEventListener('click', function() {
+        const isPassword = pwdInput.type === 'password';
+        pwdInput.type = isPassword ? 'text' : 'password';
+        eyeIcon.classList.toggle('hidden', isPassword);
+        eyeOffIcon.classList.toggle('hidden', !isPassword);
+      });
+    }
+  });
+</script>
 {% endblock content %}

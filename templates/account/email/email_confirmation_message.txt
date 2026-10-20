@@ -1,0 +1,9 @@
+Hello {{ user.first_name|default:user.email }},
+
+To verify your email address on Teaching Platform, please open the link below in your browser:
+
+{{ activate_url }}
+
+If you did not request this verification, you can safely ignore this email.
+
+— Teaching Platform Team

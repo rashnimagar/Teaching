@@ -14,13 +14,23 @@ logger = logging.getLogger(__name__)
 
 class CustomAccountAdapter(DefaultAccountAdapter):
     """
-    Custom account adapter disabling local password signups for students
-    and directing users to role-specific dashboard views upon login.
+    Custom account adapter enabling local password signups for students,
+    enforcing role safety, and directing users to role-specific dashboard views.
     """
 
     def is_open_for_signup(self, request) -> bool:
-        # Disable direct email/password signups; students must sign in with Google
-        return False
+        # Standard email/password signup is open for students
+        return True
+
+    def save_user(self, request, user, form, commit=True):
+        user = super().save_user(request, user, form, commit=False)
+        # Ensure signups are always assigned the student role with no staff privileges
+        user.role = User.Role.STUDENT
+        user.is_staff = False
+        user.is_superuser = False
+        if commit:
+            user.save()
+        return user
 
     def get_login_redirect_url(self, request) -> str:
         # Check for a requested 'next' parameter in POST or GET
@@ -43,7 +53,8 @@ class CustomAccountAdapter(DefaultAccountAdapter):
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     """
     Custom social account adapter ensuring only verified Google accounts can login,
-    guaranteeing student role defaults, and preventing privilege escalation.
+    guaranteeing student role defaults, preventing privilege escalation, and
+    mitigating pre-hijacking by invalidating passwords on unverified accounts.
     """
 
     def is_open_for_signup(self, request, sociallogin) -> bool:
@@ -72,6 +83,46 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
             raise ImmediateHttpResponse(
                 render(request, "account/unverified_email.html", status=400)
             )
+
+        # Pre-hijacking mitigation:
+        # If an unverified account already exists (e.g., an attacker signed up with victim's email),
+        # upon legitimate verified Google login, transfer ownership: make the unverified password
+        # unusable and mark the EmailAddress verified so only the real Google owner has access.
+        user = sociallogin.user if (sociallogin.user and sociallogin.user.pk) else None
+        if not user:
+            emails = [e.email for e in sociallogin.email_addresses if e.verified]
+            for email in emails:
+                found_user = User.objects.filter(email__iexact=email).first()
+                if found_user:
+                    user = found_user
+                    sociallogin.user = found_user
+                    break
+
+        if user and user.pk:
+            from allauth.account.models import EmailAddress
+
+            has_verified_email = EmailAddress.objects.filter(
+                user=user,
+                email__iexact=user.email,
+                verified=True,
+            ).exists()
+
+            if not has_verified_email:
+                logger.info(
+                    "Mitigating pre-hijacking for user %s: invalidating previous password on verified Google login",
+                    user.email,
+                )
+                user.set_unusable_password()
+                user.save(update_fields=["password"])
+                email_obj, _ = EmailAddress.objects.get_or_create(
+                    user=user,
+                    email=user.email.lower(),
+                    defaults={"verified": True, "primary": True},
+                )
+                if not email_obj.verified:
+                    email_obj.verified = True
+                    email_obj.primary = True
+                    email_obj.save(update_fields=["verified", "primary"])
 
     def populate_user(self, request, sociallogin, data):
         user = super().populate_user(request, sociallogin, data)

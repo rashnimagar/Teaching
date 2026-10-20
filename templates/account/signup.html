@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+{% load socialaccount %}
+
+{% block title %}Sign Up — Teaching Platform{% endblock title %}
+
+{% block content %}
+<div class="min-h-[75vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
+    <span class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-600 text-white font-bold text-2xl shadow-md mb-4">
+      T
+    </span>
+    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+      Create Your Account
+    </h1>
+    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+      Join our platform to access interactive lessons, notes, and coursework.
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="bg-white dark:bg-gray-900 py-8 px-6 shadow-sm border border-gray-100 dark:border-gray-800 rounded-2xl sm:px-10">
+      
+      <!-- Non-field error alert banner -->
+      {% if form.non_field_errors %}
+        <div class="mb-6 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 p-4">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div class="text-sm text-red-700 dark:text-red-300">
+              {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Registration Form -->
+      <form method="post" action="{% url 'account_signup' %}" class="space-y-4">
+        {% csrf_token %}
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+
+        <!-- Honeypot anti-spam field -->
+        {% if form.website %}
+          <div style="position: absolute; left: -9999px; top: -9999px; height: 0; width: 0; overflow: hidden;" aria-hidden="true">
+            {{ form.website }}
+          </div>
+        {% endif %}
+
+        <!-- First & Last Name Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="id_first_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              First name <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="first_name"
+              id="id_first_name"
+              required
+              autocomplete="given-name"
+              value="{{ form.first_name.value|default:'' }}"
+              placeholder="e.g. Roshan or राम"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
+            >
+            {% if form.first_name.errors %}
+              <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.first_name.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <label for="id_last_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Last name
+            </label>
+            <input
+              type="text"
+              name="last_name"
+              id="id_last_name"
+              autocomplete="family-name"
+              value="{{ form.last_name.value|default:'' }}"
+              placeholder="e.g. Adhikari"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
+            >
+            {% if form.last_name.errors %}
+              <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.last_name.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Email Address -->
+        <div>
+          <label for="id_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Email address <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            name="email"
+            id="id_email"
+            required
+            autocomplete="email"
+            value="{{ form.email.value|default:'' }}"
+            placeholder="you@example.com"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
+          >
+          {% if form.email.errors %}
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.email.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Password 1 -->
+        <div>
+          <label for="id_password1" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Password <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <input
+              type="password"
+              name="password1"
+              id="id_password1"
+              required
+              autocomplete="new-password"
+              placeholder="At least 10 characters or a passphrase"
+              class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
+            >
+            <button
+              type="button"
+              id="toggle-pwd1-btn"
+              aria-label="Toggle password visibility"
+              class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            >
+              <svg id="eye-icon-1" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <svg id="eye-off-icon-1" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Live Password Strength Hints -->
+          <div id="pwd-strength-container" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <div class="flex items-center gap-1.5">
+              <span id="pwd-length-indicator" class="inline-block w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 transition"></span>
+              <span id="pwd-hint-text">Minimum 10 characters (a memorable multi-word passphrase works best)</span>
+            </div>
+          </div>
+
+          {% if form.password1.errors %}
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.password1.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Password 2 (Confirm) -->
+        <div>
+          <label for="id_password2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Confirm password <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <input
+              type="password"
+              name="password2"
+              id="id_password2"
+              required
+              autocomplete="new-password"
+              placeholder="Re-enter your password"
+              class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
+            >
+            <button
+              type="button"
+              id="toggle-pwd2-btn"
+              aria-label="Toggle confirm password visibility"
+              class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            >
+              <svg id="eye-icon-2" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <svg id="eye-off-icon-2" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+              </svg>
+            </button>
+          </div>
+          {% if form.password2.errors %}
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.password2.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Accept Terms Checkbox -->
+        <div class="pt-1">
+          <div class="flex items-start">
+            <div class="flex items-center h-5">
+              <input
+                type="checkbox"
+                name="terms"
+                id="id_terms"
+                required
+                class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-gray-800"
+              >
+            </div>
+            <div class="ml-2.5 text-xs text-gray-600 dark:text-gray-300">
+              <label for="id_terms">
+                I agree to the
+                <a href="{% url 'core:terms' %}" target="_blank" class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Terms of Service</a>
+                and
+                <a href="{% url 'core:privacy' %}" target="_blank" class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Privacy Policy</a>.
+              </label>
+            </div>
+          </div>
+          {% if form.terms.errors %}
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.terms.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          class="w-full flex items-center justify-center py-2.5 px-4 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all mt-2"
+        >
+          Create account
+        </button>
+      </form>
+
+      <!-- OR Divider -->
+      <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-200 dark:border-gray-800"></div>
+        </div>
+        <div class="relative flex justify-center text-xs uppercase">
+          <span class="bg-white dark:bg-gray-900 px-3 text-gray-400 font-medium tracking-wider">
+            or
+          </span>
+        </div>
+      </div>
+
+      <!-- Google OAuth Option -->
+      {% if has_google_credentials %}
+        <form method="post" action="{% provider_login_url 'google' %}">
+          {% csrf_token %}
+          {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+          {% endif %}
+
+          <button
+            type="submit"
+            class="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all"
+          >
+            <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span>Continue with Google</span>
+          </button>
+        </form>
+      {% endif %}
+
+      <!-- Already Have Account Callout -->
+      <div class="mt-6 text-center">
+        <p class="text-xs text-gray-600 dark:text-gray-400">
+          Already have an account?
+          <a href="{% url 'account_login' %}" class="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 hover:underline">
+            Log in
+          </a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    function setupPasswordToggle(btnId, inputId, eyeId, eyeOffId) {
+      const btn = document.getElementById(btnId);
+      const input = document.getElementById(inputId);
+      const eye = document.getElementById(eyeId);
+      const eyeOff = document.getElementById(eyeOffId);
+
+      if (btn && input) {
+        btn.addEventListener('click', function() {
+          const isPassword = input.type === 'password';
+          input.type = isPassword ? 'text' : 'password';
+          eye.classList.toggle('hidden', isPassword);
+          eyeOff.classList.toggle('hidden', !isPassword);
+        });
+      }
+    }
+
+    setupPasswordToggle('toggle-pwd1-btn', 'id_password1', 'eye-icon-1', 'eye-off-icon-1');
+    setupPasswordToggle('toggle-pwd2-btn', 'id_password2', 'eye-icon-2', 'eye-off-icon-2');
+
+    // Live password strength hint
+    const pwd1 = document.getElementById('id_password1');
+    const indicator = document.getElementById('pwd-length-indicator');
+    const hintText = document.getElementById('pwd-hint-text');
+
+    if (pwd1 && indicator && hintText) {
+      pwd1.addEventListener('input', function() {
+        const len = pwd1.value.length;
+        if (len === 0) {
+          indicator.className = 'inline-block w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 transition';
+          hintText.textContent = 'Minimum 10 characters (a memorable multi-word passphrase works best)';
+        } else if (len < 10) {
+          indicator.className = 'inline-block w-2 h-2 rounded-full bg-amber-500 transition';
+          hintText.textContent = `${len}/10 characters (too short)`;
+        } else if (len < 16) {
+          indicator.className = 'inline-block w-2 h-2 rounded-full bg-emerald-500 transition';
+          hintText.textContent = 'Good length! Passphrases with multiple words are strong and easy to remember.';
+        } else {
+          indicator.className = 'inline-block w-2 h-2 rounded-full bg-indigo-500 transition';
+          hintText.textContent = 'Great passphrase!';
+        }
+      });
+    }
+  });
+</script>
+{% endblock content %}

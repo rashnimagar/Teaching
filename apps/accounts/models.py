@@ -39,7 +39,21 @@ class UserManager(BaseUserManager):
         if not password:
             raise ValueError(_("Superuser must have a password."))
 
-        return self.create_user(email, password, **extra_fields)
+        user = self.create_user(email, password, **extra_fields)
+        try:
+            from allauth.account.models import EmailAddress
+
+            email_obj, created = EmailAddress.objects.get_or_create(
+                user=user,
+                email=user.email,
+                defaults={"verified": True, "primary": True},
+            )
+            if not created and not email_obj.verified:
+                email_obj.verified = True
+                email_obj.save(update_fields=["verified"])
+        except Exception:
+            pass
+        return user
 
 
 class User(AbstractUser):
@@ -58,6 +72,12 @@ class User(AbstractUser):
         max_length=20,
         choices=Role.choices,
         default=Role.STUDENT,
+    )
+    terms_accepted_at = models.DateTimeField(
+        _("terms accepted at"),
+        null=True,
+        blank=True,
+        help_text=_("Timestamp when the user accepted Terms of Service on signup."),
     )
 
     objects = UserManager()

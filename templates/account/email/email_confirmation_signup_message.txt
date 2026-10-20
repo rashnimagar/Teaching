@@ -1,0 +1,11 @@
+Hello {{ user.first_name|default:user.email }},
+
+Thank you for registering with Teaching Platform!
+
+To activate your account and verify your email address, please open the link below in your browser:
+
+{{ activate_url }}
+
+If you did not create an account on our platform, you can safely ignore this message.
+
+— Teaching Platform Team

@@ -1,0 +1,13 @@
+Hello,
+
+An attempt was made to register a new account on Teaching Platform using this email address.
+
+However, an account with this email address already exists.
+
+If you made this attempt, you can log in or reset your password using the links below:
+
+Reset Password: {{ password_reset_url }}
+
+If you did not make this attempt, you can safely ignore this email. No new account was created.
+
+— Teaching Platform Team
