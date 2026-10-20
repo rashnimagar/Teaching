@@ -634,13 +634,28 @@ class TestSignupAndResetAbuseDefenses:
                 "first_name": "Spam",
                 "last_name": "Bot",
                 "password1": "SpamBotPassword123!",
-                "password2": "SpamBotPassword123!",
                 "terms": True,
                 "website": "https://spam-link.com",
             },
         )
         assert response.status_code == 200
         assert User.objects.filter(email="spambot@example.com").exists() is False
+
+    def test_signup_without_confirm_password(self, client):
+        response = client.post(
+            reverse("account_signup"),
+            {
+                "email": "singlepassword@example.com",
+                "first_name": "Single",
+                "last_name": "Password",
+                "password1": "SinglePassphrase123!",
+                "terms": True,
+                "website": "",
+            },
+            follow=True,
+        )
+        assert response.status_code == 200
+        assert User.objects.filter(email="singlepassword@example.com").exists() is True
 
     def test_signup_extra_post_fields_ignored(self, client):
         response = client.post(
@@ -650,7 +665,6 @@ class TestSignupAndResetAbuseDefenses:
                 "first_name": "Hacker",
                 "last_name": "User",
                 "password1": "HackerPassword123!",
-                "password2": "HackerPassword123!",
                 "terms": True,
                 "website": "",
                 "role": User.Role.TEACHER,

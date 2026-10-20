@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load core_tags %}
 
 {% block title %}{{ site_settings.site_name }} — Video Courses & Assignments{% endblock title %}
 
@@ -17,52 +18,52 @@
 {% endblock extra_head %}
 
 {% block content %}
-<div class="space-y-24 sm:space-y-32 pb-20">
+<div class="space-y-24 sm:space-y-32 pb-24">
 
   <!-- ========================================================================
-       1. HERO SECTION (Cinematic, High-Contrast, Action-Oriented)
+       1. HERO SECTION (Dynamic from SiteSettings, Accessible Contrast)
        ======================================================================== -->
   <section class="relative pt-12 sm:pt-20 lg:pt-24 overflow-hidden" aria-labelledby="hero-heading">
-    <!-- Subtle Background Radial Glow -->
-    <div class="absolute inset-0 -z-10 flex items-center justify-center opacity-40 dark:opacity-25 pointer-events-none" aria-hidden="true">
+    <!-- Subtle Background Glow -->
+    <div class="absolute inset-0 -z-10 flex items-center justify-center opacity-30 dark:opacity-20 pointer-events-none" aria-hidden="true">
       <div class="w-[600px] h-[600px] bg-gradient-to-tr from-indigo-500/30 to-violet-500/20 rounded-full blur-3xl"></div>
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 mb-8 shadow-sm">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        Direct Instructor-Led Education
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        Instructor-Led Platform
       </div>
 
       <h1 id="hero-heading" class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white font-display max-w-4xl mx-auto leading-[1.1]">
-        {{ site_settings.hero_headline }}
+        {{ site_settings.hero_headline|default:"Master Skills with Structured Lessons & Timed Assignments" }}
       </h1>
 
       <p class="mt-6 text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-        {{ site_settings.hero_subheadline }}
+        {{ site_settings.hero_subheadline|default:"Focused, distraction-free educational courses designed to build real-world competency." }}
       </p>
 
-      <!-- Dynamic Call To Action -->
+      <!-- Primary & Secondary CTAs -->
       <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
         {% if user.is_authenticated %}
           {% if user.is_teacher or user.is_staff %}
-            <a href="{% url 'dashboard:teacher' %}" class="btn-primary text-base px-8 py-3 w-full sm:w-auto">
+            <a href="{% url 'dashboard:teacher' %}" class="btn-primary text-base px-8 py-3 w-full sm:w-auto min-h-[44px]">
               Open Teacher Dashboard &rarr;
             </a>
           {% else %}
-            <a href="{% url 'dashboard:student' %}" class="btn-primary text-base px-8 py-3 w-full sm:w-auto">
+            <a href="{% url 'dashboard:student' %}" class="btn-primary text-base px-8 py-3 w-full sm:w-auto min-h-[44px]">
               Go to My Dashboard &rarr;
             </a>
           {% endif %}
-          <a href="{% url 'courses:list' %}" class="btn-outline text-base px-8 py-3 w-full sm:w-auto">
+          <a href="{% url 'courses:list' %}" class="btn-outline text-base px-8 py-3 w-full sm:w-auto min-h-[44px]">
             Browse All Courses
           </a>
         {% else %}
-          <a href="{% url 'account_login' %}" class="btn-primary text-base px-8 py-3 w-full sm:w-auto shadow-indigo-500/25">
-            Continue with Google &rarr;
+          <a href="{% url 'courses:list' %}" class="btn-primary text-base px-8 py-3 w-full sm:w-auto min-h-[44px]">
+            Explore Courses &rarr;
           </a>
-          <a href="{% url 'courses:list' %}" class="btn-outline text-base px-8 py-3 w-full sm:w-auto">
-            Explore Courses
+          <a href="{% url 'account_login' %}" class="btn-outline text-base px-8 py-3 w-full sm:w-auto min-h-[44px]">
+            Sign in
           </a>
         {% endif %}
       </div>
@@ -82,7 +83,7 @@
         </p>
       </div>
       <div>
-        <a href="{% url 'courses:list' %}" class="btn-outline text-sm">
+        <a href="{% url 'courses:list' %}" class="btn-outline text-sm min-h-[44px] inline-flex items-center px-4">
           View All Courses &rarr;
         </a>
       </div>
@@ -91,84 +92,7 @@
     {% if featured_courses %}
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {% for course in featured_courses %}
-          <article class="card-surface flex flex-col overflow-hidden group">
-            <!-- Thumbnail Media -->
-            <a href="{% url 'courses:detail' slug=course.slug %}" class="relative block aspect-video overflow-hidden bg-slate-100 dark:bg-slate-800 focus:outline-none">
-              {% if course.thumbnail %}
-                <picture>
-                  {% if course.thumbnail_webp %}
-                    <source srcset="{{ course.thumbnail_webp.url }}" type="image/webp">
-                  {% endif %}
-                  <img
-                    src="{{ course.thumbnail.url }}"
-                    alt="{{ course.title }}"
-                    width="640"
-                    height="360"
-                    loading="lazy"
-                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  >
-                </picture>
-              {% else %}
-                <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 p-6">
-                  <svg class="w-12 h-12 mb-2 stroke-current" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <span class="text-xs font-medium">Video Course</span>
-                </div>
-              {% endif %}
-
-              <!-- Top Overlay Badges -->
-              <div class="absolute top-3 left-3 flex flex-wrap gap-2">
-                {% if course.is_featured %}
-                  <span class="badge-featured shadow-sm">Featured</span>
-                {% endif %}
-                {% if course.is_free %}
-                  <span class="badge-free shadow-sm">Free</span>
-                {% else %}
-                  <span class="badge-paid shadow-sm">{{ course.currency }} {{ course.price }}</span>
-                {% endif %}
-              </div>
-            </a>
-
-            <!-- Card Body -->
-            <div class="p-6 flex flex-col flex-grow">
-              <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                <span>{{ course.lesson_count }} lesson{{ course.lesson_count|pluralize }}</span>
-              </div>
-
-              <h3 class="text-xl font-bold text-slate-900 dark:text-white font-display mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                <a href="{% url 'courses:detail' slug=course.slug %}">
-                  {{ course.title }}
-                </a>
-              </h3>
-
-              <p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-6 flex-grow">
-                {{ course.short_description|default:course.description|truncatewords:24 }}
-              </p>
-
-              <!-- Footer Action -->
-              <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-                {% if course.is_free %}
-                  <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                    Instant Access
-                  </span>
-                {% else %}
-                  <span class="text-xs font-semibold text-amber-600 dark:text-amber-400">
-                    Enrollment opens soon
-                  </span>
-                {% endif %}
-                <a
-                  href="{% url 'courses:detail' slug=course.slug %}"
-                  class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 inline-flex items-center gap-1"
-                >
-                  View Details &rarr;
-                </a>
-              </div>
-            </div>
-          </article>
+          {% include "courses/includes/course_card.html" with course=course %}
         {% endfor %}
       </div>
     {% else %}
@@ -181,13 +105,14 @@
   </section>
 
   <!-- ========================================================================
-       3. MEET YOUR INSTRUCTOR (Strictly hidden until name & bio are filled)
+       3. MEET YOUR INSTRUCTOR (Strictly hidden unless teacher_name AND teacher_bio are set)
        ======================================================================== -->
   {% if site_settings.teacher_name and site_settings.teacher_bio %}
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-labelledby="instructor-heading">
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-labelledby="instructor-heading" id="instructor-section">
       <div class="card-surface p-8 sm:p-12 lg:p-16">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-          <!-- Instructor Photo -->
+          
+          <!-- Instructor Photo or Monogram -->
           <div class="lg:col-span-4 flex justify-center">
             <div class="relative w-48 h-48 sm:w-60 sm:h-60 rounded-3xl overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-indigo-500/20 shadow-lg">
               {% if site_settings.teacher_photo %}
@@ -205,8 +130,10 @@
                   >
                 </picture>
               {% else %}
-                <div class="w-full h-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-extrabold text-5xl font-display">
-                  {{ site_settings.teacher_name|slice:":1" }}
+                <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900 text-white font-extrabold text-5xl font-display select-none">
+                  {% with t_initial=site_settings.teacher_name|initial_grapheme %}
+                    {% if t_initial %}{{ t_initial }}{% else %}T{% endif %}
+                  {% endwith %}
                 </div>
               {% endif %}
             </div>
@@ -228,22 +155,51 @@
               {{ site_settings.teacher_bio|linebreaks }}
             </div>
 
-            {% if site_settings.contact_email %}
-              <div class="pt-4 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                <span class="font-medium text-slate-700 dark:text-slate-200">Contact email:</span>
-                <a href="mailto:{{ site_settings.contact_email }}" class="text-indigo-600 dark:text-indigo-400 hover:underline ml-1">
-                  {{ site_settings.contact_email }}
-                </a>
-              </div>
-            {% endif %}
+            <!-- Contact & Social Links -->
+            <div class="pt-4 flex flex-wrap items-center gap-4">
+              {% if site_settings.contact_email %}
+                <div class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                  <span class="font-medium text-slate-700 dark:text-slate-200">Contact email:</span>
+                  <a href="mailto:{{ site_settings.contact_email }}" class="text-indigo-600 dark:text-indigo-400 hover:underline ml-1">
+                    {{ site_settings.contact_email }}
+                  </a>
+                </div>
+              {% endif %}
+
+              {% if site_settings.github_url or site_settings.twitter_url or site_settings.linkedin_url or site_settings.youtube_url %}
+                <div class="flex items-center gap-2">
+                  {% if site_settings.github_url %}
+                    <a href="{{ site_settings.github_url }}" target="_blank" rel="noopener noreferrer" class="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-center" aria-label="GitHub Profile">
+                      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    </a>
+                  {% endif %}
+                  {% if site_settings.twitter_url %}
+                    <a href="{{ site_settings.twitter_url }}" target="_blank" rel="noopener noreferrer" class="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-center" aria-label="Twitter Profile">
+                      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </a>
+                  {% endif %}
+                  {% if site_settings.linkedin_url %}
+                    <a href="{{ site_settings.linkedin_url }}" target="_blank" rel="noopener noreferrer" class="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-center" aria-label="LinkedIn Profile">
+                      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                    </a>
+                  {% endif %}
+                  {% if site_settings.youtube_url %}
+                    <a href="{{ site_settings.youtube_url }}" target="_blank" rel="noopener noreferrer" class="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-center" aria-label="YouTube Channel">
+                      <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    </a>
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
           </div>
+
         </div>
       </div>
     </section>
   {% endif %}
 
   <!-- ========================================================================
-       4. HOW IT WORKS (Accurate, describes only real features)
+       4. HOW IT WORKS (Accurate, grounded in currently existing features)
        ======================================================================== -->
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-labelledby="workflow-heading">
     <div class="text-center max-w-3xl mx-auto mb-16">
@@ -261,10 +217,10 @@
           01
         </div>
         <h3 class="text-lg font-bold text-slate-900 dark:text-white font-display mb-2">
-          One-Click Google Sign In
+          Secure Account Access
         </h3>
         <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-          Log in securely with your Google account. No passwords to remember or manual verification delays.
+          Create an account with email and password or sign in with one click using your Google profile.
         </p>
       </div>
 
@@ -274,10 +230,10 @@
           02
         </div>
         <h3 class="text-lg font-bold text-slate-900 dark:text-white font-display mb-2">
-          Watch Structured Video Lessons
+          Sequential Video Lessons
         </h3>
         <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-          Follow ordered, sequential lessons streamed in high definition with clean course outlines.
+          Follow ordered lessons with lesson completion tracking and preview access on designated lessons.
         </p>
       </div>
 
@@ -290,14 +246,14 @@
           Timed Assignments & Feedback
         </h3>
         <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-          Submit assignments directly through the platform before the deadline and review instructor feedback.
+          Submit assignments before deadlines and review instructor grading and personalized notes.
         </p>
       </div>
     </div>
   </section>
 
   <!-- ========================================================================
-       5. FREQUENTLY ASKED QUESTIONS
+       5. FREQUENTLY ASKED QUESTIONS (Native <details>/<summary> accordion)
        ======================================================================== -->
   {% if faqs %}
     <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8" aria-labelledby="faq-heading">
@@ -311,16 +267,16 @@
 
       <div class="space-y-4">
         {% for faq in faqs %}
-          <details class="card-surface p-6 group focus:outline-none focus-within:ring-2 focus-within:ring-indigo-500 rounded-2xl transition-all">
-            <summary class="flex justify-between items-center cursor-pointer list-none font-semibold text-slate-900 dark:text-white text-base">
+          <details class="group card-surface p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 transition-all focus-within:ring-2 focus-within:ring-indigo-500">
+            <summary class="flex justify-between items-center cursor-pointer list-none font-semibold text-slate-900 dark:text-white text-base select-none">
               <span>{{ faq.question }}</span>
-              <span class="transition-transform group-open:rotate-180 text-slate-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <span class="ml-4 flex-shrink-0 transition-transform duration-200 group-open:rotate-180 text-slate-400" aria-hidden="true">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </span>
             </summary>
-            <div class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-3 border-t border-slate-100 dark:border-slate-800">
               {{ faq.answer|linebreaks }}
             </div>
           </details>
@@ -328,6 +284,42 @@
       </div>
     </section>
   {% endif %}
+
+  <!-- ========================================================================
+       6. FINAL CALL TO ACTION (Focused, Clean, Non-Gimmicky)
+       ======================================================================== -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-labelledby="final-cta-heading">
+    <div class="rounded-3xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-slate-900 text-white p-8 sm:p-14 lg:p-16 text-center shadow-xl relative overflow-hidden">
+      <!-- Decorative background circles -->
+      <div class="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-white/5 blur-2xl pointer-events-none" aria-hidden="true"></div>
+      <div class="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-indigo-400/10 blur-2xl pointer-events-none" aria-hidden="true"></div>
+
+      <div class="relative z-10 max-w-2xl mx-auto space-y-6">
+        <h2 id="final-cta-heading" class="text-3xl sm:text-4xl font-extrabold tracking-tight font-display">
+          Ready to Start Learning?
+        </h2>
+        <p class="text-base sm:text-lg text-white/80 leading-relaxed">
+          Join our structured courses today. Learn through sequential video lectures and practice with real assignments.
+        </p>
+        <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a
+            href="{% url 'courses:list' %}"
+            class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm bg-white text-indigo-700 hover:bg-slate-100 shadow-lg transition-colors min-h-[44px] inline-flex items-center justify-center"
+          >
+            Browse Available Courses
+          </a>
+          {% if not user.is_authenticated %}
+            <a
+              href="{% url 'account_signup' %}"
+              class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm transition-colors min-h-[44px] inline-flex items-center justify-center"
+            >
+              Create Free Account
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
 
 </div>
 {% endblock content %}

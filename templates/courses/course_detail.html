@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load core_tags %}
 
 {% block title %}{{ course.title }} — {{ site_settings.site_name }}{% endblock title %}
 {% block meta_description %}{{ course.short_description|default:course.title }}{% endblock meta_description %}
@@ -13,14 +14,15 @@
 {% endblock og_image %}
 
 {% block extra_head %}
-<!-- Course JSON-LD Structured Data (Safely Escaped via serialize_json_ld) -->
+<!-- Course JSON-LD Structured Data -->
 <script type="application/ld+json">
 {{ json_ld_raw|safe }}
 </script>
 {% endblock extra_head %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+<!-- Container with bottom padding to ensure mobile fixed bar never covers content or footer -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-32 lg:pb-16 space-y-12">
 
   <!-- Breadcrumb -->
   <nav class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">
@@ -28,13 +30,14 @@
     <span>/</span>
     <a href="{% url 'courses:list' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400">Courses</a>
     <span>/</span>
-    <span class="text-slate-900 dark:text-white font-medium truncate max-w-xs">{{ course.title }}</span>
+    <span class="text-slate-900 dark:text-white font-medium truncate max-w-xs" aria-current="page">{{ course.title }}</span>
   </nav>
 
   <!-- Top Hero Banner -->
   <div class="card-surface overflow-hidden">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center p-6 sm:p-10 lg:p-12">
-      <!-- Media / Thumbnail (Col 5) -->
+      
+      <!-- Media / Thumbnail (Col 5) with high fetch priority -->
       <div class="lg:col-span-5 aspect-video rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shadow-md">
         {% if course.thumbnail %}
           <picture>
@@ -46,15 +49,22 @@
               alt="{{ course.title }}"
               width="640"
               height="360"
+              fetchpriority="high"
               class="w-full h-full object-cover"
             >
           </picture>
         {% else %}
-          <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 p-6">
-            <svg class="w-16 h-16 stroke-current mb-2" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            <span class="text-xs font-semibold">Video Course</span>
+          <div class="w-full h-full bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900 flex flex-col items-center justify-center p-6 text-white">
+            <span class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 text-white font-extrabold text-4xl font-display shadow-inner select-none" aria-hidden="true">
+              {% with c_initial=course.title|initial_grapheme %}
+                {% if c_initial %}
+                  {{ c_initial }}
+                {% else %}
+                  <svg class="w-10 h-10 fill-current text-white/90" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM3.45 9L12 4.34 20.55 9 12 13.66 3.45 9z"/></svg>
+                {% endif %}
+              {% endwith %}
+            </span>
+            <span class="mt-3 text-xs font-semibold tracking-wider uppercase text-white/75">Video Course</span>
           </div>
         {% endif %}
       </div>
@@ -62,14 +72,18 @@
       <!-- Course Meta & Enrollment Action (Col 7) -->
       <div class="lg:col-span-7 space-y-6">
         <div class="flex flex-wrap items-center gap-2">
-          {% if course.is_featured %}
+          {% if course.is_archived %}
+            <span class="badge-danger">Archived Course</span>
+          {% elif course.is_featured %}
             <span class="badge-featured">Featured Course</span>
           {% endif %}
+          
           {% if course.is_free %}
             <span class="badge-free">Free Course</span>
           {% else %}
             <span class="badge-paid">{{ course.currency }} {{ course.price }}</span>
           {% endif %}
+
           <span class="inline-flex items-center text-xs font-medium text-slate-500 dark:text-slate-400 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800">
             {{ lesson_count }} lesson{{ lesson_count|pluralize }}
           </span>
@@ -85,24 +99,35 @@
           </p>
         {% endif %}
 
-        <!-- Enrollment Call to Action State Machine -->
-        <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
-          {% if not user.is_authenticated %}
-            <!-- State 1: Unauthenticated -->
+        <!-- Desktop Enrollment Action State Machine -->
+        <div class="pt-6 border-t border-slate-100 dark:border-slate-800 hidden sm:block">
+          {% if course.is_archived %}
+            <!-- State: Archived Course (enrolled students only) -->
+            <div class="space-y-3">
+              <a href="{% url 'learn:course' course_slug=course.slug %}" class="btn-primary text-base px-8 py-3">
+                Continue Learning &rarr;
+              </a>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                This course is archived. As an enrolled student, you retain full access to all lessons and materials.
+              </p>
+            </div>
+
+          {% elif not user.is_authenticated %}
+            <!-- State: Guest -->
             <div class="space-y-3">
               <a
                 href="{% url 'account_login' %}?next={{ request.path }}"
                 class="btn-primary text-base px-8 py-3 w-full sm:w-auto"
               >
-                Sign In with Google to Enroll
+                Log in to Enroll
               </a>
               <p class="text-xs text-slate-500 dark:text-slate-400">
-                Authentication required to track lesson progress and submit assignments.
+                Log in or create an account to enroll and start learning.
               </p>
             </div>
 
           {% elif user_enrollment.status == 'revoked' %}
-            <!-- State 2: Revoked (Cannot re-enroll) -->
+            <!-- State: Revoked -->
             <div class="p-4 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/80 text-red-800 dark:text-red-200 text-sm flex items-center gap-3" role="alert">
               <svg class="w-5 h-5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -111,13 +136,13 @@
             </div>
 
           {% elif user_enrollment.status == 'active' %}
-            <!-- State 3: Active Enrollment -->
+            <!-- State: Active Enrolled -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <a
-                href="{% url 'dashboard:student' %}"
+                href="{% url 'learn:course' course_slug=course.slug %}"
                 class="btn-primary text-base px-8 py-3"
               >
-                Go to Course in Dashboard &rarr;
+                Continue Learning &rarr;
               </a>
               <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -126,54 +151,64 @@
             </div>
 
           {% elif user_enrollment.status == 'pending' %}
-            <!-- State 4: Pending Approval -->
-            <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/80 text-amber-800 dark:text-amber-200 text-sm flex items-center gap-3">
-              <svg class="w-5 h-5 flex-shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Enrollment Pending Approval — Your enrollment request is under review by the instructor.</span>
+            <!-- State: Pending Approval -->
+            <div class="space-y-3">
+              <button
+                type="button"
+                disabled
+                aria-disabled="true"
+                class="btn-secondary text-base px-8 py-3 opacity-70 cursor-not-allowed"
+              >
+                Enrollment Pending
+              </button>
+              <p class="text-xs text-amber-600 dark:text-amber-400">
+                Your enrollment request is pending instructor approval. Lessons will unlock once approved.
+              </p>
             </div>
 
+          {% elif not course.is_free %}
+            <!-- State: Paid Course -->
+            <div class="space-y-3">
+              <button
+                type="button"
+                disabled
+                aria-disabled="true"
+                class="btn-secondary text-base px-8 py-3 opacity-60 cursor-not-allowed"
+              >
+                Enrollment opens soon
+              </button>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Paid enrollment will open soon. For manual provisioning, contact the instructor.
+              </p>
+            </div>
+
+          {% elif course.is_free and course.requires_approval %}
+            <!-- State: Free with approval -->
+            <form method="post" action="{% url 'courses:enroll' slug=course.slug %}" onsubmit="const btn = this.querySelector('button[type=submit]'); if (btn) { btn.disabled = true; btn.innerText = 'Requesting...'; }">
+              {% csrf_token %}
+              <button type="submit" class="btn-primary text-base px-8 py-3">
+                Request Enrollment
+              </button>
+              <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                This course requires instructor approval before lessons unlock.
+              </p>
+            </form>
+
           {% else %}
-            <!-- State 5: Authenticated but Not Enrolled -->
-            {% if course.is_free %}
-              <form method="post" action="{% url 'courses:enroll' slug=course.slug %}">
-                {% csrf_token %}
-                {% if course.requires_approval %}
-                  <button type="submit" class="btn-primary text-base px-8 py-3">
-                    Request Access
-                  </button>
-                  <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    This course requires instructor approval before lessons unlock.
-                  </p>
-                {% else %}
-                  <button type="submit" class="btn-primary text-base px-8 py-3">
-                    Enroll for Free &rarr;
-                  </button>
-                  <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    Free instant enrollment with immediate lesson access.
-                  </p>
-                {% endif %}
-              </form>
-            {% else %}
-              <!-- State 6: Paid Course -->
-              <div class="space-y-3">
-                <button
-                  type="button"
-                  disabled
-                  aria-disabled="true"
-                  class="btn-secondary text-base px-8 py-3 opacity-60 cursor-not-allowed"
-                >
-                  Enrollment opens soon
-                </button>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                  Paid enrollment will open soon. For manual provisioning, contact the instructor.
-                </p>
-              </div>
-            {% endif %}
+            <!-- State: Free Instant Access -->
+            <form method="post" action="{% url 'courses:enroll' slug=course.slug %}" onsubmit="const btn = this.querySelector('button[type=submit]'); if (btn) { btn.disabled = true; btn.innerText = 'Enrolling...'; }">
+              {% csrf_token %}
+              <button type="submit" class="btn-primary text-base px-8 py-3">
+                Enroll Now &rarr;
+              </button>
+              <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Free instant enrollment with immediate lesson access.
+              </p>
+            </form>
           {% endif %}
         </div>
       </div>
+
     </div>
   </div>
 
@@ -224,7 +259,7 @@
                   </div>
                 </div>
 
-                <!-- Access Indicator (Zero video_id exposure for non-preview lessons) -->
+                <!-- Access Indicator -->
                 <div class="flex-shrink-0">
                   {% if lesson.is_preview %}
                     <span class="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-full border border-indigo-200/60 dark:border-indigo-800/60">
@@ -261,25 +296,25 @@
           Course Features
         </h3>
         <ul class="space-y-3 text-xs text-slate-600 dark:text-slate-300">
-          <li class="flex items-center gap-2">
+          <li class="flex items-center gap-2.5">
             <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
             <span>Complete video lectures</span>
           </li>
-          <li class="flex items-center gap-2">
+          <li class="flex items-center gap-2.5">
             <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
             <span>Timed assignments & grading</span>
           </li>
-          <li class="flex items-center gap-2">
+          <li class="flex items-center gap-2.5">
             <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
             <span>Direct instructor evaluation</span>
           </li>
-          <li class="flex items-center gap-2">
+          <li class="flex items-center gap-2.5">
             <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
@@ -291,4 +326,75 @@
   </div>
 
 </div>
+
+<!-- ========================================================================
+     MOBILE STICKY ENROLLMENT BAR (Fixed at bottom with safe-area inset)
+     ======================================================================== -->
+<aside class="fixed bottom-0 inset-x-0 z-30 sm:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-xl transition-all" aria-label="Quick Enrollment">
+  <div class="flex items-center justify-between gap-3">
+    <!-- Course price / status summary -->
+    <div class="min-w-0">
+      <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Course Access</p>
+      <p class="text-sm font-bold text-slate-900 dark:text-white truncate">
+        {% if course.is_archived %}
+          Archived
+        {% elif course.is_free %}
+          Free
+        {% else %}
+          {{ course.currency }} {{ course.price }}
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- Mobile Action Button (handling all 7 states) -->
+    <div class="flex-shrink-0">
+      {% if course.is_archived %}
+        <a href="{% url 'learn:course' course_slug=course.slug %}" class="btn-primary text-xs px-4 py-2.5 min-h-[44px] inline-flex items-center justify-center">
+          Continue Learning
+        </a>
+
+      {% elif not user.is_authenticated %}
+        <a href="{% url 'account_login' %}?next={{ request.path }}" class="btn-primary text-xs px-4 py-2.5 min-h-[44px] inline-flex items-center justify-center">
+          Log in to Enroll
+        </a>
+
+      {% elif user_enrollment.status == 'revoked' %}
+        <span class="text-xs font-semibold text-red-600 dark:text-red-400 px-3 py-2 bg-red-50 dark:bg-red-950/60 rounded-xl inline-flex items-center min-h-[44px]">
+          Revoked
+        </span>
+
+      {% elif user_enrollment.status == 'active' %}
+        <a href="{% url 'learn:course' course_slug=course.slug %}" class="btn-primary text-xs px-4 py-2.5 min-h-[44px] inline-flex items-center justify-center">
+          Continue &rarr;
+        </a>
+
+      {% elif user_enrollment.status == 'pending' %}
+        <button type="button" disabled class="btn-secondary text-xs px-4 py-2.5 opacity-70 cursor-not-allowed min-h-[44px] inline-flex items-center justify-center">
+          Pending
+        </button>
+
+      {% elif not course.is_free %}
+        <button type="button" disabled class="btn-secondary text-xs px-4 py-2.5 opacity-60 cursor-not-allowed min-h-[44px] inline-flex items-center justify-center">
+          Opens Soon
+        </button>
+
+      {% elif course.is_free and course.requires_approval %}
+        <form method="post" action="{% url 'courses:enroll' slug=course.slug %}" onsubmit="const btn = this.querySelector('button[type=submit]'); if (btn) { btn.disabled = true; btn.innerText = 'Requesting...'; }">
+          {% csrf_token %}
+          <button type="submit" class="btn-primary text-xs px-4 py-2.5 min-h-[44px] inline-flex items-center justify-center">
+            Request Access
+          </button>
+        </form>
+
+      {% else %}
+        <form method="post" action="{% url 'courses:enroll' slug=course.slug %}" onsubmit="const btn = this.querySelector('button[type=submit]'); if (btn) { btn.disabled = true; btn.innerText = 'Enrolling...'; }">
+          {% csrf_token %}
+          <button type="submit" class="btn-primary text-xs px-4 py-2.5 min-h-[44px] inline-flex items-center justify-center">
+            Enroll Now
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</aside>
 {% endblock content %}

@@ -1,0 +1,91 @@
+{% load core_tags %}
+<article class="card-surface flex flex-col overflow-hidden group hover:shadow-lg transition-all duration-200">
+  <!-- Thumbnail Media (16:9 Aspect Ratio) -->
+  <a href="{% url 'courses:detail' slug=course.slug %}" class="relative block aspect-video overflow-hidden bg-slate-100 dark:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500" aria-label="{{ course.title }}">
+    {% if course.thumbnail %}
+      <picture>
+        {% if course.thumbnail_webp %}
+          <source srcset="{{ course.thumbnail_webp.url }}" type="image/webp">
+        {% endif %}
+        <img
+          src="{{ course.thumbnail.url }}"
+          alt="{{ course.title }}"
+          width="640"
+          height="360"
+          loading="lazy"
+          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        >
+      </picture>
+    {% else %}
+      <!-- Elegant Gradient Monogram Fallback -->
+      <div class="w-full h-full bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900 flex flex-col items-center justify-center p-6 text-white group-hover:scale-105 transition-transform duration-300">
+        <span class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 text-white font-extrabold text-3xl font-display shadow-inner select-none" aria-hidden="true">
+          {% with c_initial=course.title|initial_grapheme %}
+            {% if c_initial %}
+              {{ c_initial }}
+            {% else %}
+              <svg class="w-8 h-8 fill-current text-white/90" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM3.45 9L12 4.34 20.55 9 12 13.66 3.45 9z"/></svg>
+            {% endif %}
+          {% endwith %}
+        </span>
+        <span class="mt-2 text-xs font-semibold tracking-wider uppercase text-white/75">Video Course</span>
+      </div>
+    {% endif %}
+
+    <!-- Top Overlay Badges -->
+    <div class="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-none">
+      {% if course.is_featured %}
+        <span class="badge-featured shadow-sm">Featured</span>
+      {% endif %}
+      {% if course.is_free %}
+        <span class="badge-free shadow-sm">Free</span>
+      {% else %}
+        <span class="badge-paid shadow-sm">{{ course.currency }} {{ course.price }}</span>
+      {% endif %}
+    </div>
+  </a>
+
+  <!-- Card Body -->
+  <div class="p-6 flex flex-col flex-grow">
+    <!-- Lesson Count Meta -->
+    <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-2">
+      <svg class="w-4 h-4 text-indigo-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>{{ course.lesson_count }} lesson{{ course.lesson_count|pluralize }}</span>
+    </div>
+
+    <!-- Title with 2-line clamp -->
+    <h3 class="text-xl font-bold text-slate-900 dark:text-white font-display mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
+      <a href="{% url 'courses:detail' slug=course.slug %}" class="focus:outline-none focus-visible:underline">
+        {{ course.title }}
+      </a>
+    </h3>
+
+    <!-- Description with 3-line clamp -->
+    <p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-3 mb-6 flex-grow leading-relaxed">
+      {{ course.short_description|default:course.description|default:"" }}
+    </p>
+
+    <!-- Footer Action Row -->
+    <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+      {% if course.is_free %}
+        <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+          Instant Access
+        </span>
+      {% else %}
+        <span class="text-xs font-semibold text-amber-600 dark:text-amber-400">
+          Enrollment opens soon
+        </span>
+      {% endif %}
+      
+      <a
+        href="{% url 'courses:detail' slug=course.slug %}"
+        class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 inline-flex items-center gap-1 min-h-[44px] px-2 -mr-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+      >
+        View Details &rarr;
+      </a>
+    </div>
+  </div>
+</article>

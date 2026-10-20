@@ -1,11 +1,17 @@
+{% load core_tags %}
 <nav class="sticky top-0 z-40 backdrop-blur-md bg-white/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800 transition-colors" aria-label="Main Navigation">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between h-16">
-      <!-- Left: Brand Logo -->
+    <div class="flex justify-between items-center h-16">
+      
+      <!-- Left: Brand Logo & Main Nav -->
       <div class="flex items-center gap-8">
-        <a href="{% url 'core:home' %}" class="flex items-center gap-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg p-1">
-          <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-600 text-white font-extrabold text-lg shadow-sm">
-            {{ site_settings.site_name|slice:":1"|default:"T" }}
+        <a href="{% url 'core:home' %}" class="flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-xl p-1" aria-label="{{ site_settings.site_name }} Home">
+          <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-600 text-white font-extrabold text-base shadow-sm select-none" aria-hidden="true">
+            {% with initial=site_settings.site_name|initial_grapheme %}
+              {% if initial %}{{ initial }}{% else %}
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM3.45 9L12 4.34 20.55 9 12 13.66 3.45 9z"/></svg>
+              {% endif %}
+            {% endwith %}
           </span>
           <span class="font-extrabold text-xl tracking-tight text-slate-900 dark:text-white font-display">
             {{ site_settings.site_name }}
@@ -16,139 +22,285 @@
         <div class="hidden md:flex md:items-center md:space-x-1">
           <a
             href="{% url 'courses:list' %}"
-            class="px-3 py-2 text-sm font-semibold rounded-lg text-slate-700 hover:text-indigo-600 hover:bg-slate-100 dark:text-slate-200 dark:hover:text-indigo-400 dark:hover:bg-slate-800/60 transition-colors"
+            {% if request.resolver_match.view_name == 'courses:list' %}aria-current="page"{% endif %}
+            class="px-3.5 py-2 text-sm font-semibold rounded-xl transition-colors {% if request.resolver_match.view_name == 'courses:list' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300{% else %}text-slate-700 hover:text-indigo-600 hover:bg-slate-100 dark:text-slate-200 dark:hover:text-indigo-400 dark:hover:bg-slate-800/60{% endif %}"
           >
             Browse Courses
           </a>
         </div>
       </div>
 
-      <!-- Center/Right: Desktop Navigation & Actions -->
-      <div class="hidden md:flex md:items-center md:space-x-3">
-        <!-- Dark/Light Theme Toggle -->
+      <!-- Right: Desktop User Menu & Actions -->
+      <div class="hidden md:flex md:items-center md:space-x-4">
+        <!-- Theme Toggle Button -->
         <button
           type="button"
           data-theme-toggle
-          class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors"
           aria-label="Toggle dark mode"
+          aria-pressed="false"
+          class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
         >
           <!-- Sun Icon (visible in dark mode) -->
-          <svg class="w-5 h-5 theme-icon-sun hidden text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 theme-icon-sun hidden text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
           <!-- Moon Icon (visible in light mode) -->
-          <svg class="w-5 h-5 theme-icon-moon text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 theme-icon-moon text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
           </svg>
         </button>
 
         {% if user.is_authenticated %}
-          {% if user.is_teacher or user.is_staff %}
-            <a href="{% url 'dashboard:teacher' %}" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 transition-colors">
-              Teacher Portal
-            </a>
-            <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800">
-              Teacher
-            </span>
-          {% else %}
-            <a href="{% url 'dashboard:student' %}" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 transition-colors">
-              My Dashboard
-            </a>
-            <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800">
-              Student
-            </span>
-          {% endif %}
+          <!-- User Details & Role Badge -->
+          <div class="flex items-center gap-3">
+            {% if user.is_teacher or user.is_staff %}
+              <a href="{% url 'dashboard:teacher' %}" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 transition-colors">
+                Teacher Portal
+              </a>
+              <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800">
+                Teacher
+              </span>
+            {% else %}
+              <a href="{% url 'dashboard:student' %}" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 transition-colors">
+                My Dashboard
+              </a>
+              <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800">
+                Student
+              </span>
+            {% endif %}
 
-          <span class="text-sm text-slate-600 dark:text-slate-300 font-medium truncate max-w-[150px]">
-            {{ user.first_name|default:user.email }}
-          </span>
+            <!-- User Initials Avatar -->
+            <div class="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
+              <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-xs select-none" aria-hidden="true">
+                {% with u_initial=user|initial_grapheme %}
+                  {% if u_initial %}{{ u_initial }}{% else %}
+                    <svg class="w-4 h-4 fill-current text-slate-500" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+                  {% endif %}
+                {% endwith %}
+              </span>
+              <span class="text-sm text-slate-700 dark:text-slate-300 font-medium truncate max-w-[140px]" title="{{ user.first_name|default:user.email }}">
+                {{ user.first_name|default:user.email }}
+              </span>
+            </div>
 
-          <form method="post" action="{% url 'account_logout' %}" class="inline">
-            {% csrf_token %}
-            <button
-              type="submit"
-              class="text-xs px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              Sign out
-            </button>
-          </form>
+            <!-- Logout POST Form -->
+            <form method="post" action="{% url 'account_logout' %}" class="inline">
+              {% csrf_token %}
+              <button
+                type="submit"
+                class="text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors min-h-[44px]"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         {% else %}
-          <a
-            href="{% url 'account_login' %}"
-            class="btn-primary"
-          >
-            Sign in with Google
-          </a>
+          <!-- Guest Navigation: Log in and Sign up -->
+          <div class="flex items-center gap-2">
+            <a
+              href="{% url 'account_login' %}"
+              class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors min-h-[44px] inline-flex items-center justify-center"
+            >
+              Log in
+            </a>
+            <a
+              href="{% url 'account_signup' %}"
+              class="px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 transition-all min-h-[44px] inline-flex items-center justify-center"
+            >
+              Sign up
+            </a>
+          </div>
         {% endif %}
       </div>
 
-      <!-- Mobile menu button & theme toggle -->
-      <div class="flex items-center space-x-2 md:hidden">
+      <!-- Mobile Hamburger Button & Theme Toggle -->
+      <div class="flex items-center space-x-1 md:hidden">
+        <!-- Theme Toggle Mobile -->
         <button
           type="button"
           data-theme-toggle
-          class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
           aria-label="Toggle dark mode"
+          aria-pressed="false"
+          class="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
         >
-          <svg class="w-5 h-5 theme-icon-sun hidden text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 theme-icon-sun hidden text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
-          <svg class="w-5 h-5 theme-icon-moon text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 theme-icon-moon text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
           </svg>
         </button>
 
-        <button 
-          type="button" 
-          onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" 
-          class="inline-flex items-center justify-center p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          aria-controls="mobile-menu" 
-          aria-expanded="false"
-          aria-label="Toggle navigation menu"
+        <!-- Mobile Menu Drawer Trigger -->
+        <button
+          type="button"
+          data-dialog-trigger="mobile-nav-drawer"
+          class="p-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
+          aria-label="Open navigation menu"
         >
-          <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+          <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
       </div>
+
     </div>
   </div>
 
-  <!-- Mobile menu -->
-  <div class="hidden md:hidden border-t border-slate-200 dark:border-slate-800 px-4 pt-3 pb-4 space-y-2 bg-white dark:bg-slate-900" id="mobile-menu">
-    <a href="{% url 'courses:list' %}" class="block py-2 text-base font-medium text-slate-700 hover:text-indigo-600 dark:text-slate-200">
-      Browse Courses
-    </a>
-    {% if user.is_authenticated %}
-      {% if user.is_teacher or user.is_staff %}
-        <a href="{% url 'dashboard:teacher' %}" class="block py-2 text-base font-semibold text-indigo-600 dark:text-indigo-400">
-          Teacher Portal
-        </a>
-      {% else %}
-        <a href="{% url 'dashboard:student' %}" class="block py-2 text-base font-semibold text-indigo-600 dark:text-indigo-400">
-          My Dashboard
-        </a>
-      {% endif %}
-      <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-        <span class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
-          {{ user.email }}
-        </span>
-        <form method="post" action="{% url 'account_logout' %}">
-          {% csrf_token %}
-          <button type="submit" class="text-xs text-red-600 dark:text-red-400 font-medium">
-            Sign out
+  <!-- Mobile Off-Canvas Navigation Drawer -->
+  <div
+    id="mobile-nav-drawer"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="mobile-nav-drawer-title"
+    aria-hidden="true"
+    data-dialog-root="drawer"
+    class="fixed inset-0 z-50 hidden transition-opacity duration-200"
+  >
+    <!-- Backdrop -->
+    <div
+      class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm"
+      data-dialog-backdrop
+      aria-hidden="true"
+    ></div>
+
+    <!-- Slide-over Drawer Panel -->
+    <div class="fixed inset-y-0 right-0 z-50 flex max-w-full pl-10">
+      <div class="w-screen max-w-sm bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col focus:outline-none" tabindex="-1">
+        
+        <!-- Drawer Header -->
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-600 text-white font-extrabold text-sm shadow-sm" aria-hidden="true">
+              {% with initial=site_settings.site_name|initial_grapheme %}
+                {% if initial %}{{ initial }}{% else %}T{% endif %}
+              {% endwith %}
+            </span>
+            <h2 id="mobile-nav-drawer-title" class="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white font-display">
+              {{ site_settings.site_name }}
+            </h2>
+          </div>
+          <button
+            type="button"
+            data-dialog-close
+            class="p-2 -mr-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
+            aria-label="Close navigation menu"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
-        </form>
+        </div>
+
+        <!-- Drawer Body Content -->
+        <div class="p-6 overflow-y-auto flex-grow space-y-6">
+          <!-- Main Links -->
+          <div class="space-y-1">
+            <a
+              href="{% url 'core:home' %}"
+              class="flex items-center px-4 py-3 rounded-xl text-base font-semibold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 min-h-[44px]"
+            >
+              Home
+            </a>
+            <a
+              href="{% url 'courses:list' %}"
+              class="flex items-center px-4 py-3 rounded-xl text-base font-semibold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 min-h-[44px]"
+            >
+              Browse Courses
+            </a>
+          </div>
+
+          <!-- User Section -->
+          <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+            {% if user.is_authenticated %}
+              <div class="space-y-4">
+                <div class="flex items-center gap-3 px-2">
+                  <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-sm select-none" aria-hidden="true">
+                    {% with u_initial=user|initial_grapheme %}
+                      {% if u_initial %}{{ u_initial }}{% else %}
+                        <svg class="w-5 h-5 fill-current text-slate-500" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+                      {% endif %}
+                    {% endwith %}
+                  </span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                      {{ user.first_name|default:user.email }}
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {{ user.email }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="space-y-2">
+                  {% if user.is_teacher or user.is_staff %}
+                    <a
+                      href="{% url 'dashboard:teacher' %}"
+                      class="flex items-center justify-between px-4 py-3 rounded-xl font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 min-h-[44px]"
+                    >
+                      <span>Teacher Portal</span>
+                      <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900 font-bold">Teacher</span>
+                    </a>
+                  {% else %}
+                    <a
+                      href="{% url 'dashboard:student' %}"
+                      class="flex items-center justify-between px-4 py-3 rounded-xl font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 min-h-[44px]"
+                    >
+                      <span>My Dashboard</span>
+                      <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold">Student</span>
+                    </a>
+                  {% endif %}
+                </div>
+
+                <form method="post" action="{% url 'account_logout' %}" class="pt-2">
+                  {% csrf_token %}
+                  <button
+                    type="submit"
+                    class="w-full flex items-center justify-center py-2.5 px-4 rounded-xl border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 text-sm font-semibold transition-colors min-h-[44px]"
+                  >
+                    Sign out
+                  </button>
+                </form>
+              </div>
+            {% else %}
+              <div class="space-y-3">
+                <a
+                  href="{% url 'account_login' %}"
+                  class="w-full flex items-center justify-center py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold min-h-[44px]"
+                >
+                  Log in
+                </a>
+                <a
+                  href="{% url 'account_signup' %}"
+                  class="w-full flex items-center justify-center py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm min-h-[44px]"
+                >
+                  Sign up
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Drawer Footer: Theme Toggle -->
+        <div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Theme</span>
+          <button
+            type="button"
+            data-theme-toggle
+            aria-label="Toggle dark mode"
+            aria-pressed="false"
+            class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
+          >
+            <svg class="w-5 h-5 theme-icon-sun hidden text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <svg class="w-5 h-5 theme-icon-moon text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          </button>
+        </div>
+
       </div>
-    {% else %}
-      <div class="pt-2">
-        <a
-          href="{% url 'account_login' %}"
-          class="block w-full text-center py-2 px-4 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
-        >
-          Sign in with Google
-        </a>
-      </div>
-    {% endif %}
+    </div>
   </div>
 </nav>

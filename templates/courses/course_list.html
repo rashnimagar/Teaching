@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load core_tags %}
 
 {% block title %}All Courses — {{ site_settings.site_name }}{% endblock title %}
 {% block meta_description %}Explore all available video courses, structured curriculum tracks, and hands-on assignments.{% endblock meta_description %}
@@ -21,37 +22,45 @@
     <form method="get" action="{% url 'courses:list' %}" class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 pt-4">
       <!-- Search Input -->
       <div class="relative flex-grow max-w-lg">
-        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <label for="course-search-input" class="sr-only">Search courses</label>
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400" aria-hidden="true">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
         <input
           type="search"
           name="q"
+          id="course-search-input"
           value="{{ q }}"
           placeholder="Search courses by topic, keyword, or title..."
-          class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+          class="w-full pl-10 pr-4 py-2.5 min-h-[44px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
         >
+        {% if filter_param and filter_param != 'all' %}
+          <input type="hidden" name="filter" value="{{ filter_param }}">
+        {% endif %}
       </div>
 
-      <!-- Filter Radio Tabs -->
-      <div class="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-xs font-semibold">
+      <!-- Filter Radio Tabs (>= 44px tap targets) -->
+      <div class="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-xs font-semibold" role="group" aria-label="Course pricing filter">
         <a
-          href="?filter=all{% if q %}&q={{ q }}{% endif %}"
-          class="px-4 py-1.5 rounded-lg transition-all {% if filter_param == 'all' %}bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm{% else %}text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white{% endif %}"
+          href="?{% url_replace filter='all' page=None %}"
+          class="px-4 py-2 rounded-lg transition-all min-h-[44px] inline-flex items-center justify-center {% if filter_param == 'all' %}bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm{% else %}text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white{% endif %}"
+          {% if filter_param == 'all' %}aria-current="true"{% endif %}
         >
           All ({{ total_courses }})
         </a>
         <a
-          href="?filter=free{% if q %}&q={{ q }}{% endif %}"
-          class="px-4 py-1.5 rounded-lg transition-all {% if filter_param == 'free' %}bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm{% else %}text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white{% endif %}"
+          href="?{% url_replace filter='free' page=None %}"
+          class="px-4 py-2 rounded-lg transition-all min-h-[44px] inline-flex items-center justify-center {% if filter_param == 'free' %}bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm{% else %}text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white{% endif %}"
+          {% if filter_param == 'free' %}aria-current="true"{% endif %}
         >
           Free
         </a>
         <a
-          href="?filter=paid{% if q %}&q={{ q }}{% endif %}"
-          class="px-4 py-1.5 rounded-lg transition-all {% if filter_param == 'paid' %}bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm{% else %}text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white{% endif %}"
+          href="?{% url_replace filter='paid' page=None %}"
+          class="px-4 py-2 rounded-lg transition-all min-h-[44px] inline-flex items-center justify-center {% if filter_param == 'paid' %}bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm{% else %}text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white{% endif %}"
+          {% if filter_param == 'paid' %}aria-current="true"{% endif %}
         >
           Paid
         </a>
@@ -63,109 +72,32 @@
   {% if courses %}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       {% for course in courses %}
-        <article class="card-surface flex flex-col overflow-hidden group">
-          <!-- Thumbnail Media -->
-          <a href="{% url 'courses:detail' slug=course.slug %}" class="relative block aspect-video overflow-hidden bg-slate-100 dark:bg-slate-800 focus:outline-none">
-            {% if course.thumbnail %}
-              <picture>
-                {% if course.thumbnail_webp %}
-                  <source srcset="{{ course.thumbnail_webp.url }}" type="image/webp">
-                {% endif %}
-                <img
-                  src="{{ course.thumbnail.url }}"
-                  alt="{{ course.title }}"
-                  width="640"
-                  height="360"
-                  loading="lazy"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                >
-              </picture>
-            {% else %}
-              <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 p-6">
-                <svg class="w-12 h-12 mb-2 stroke-current" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                <span class="text-xs font-medium">Video Course</span>
-              </div>
-            {% endif %}
-
-            <!-- Top Overlay Badges -->
-            <div class="absolute top-3 left-3 flex flex-wrap gap-2">
-              {% if course.is_featured %}
-                <span class="badge-featured shadow-sm">Featured</span>
-              {% endif %}
-              {% if course.is_free %}
-                <span class="badge-free shadow-sm">Free</span>
-              {% else %}
-                <span class="badge-paid shadow-sm">{{ course.currency }} {{ course.price }}</span>
-              {% endif %}
-            </div>
-          </a>
-
-          <!-- Card Body -->
-          <div class="p-6 flex flex-col flex-grow">
-            <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-              <span>{{ course.lesson_count }} lesson{{ course.lesson_count|pluralize }}</span>
-            </div>
-
-            <h2 class="text-xl font-bold text-slate-900 dark:text-white font-display mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-              <a href="{% url 'courses:detail' slug=course.slug %}">
-                {{ course.title }}
-              </a>
-            </h2>
-
-            <p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-6 flex-grow">
-              {{ course.short_description|default:course.description|truncatewords:24 }}
-            </p>
-
-            <!-- Footer Action -->
-            <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-              {% if course.is_free %}
-                <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                  Instant Access
-                </span>
-              {% else %}
-                <span class="text-xs font-semibold text-amber-600 dark:text-amber-400">
-                  Enrollment opens soon
-                </span>
-              {% endif %}
-              <a
-                href="{% url 'courses:detail' slug=course.slug %}"
-                class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 inline-flex items-center gap-1"
-              >
-                View Details &rarr;
-              </a>
-            </div>
-          </div>
-        </article>
+        {% include "courses/includes/course_card.html" with course=course %}
       {% endfor %}
     </div>
 
-    <!-- Accessible Pagination -->
+    <!-- Accessible Pagination Preserving Search & Filter Parameters -->
     {% if page_obj.has_other_pages %}
-      <nav class="flex items-center justify-center space-x-2 pt-8" aria-label="Pagination">
+      <nav class="flex items-center justify-center space-x-2 pt-8" aria-label="Course catalog pagination">
         {% if page_obj.has_previous %}
           <a
-            href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if filter_param != 'all' %}&filter={{ filter_param }}{% endif %}"
-            class="btn-outline px-3 py-1.5 text-xs"
-            aria-label="Previous Page"
+            href="?{% url_replace page=page_obj.previous_page_number %}"
+            class="btn-outline px-4 py-2 text-xs min-h-[44px] inline-flex items-center justify-center"
+            aria-label="Go to Previous Page"
           >
             &larr; Previous
           </a>
         {% endif %}
 
-        <span class="text-xs font-medium text-slate-500 dark:text-slate-400 px-3">
+        <span class="text-xs font-semibold text-slate-600 dark:text-slate-400 px-3 select-none">
           Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
         </span>
 
         {% if page_obj.has_next %}
           <a
-            href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if filter_param != 'all' %}&filter={{ filter_param }}{% endif %}"
-            class="btn-outline px-3 py-1.5 text-xs"
-            aria-label="Next Page"
+            href="?{% url_replace page=page_obj.next_page_number %}"
+            class="btn-outline px-4 py-2 text-xs min-h-[44px] inline-flex items-center justify-center"
+            aria-label="Go to Next Page"
           >
             Next &rarr;
           </a>
@@ -176,17 +108,17 @@
   {% else %}
     <!-- Empty State -->
     <div class="card-surface p-12 text-center max-w-lg mx-auto space-y-4">
-      <div class="w-12 h-12 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400" aria-hidden="true">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </div>
-      <h3 class="text-lg font-bold text-slate-900 dark:text-white font-display">No courses found</h3>
-      <p class="text-sm text-slate-500 dark:text-slate-400">
+      <h2 class="text-lg font-bold text-slate-900 dark:text-white font-display">No courses found</h2>
+      <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
         We couldn't find any courses matching your search or filter criteria.
       </p>
       <div class="pt-2">
-        <a href="{% url 'courses:list' %}" class="btn-outline text-xs">
+        <a href="{% url 'courses:list' %}" class="btn-outline text-xs min-h-[44px] inline-flex items-center justify-center px-4">
           Reset All Filters
         </a>
       </div>

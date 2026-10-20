@@ -1,299 +1,322 @@
 {% extends "base.html" %}
 {% load socialaccount %}
+{% load core_tags %}
 
-{% block title %}Sign Up — Teaching Platform{% endblock title %}
+{% block title %}Sign Up — {{ site_settings.site_name }}{% endblock title %}
 
 {% block content %}
-<div class="min-h-[75vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-  <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
-    <span class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-600 text-white font-bold text-2xl shadow-md mb-4">
-      T
-    </span>
-    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-      Create Your Account
-    </h1>
-    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-      Join our platform to access interactive lessons, notes, and coursework.
-    </p>
-  </div>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-[calc(100vh-12rem)]">
+    
+    <!-- Left Brand Panel (Desktop lg+) -->
+    <div class="hidden lg:flex lg:col-span-5 flex-col justify-between bg-gradient-to-br from-indigo-700 via-indigo-900 to-slate-950 text-white p-8 xl:p-10 rounded-3xl shadow-xl min-h-[520px] relative overflow-hidden">
+      <!-- Background subtle gradient circle -->
+      <div class="absolute -top-16 -right-16 w-60 h-60 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" aria-hidden="true"></div>
 
-  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-    <div class="bg-white dark:bg-gray-900 py-8 px-6 shadow-sm border border-gray-100 dark:border-gray-800 rounded-2xl sm:px-10">
-      
-      <!-- Non-field error alert banner -->
-      {% if form.non_field_errors %}
-        <div class="mb-6 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 p-4">
-          <div class="flex items-start gap-3">
-            <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div class="text-sm text-red-700 dark:text-red-300">
-              {% for error in form.non_field_errors %}
-                <p>{{ error }}</p>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-      {% endif %}
-
-      <!-- Registration Form -->
-      <form method="post" action="{% url 'account_signup' %}" class="space-y-4">
-        {% csrf_token %}
-        {% if redirect_field_value %}
-          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
-        {% endif %}
-
-        <!-- Honeypot anti-spam field -->
-        {% if form.website %}
-          <div style="position: absolute; left: -9999px; top: -9999px; height: 0; width: 0; overflow: hidden;" aria-hidden="true">
-            {{ form.website }}
-          </div>
-        {% endif %}
-
-        <!-- First & Last Name Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label for="id_first_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              First name <span class="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="first_name"
-              id="id_first_name"
-              required
-              autocomplete="given-name"
-              value="{{ form.first_name.value|default:'' }}"
-              placeholder="e.g. Roshan or राम"
-              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
-            >
-            {% if form.first_name.errors %}
-              <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.first_name.errors.0 }}</p>
-            {% endif %}
-          </div>
-
-          <div>
-            <label for="id_last_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Last name
-            </label>
-            <input
-              type="text"
-              name="last_name"
-              id="id_last_name"
-              autocomplete="family-name"
-              value="{{ form.last_name.value|default:'' }}"
-              placeholder="e.g. Adhikari"
-              class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
-            >
-            {% if form.last_name.errors %}
-              <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.last_name.errors.0 }}</p>
-            {% endif %}
-          </div>
-        </div>
-
-        <!-- Email Address -->
-        <div>
-          <label for="id_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Email address <span class="text-red-500">*</span>
-          </label>
-          <input
-            type="email"
-            name="email"
-            id="id_email"
-            required
-            autocomplete="email"
-            value="{{ form.email.value|default:'' }}"
-            placeholder="you@example.com"
-            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
-          >
-          {% if form.email.errors %}
-            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.email.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Password 1 -->
-        <div>
-          <label for="id_password1" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Password <span class="text-red-500">*</span>
-          </label>
-          <div class="relative">
-            <input
-              type="password"
-              name="password1"
-              id="id_password1"
-              required
-              autocomplete="new-password"
-              placeholder="At least 10 characters or a passphrase"
-              class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
-            >
-            <button
-              type="button"
-              id="toggle-pwd1-btn"
-              aria-label="Toggle password visibility"
-              class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            >
-              <svg id="eye-icon-1" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <svg id="eye-off-icon-1" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-              </svg>
-            </button>
-          </div>
-          
-          <!-- Live Password Strength Hints -->
-          <div id="pwd-strength-container" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            <div class="flex items-center gap-1.5">
-              <span id="pwd-length-indicator" class="inline-block w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 transition"></span>
-              <span id="pwd-hint-text">Minimum 10 characters (a memorable multi-word passphrase works best)</span>
-            </div>
-          </div>
-
-          {% if form.password1.errors %}
-            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.password1.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Password 2 (Confirm) -->
-        <div>
-          <label for="id_password2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Confirm password <span class="text-red-500">*</span>
-          </label>
-          <div class="relative">
-            <input
-              type="password"
-              name="password2"
-              id="id_password2"
-              required
-              autocomplete="new-password"
-              placeholder="Re-enter your password"
-              class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
-            >
-            <button
-              type="button"
-              id="toggle-pwd2-btn"
-              aria-label="Toggle confirm password visibility"
-              class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            >
-              <svg id="eye-icon-2" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <svg id="eye-off-icon-2" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-              </svg>
-            </button>
-          </div>
-          {% if form.password2.errors %}
-            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.password2.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Accept Terms Checkbox -->
-        <div class="pt-1">
-          <div class="flex items-start">
-            <div class="flex items-center h-5">
-              <input
-                type="checkbox"
-                name="terms"
-                id="id_terms"
-                required
-                class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-gray-800"
-              >
-            </div>
-            <div class="ml-2.5 text-xs text-gray-600 dark:text-gray-300">
-              <label for="id_terms">
-                I agree to the
-                <a href="{% url 'core:terms' %}" target="_blank" class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Terms of Service</a>
-                and
-                <a href="{% url 'core:privacy' %}" target="_blank" class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Privacy Policy</a>.
-              </label>
-            </div>
-          </div>
-          {% if form.terms.errors %}
-            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.terms.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Submit Button -->
-        <button
-          type="submit"
-          class="w-full flex items-center justify-center py-2.5 px-4 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all mt-2"
-        >
-          Create account
-        </button>
-      </form>
-
-      <!-- OR Divider -->
-      <div class="relative my-6">
-        <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-gray-200 dark:border-gray-800"></div>
-        </div>
-        <div class="relative flex justify-center text-xs uppercase">
-          <span class="bg-white dark:bg-gray-900 px-3 text-gray-400 font-medium tracking-wider">
-            or
+      <!-- Top: Brand & SiteSettings Text -->
+      <div class="relative z-10 space-y-4">
+        <div class="flex items-center gap-3">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white text-indigo-700 font-extrabold text-lg shadow select-none" aria-hidden="true">
+            {% with initial=site_settings.site_name|initial_grapheme %}
+              {% if initial %}{{ initial }}{% else %}T{% endif %}
+            {% endwith %}
           </span>
+          <span class="font-extrabold text-2xl tracking-tight font-display">
+            {{ site_settings.site_name }}
+          </span>
+        </div>
+
+        <h2 class="text-2xl font-bold tracking-tight font-display pt-4 text-white/95 leading-snug">
+          {{ site_settings.hero_headline|default:"Master Skills with Structured Lessons & Timed Assignments" }}
+        </h2>
+        <p class="text-sm text-indigo-100/80 leading-relaxed">
+          {{ site_settings.hero_subheadline|default:"Focused, distraction-free educational courses designed to build real-world competency." }}
+        </p>
+      </div>
+
+      <!-- Platform Highlights -->
+      <div class="relative z-10 space-y-2.5 py-4 border-t border-white/10">
+        <div class="flex items-center gap-2.5 text-xs text-indigo-100/90">
+          <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+          <span>Free enrollment and instant preview lessons</span>
+        </div>
+        <div class="flex items-center gap-2.5 text-xs text-indigo-100/90">
+          <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+          <span>Dedicated student learning dashboard</span>
+        </div>
+        <div class="flex items-center gap-2.5 text-xs text-indigo-100/90">
+          <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+          <span>Hands-on assignments and evaluation feedback</span>
         </div>
       </div>
 
-      <!-- Google OAuth Option -->
-      {% if has_google_credentials %}
-        <form method="post" action="{% provider_login_url 'google' %}">
+      <!-- Footer Info -->
+      <div class="relative z-10 text-xs text-white/60">
+        &copy; {% now "Y" %} {{ site_settings.site_name }}. All rights reserved.
+      </div>
+    </div>
+
+    <!-- Right: Registration Form Card -->
+    <div class="lg:col-span-7 flex justify-center">
+      <div class="w-full max-w-md card-surface p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-800">
+        
+        <!-- Header -->
+        <div class="mb-4 text-center sm:text-left">
+          <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white font-display tracking-tight">
+            Create Your Account
+          </h1>
+          <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">
+            Sign up to access course video lessons, notes, and coursework.
+          </p>
+        </div>
+
+        <!-- Accessible Error Summary (moves focus on failed submit) -->
+        {% if form.errors %}
+          <div
+            id="error-summary"
+            tabindex="-1"
+            role="alert"
+            aria-labelledby="error-summary-title"
+            class="mb-4 p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            <h2 id="error-summary-title" class="text-xs font-bold text-red-800 dark:text-red-200 uppercase tracking-wide mb-1">
+              Please fix the following errors
+            </h2>
+            <ul class="list-disc list-inside text-xs text-red-700 dark:text-red-300 space-y-0.5">
+              {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+              {% if form.first_name.errors %}
+                <li>First name: {{ form.first_name.errors.0 }}</li>
+              {% endif %}
+              {% if form.last_name.errors %}
+                <li>Last name: {{ form.last_name.errors.0 }}</li>
+              {% endif %}
+              {% if form.email.errors %}
+                <li>Email: {{ form.email.errors.0 }}</li>
+              {% endif %}
+              {% if form.password1.errors %}
+                <li>Password: {{ form.password1.errors.0 }}</li>
+              {% endif %}
+              {% if form.terms.errors %}
+                <li>Terms: {{ form.terms.errors.0 }}</li>
+              {% endif %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <!-- Registration Form -->
+        <form method="post" action="{% url 'account_signup' %}" class="space-y-3">
           {% csrf_token %}
           {% if redirect_field_value %}
             <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
           {% endif %}
 
+          <!-- Honeypot anti-spam field -->
+          {% if form.website %}
+            <div style="position: absolute; left: -9999px; top: -9999px; height: 0; width: 0; overflow: hidden;" aria-hidden="true">
+              {{ form.website }}
+            </div>
+          {% endif %}
+
+          <!-- First & Last Name (Single Row Grid) -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="id_first_name" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                First name <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="first_name"
+                id="id_first_name"
+                required
+                autocomplete="given-name"
+                autocapitalize="words"
+                value="{{ form.first_name.value|default:'' }}"
+                placeholder="e.g. Roshan or राम"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition min-h-[44px]"
+              >
+            </div>
+
+            <div>
+              <label for="id_last_name" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Last name
+              </label>
+              <input
+                type="text"
+                name="last_name"
+                id="id_last_name"
+                autocomplete="family-name"
+                autocapitalize="words"
+                value="{{ form.last_name.value|default:'' }}"
+                placeholder="e.g. Adhikari or अधिकारी"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition min-h-[44px]"
+              >
+            </div>
+          </div>
+
+          <!-- Email Field -->
+          <div>
+            <label for="id_email" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Email address <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="email"
+              name="email"
+              id="id_email"
+              required
+              autocomplete="email"
+              autocapitalize="none"
+              inputmode="email"
+              spellcheck="false"
+              value="{{ form.email.value|default:'' }}"
+              placeholder="you@example.com"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition min-h-[44px]"
+            >
+          </div>
+
+          <!-- Single Password Field with Show/Hide Toggle (No confirm-password field) -->
+          <div>
+            <label for="id_password1" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Password <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input
+                type="password"
+                name="password1"
+                id="id_password1"
+                required
+                autocomplete="new-password"
+                autocapitalize="none"
+                spellcheck="false"
+                placeholder="At least 10 characters or a passphrase"
+                class="w-full px-3 py-2 pr-12 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition min-h-[44px]"
+              >
+              <button
+                type="button"
+                data-toggle-password="id_password1"
+                aria-label="Toggle password visibility"
+                class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 min-h-[44px] min-w-[44px] justify-center"
+              >
+                <!-- Eye open -->
+                <svg class="w-4 h-4 icon-eye-open" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <!-- Eye closed -->
+                <svg class="w-4 h-4 icon-eye-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                </svg>
+              </button>
+            </div>
+            
+            <!-- Compact Password Strength Indicator -->
+            <div id="pwd-strength-container" class="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+              <span id="pwd-length-indicator" class="inline-block w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors"></span>
+              <span id="pwd-hint-text">Minimum 10 characters</span>
+            </div>
+          </div>
+
+          <!-- Accept Terms Checkbox -->
+          <div class="pt-0.5">
+            <div class="flex items-start">
+              <div class="flex items-center h-5">
+                <input
+                  type="checkbox"
+                  name="terms"
+                  id="id_terms"
+                  required
+                  class="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-800"
+                >
+              </div>
+              <div class="ml-2.5 text-xs text-slate-600 dark:text-slate-300">
+                <label for="id_terms">
+                  I agree to the
+                  <a href="{% url 'core:terms' %}" target="_blank" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Terms</a>
+                  and
+                  <a href="{% url 'core:privacy' %}" target="_blank" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Privacy Policy</a>.
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button (Always visible on 1366x768) -->
           <button
             type="submit"
-            class="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all"
+            id="signup-submit-btn"
+            class="w-full flex items-center justify-center py-2.5 px-4 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all min-h-[44px] mt-1"
           >
-            <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-            </svg>
-            <span>Continue with Google</span>
+            Create account
           </button>
         </form>
-      {% endif %}
 
-      <!-- Already Have Account Callout -->
-      <div class="mt-6 text-center">
-        <p class="text-xs text-gray-600 dark:text-gray-400">
-          Already have an account?
-          <a href="{% url 'account_login' %}" class="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 hover:underline">
-            Log in
-          </a>
-        </p>
+        <!-- OR Divider -->
+        <div class="relative my-4">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-slate-200 dark:border-slate-800"></div>
+          </div>
+          <div class="relative flex justify-center text-xs uppercase">
+            <span class="bg-white dark:bg-slate-900 px-3 text-slate-400 font-medium tracking-wider">
+              or
+            </span>
+          </div>
+        </div>
+
+        <!-- Google OAuth Option -->
+        {% if has_google_credentials %}
+          <form method="post" action="{% provider_login_url 'google' %}">
+            {% csrf_token %}
+            {% if redirect_field_value %}
+              <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+            {% endif %}
+
+            <button
+              type="submit"
+              class="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all min-h-[44px]"
+            >
+              <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+          </form>
+        {% else %}
+          <div class="rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 p-4 text-center">
+            <h3 class="text-xs font-semibold text-amber-800 dark:text-amber-200">Google Sign-In Unavailable</h3>
+            <p class="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
+              Authentication credentials have not been configured for this environment.
+            </p>
+          </div>
+        {% endif %}
+
+        <!-- Already Have Account Callout -->
+        <div class="mt-4 text-center">
+          <p class="text-xs text-slate-600 dark:text-slate-400">
+            Already have an account?
+            <a href="{% url 'account_login' %}" class="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 hover:underline">
+              Log in
+            </a>
+          </p>
+        </div>
+
       </div>
     </div>
+
   </div>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    function setupPasswordToggle(btnId, inputId, eyeId, eyeOffId) {
-      const btn = document.getElementById(btnId);
-      const input = document.getElementById(inputId);
-      const eye = document.getElementById(eyeId);
-      const eyeOff = document.getElementById(eyeOffId);
-
-      if (btn && input) {
-        btn.addEventListener('click', function() {
-          const isPassword = input.type === 'password';
-          input.type = isPassword ? 'text' : 'password';
-          eye.classList.toggle('hidden', isPassword);
-          eyeOff.classList.toggle('hidden', !isPassword);
-        });
-      }
+    // Focus error summary on failed submit
+    const errorSummary = document.getElementById('error-summary');
+    if (errorSummary) {
+      errorSummary.focus();
     }
 
-    setupPasswordToggle('toggle-pwd1-btn', 'id_password1', 'eye-icon-1', 'eye-off-icon-1');
-    setupPasswordToggle('toggle-pwd2-btn', 'id_password2', 'eye-icon-2', 'eye-off-icon-2');
-
-    // Live password strength hint
+    // Compact live password strength hint
     const pwd1 = document.getElementById('id_password1');
     const indicator = document.getElementById('pwd-length-indicator');
     const hintText = document.getElementById('pwd-hint-text');
@@ -302,17 +325,17 @@
       pwd1.addEventListener('input', function() {
         const len = pwd1.value.length;
         if (len === 0) {
-          indicator.className = 'inline-block w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 transition';
-          hintText.textContent = 'Minimum 10 characters (a memorable multi-word passphrase works best)';
+          indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors';
+          hintText.textContent = 'Minimum 10 characters';
         } else if (len < 10) {
-          indicator.className = 'inline-block w-2 h-2 rounded-full bg-amber-500 transition';
+          indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-amber-500 transition-colors';
           hintText.textContent = `${len}/10 characters (too short)`;
         } else if (len < 16) {
-          indicator.className = 'inline-block w-2 h-2 rounded-full bg-emerald-500 transition';
-          hintText.textContent = 'Good length! Passphrases with multiple words are strong and easy to remember.';
+          indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 transition-colors';
+          hintText.textContent = 'Good password length!';
         } else {
-          indicator.className = 'inline-block w-2 h-2 rounded-full bg-indigo-500 transition';
-          hintText.textContent = 'Great passphrase!';
+          indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 transition-colors';
+          hintText.textContent = 'Strong passphrase!';
         }
       });
     }

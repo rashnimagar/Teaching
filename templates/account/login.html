@@ -1,208 +1,265 @@
 {% extends "base.html" %}
 {% load socialaccount %}
+{% load core_tags %}
 
-{% block title %}Log In — Teaching Platform{% endblock title %}
+{% block title %}Log In — {{ site_settings.site_name }}{% endblock title %}
 
 {% block content %}
-<div class="min-h-[75vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-  <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
-    <span class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-600 text-white font-bold text-2xl shadow-md mb-4">
-      T
-    </span>
-    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-      Welcome Back
-    </h1>
-    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-      Access your enrolled courses, video lessons, and timed assignments.
-    </p>
-  </div>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-[calc(100vh-14rem)]">
+    
+    <!-- Left Brand Panel (Desktop lg+) -->
+    <div class="hidden lg:flex lg:col-span-5 flex-col justify-between bg-gradient-to-br from-indigo-700 via-indigo-900 to-slate-950 text-white p-10 xl:p-12 rounded-3xl shadow-xl min-h-[540px] relative overflow-hidden">
+      <!-- Background subtle gradient circle -->
+      <div class="absolute -top-16 -right-16 w-60 h-60 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" aria-hidden="true"></div>
 
-  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-    <div class="bg-white dark:bg-gray-900 py-8 px-6 shadow-sm border border-gray-100 dark:border-gray-800 rounded-2xl sm:px-10">
-      
-      <!-- Non-field error alert banner -->
-      {% if form.non_field_errors %}
-        <div class="mb-6 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 p-4">
-          <div class="flex items-start gap-3">
-            <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div class="text-sm text-red-700 dark:text-red-300">
-              {% for error in form.non_field_errors %}
-                <p>{{ error }}</p>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-      {% endif %}
-
-      <!-- Standard Email & Password Form -->
-      <form method="post" action="{% url 'account_login' %}" class="space-y-4">
-        {% csrf_token %}
-        {% if redirect_field_value %}
-          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
-        {% endif %}
-
-        <div>
-          <label for="id_login" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Email address
-          </label>
-          <input
-            type="email"
-            name="login"
-            id="id_login"
-            required
-            autocomplete="email"
-            value="{{ form.login.value|default:'' }}"
-            placeholder="you@example.com"
-            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
-          >
-          {% if form.login.errors %}
-            <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ form.login.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label for="id_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Password
-            </label>
-            <a href="{% url 'account_reset_password' %}" class="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
-              Forgot password?
-            </a>
-          </div>
-          <div class="relative">
-            <input
-              type="password"
-              name="password"
-              id="id_password"
-              required
-              autocomplete="current-password"
-              placeholder="••••••••••••"
-              class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition"
-            >
-            <button
-              type="button"
-              id="toggle-password-btn"
-              aria-label="Toggle password visibility"
-              class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            >
-              <svg id="eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <svg id="eye-off-icon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-              </svg>
-            </button>
-          </div>
-          {% if form.password.errors %}
-            <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ form.password.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <div class="flex items-center">
-          <input
-            type="checkbox"
-            name="remember"
-            id="id_remember"
-            class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-gray-800"
-          >
-          <label for="id_remember" class="ml-2 block text-xs text-gray-700 dark:text-gray-300">
-            Remember me
-          </label>
-        </div>
-
-        <button
-          type="submit"
-          class="w-full flex items-center justify-center py-2.5 px-4 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all"
-        >
-          Log in
-        </button>
-      </form>
-
-      <!-- OR Divider -->
-      <div class="relative my-6">
-        <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-gray-200 dark:border-gray-800"></div>
-        </div>
-        <div class="relative flex justify-center text-xs uppercase">
-          <span class="bg-white dark:bg-gray-900 px-3 text-gray-400 font-medium tracking-wider">
-            or
+      <!-- Top: Brand -->
+      <div class="relative z-10 space-y-4">
+        <div class="flex items-center gap-3">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white text-indigo-700 font-extrabold text-lg shadow select-none" aria-hidden="true">
+            {% with initial=site_settings.site_name|initial_grapheme %}
+              {% if initial %}{{ initial }}{% else %}T{% endif %}
+            {% endwith %}
           </span>
+          <span class="font-extrabold text-2xl tracking-tight font-display">
+            {{ site_settings.site_name }}
+          </span>
+        </div>
+
+        <h2 class="text-2xl font-bold tracking-tight font-display pt-6 text-white/95 leading-snug">
+          {{ site_settings.hero_headline|default:"Master Skills with Structured Lessons & Timed Assignments" }}
+        </h2>
+        <p class="text-sm text-indigo-100/80 leading-relaxed">
+          {{ site_settings.hero_subheadline|default:"Focused, distraction-free educational courses designed to build real-world competency." }}
+        </p>
+      </div>
+
+      <!-- Features Checklist -->
+      <div class="relative z-10 space-y-3 py-6 border-t border-white/10">
+        <div class="flex items-center gap-3 text-xs text-indigo-100/90">
+          <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+          <span>Ordered, high-definition video curriculum</span>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-indigo-100/90">
+          <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+          <span>Hands-on assignments with instructor reviews</span>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-indigo-100/90">
+          <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+          <span>Continuous progress and completion tracking</span>
         </div>
       </div>
 
-      <!-- Google OAuth Action -->
-      {% if has_google_credentials %}
-        <form method="post" action="{% provider_login_url 'google' %}">
+      <!-- Footer Info -->
+      <div class="relative z-10 text-xs text-white/60">
+        &copy; {% now "Y" %} {{ site_settings.site_name }}. All rights reserved.
+      </div>
+    </div>
+
+    <!-- Right: Authentication Card -->
+    <div class="lg:col-span-7 flex justify-center">
+      <div class="w-full max-w-md card-surface p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-800">
+        
+        <!-- Header -->
+        <div class="mb-6 text-center sm:text-left">
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-display tracking-tight">
+            Welcome Back
+          </h1>
+          <p class="mt-1.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+            Log in to continue your enrolled courses and access assignments.
+          </p>
+        </div>
+
+        <!-- Accessible Error Summary (moves focus on failed submit) -->
+        {% if form.errors %}
+          <div
+            id="error-summary"
+            tabindex="-1"
+            role="alert"
+            aria-labelledby="error-summary-title"
+            class="mb-5 p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            <h2 id="error-summary-title" class="text-xs font-bold text-red-800 dark:text-red-200 uppercase tracking-wide mb-1">
+              There was a problem signing in
+            </h2>
+            <ul class="list-disc list-inside text-xs text-red-700 dark:text-red-300 space-y-0.5">
+              {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+              {% if form.login.errors %}
+                <li>Email: {{ form.login.errors.0 }}</li>
+              {% endif %}
+              {% if form.password.errors %}
+                <li>Password: {{ form.password.errors.0 }}</li>
+              {% endif %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <!-- Login Form -->
+        <form method="post" action="{% url 'account_login' %}" class="space-y-4">
           {% csrf_token %}
           {% if redirect_field_value %}
             <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
           {% endif %}
 
+          <!-- Email Field -->
+          <div>
+            <label for="id_login" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Email address
+            </label>
+            <input
+              type="email"
+              name="login"
+              id="id_login"
+              required
+              autocomplete="email"
+              autocapitalize="none"
+              inputmode="email"
+              spellcheck="false"
+              value="{{ form.login.value|default:'' }}"
+              placeholder="you@example.com"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition min-h-[44px]"
+            >
+          </div>
+
+          <!-- Password Field with Show/Hide Toggle -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="id_password" class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Password
+              </label>
+              <a href="{% url 'account_reset_password' %}" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+                Forgot password?
+              </a>
+            </div>
+            <div class="relative">
+              <input
+                type="password"
+                name="password"
+                id="id_password"
+                required
+                autocomplete="current-password"
+                autocapitalize="none"
+                spellcheck="false"
+                placeholder="••••••••••••"
+                class="w-full px-3.5 py-2.5 pr-12 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm transition min-h-[44px]"
+              >
+              <button
+                type="button"
+                data-toggle-password="id_password"
+                aria-label="Toggle password visibility"
+                class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 min-h-[44px] min-w-[44px] justify-center"
+              >
+                <!-- Eye open -->
+                <svg class="w-4 h-4 icon-eye-open" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <!-- Eye closed -->
+                <svg class="w-4 h-4 icon-eye-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Remember Me Checkbox -->
+          <div class="flex items-center pt-1">
+            <input
+              type="checkbox"
+              name="remember"
+              id="id_remember"
+              class="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-800"
+            >
+            <label for="id_remember" class="ml-2 block text-xs text-slate-700 dark:text-slate-300 select-none">
+              Remember me on this device
+            </label>
+          </div>
+
+          <!-- Submit Button -->
           <button
             type="submit"
-            class="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all"
+            class="w-full flex items-center justify-center py-2.5 px-4 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all min-h-[44px]"
           >
-            <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-            </svg>
-            <span>Continue with Google</span>
+            Log in
           </button>
         </form>
-      {% else %}
-        <div class="rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 p-5 text-center">
-          <svg class="w-8 h-8 mx-auto text-amber-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-200">Google Sign-In Unavailable</h3>
-          <p class="mt-1.5 text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-            Authentication credentials have not been configured for this environment. Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.
+
+        <!-- OR Divider -->
+        <div class="relative my-5">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-slate-200 dark:border-slate-800"></div>
+          </div>
+          <div class="relative flex justify-center text-xs uppercase">
+            <span class="bg-white dark:bg-slate-900 px-3 text-slate-400 font-medium tracking-wider">
+              or
+            </span>
+          </div>
+        </div>
+
+        <!-- Google OAuth Action -->
+        {% if has_google_credentials %}
+          <form method="post" action="{% provider_login_url 'google' %}">
+            {% csrf_token %}
+            {% if redirect_field_value %}
+              <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+            {% endif %}
+
+            <button
+              type="submit"
+              class="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all min-h-[44px]"
+            >
+              <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+          </form>
+        {% else %}
+          <div class="rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 p-4 text-center">
+            <h3 class="text-xs font-semibold text-amber-800 dark:text-amber-200">Google Sign-In Unavailable</h3>
+            <p class="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
+              Authentication credentials have not been configured for this environment.
+            </p>
+          </div>
+        {% endif %}
+
+        <!-- Sign Up Callout -->
+        <div class="mt-5 text-center">
+          <p class="text-xs text-slate-600 dark:text-slate-400">
+            Don't have an account?
+            <a href="{% url 'account_signup' %}" class="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 hover:underline">
+              Sign up
+            </a>
           </p>
         </div>
-      {% endif %}
 
-      <!-- Sign Up Callout -->
-      <div class="mt-6 text-center">
-        <p class="text-xs text-gray-600 dark:text-gray-400">
-          Don't have an account?
-          <a href="{% url 'account_signup' %}" class="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 hover:underline">
-            Sign up
-          </a>
-        </p>
-      </div>
+        <!-- Legal Disclaimer -->
+        <div class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 leading-normal">
+            By signing in, you agree to our
+            <a href="{% url 'core:terms' %}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Terms of Service</a>
+            and
+            <a href="{% url 'core:privacy' %}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Privacy Policy</a>.
+          </p>
+        </div>
 
-      <!-- Legal Footer -->
-      <div class="mt-6 border-t border-gray-100 dark:border-gray-800 pt-6 text-center">
-        <p class="text-xs text-gray-400 dark:text-gray-500">
-          By signing in, you agree to our
-          <a href="{% url 'core:terms' %}" class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 font-medium">Terms of Service</a>
-          and
-          <a href="{% url 'core:privacy' %}" class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 font-medium">Privacy Policy</a>.
-        </p>
       </div>
     </div>
+
   </div>
 </div>
 
 <script>
+  // Move focus to error summary upon failed submit
   document.addEventListener('DOMContentLoaded', function() {
-    const toggleBtn = document.getElementById('toggle-password-btn');
-    const pwdInput = document.getElementById('id_password');
-    const eyeIcon = document.getElementById('eye-icon');
-    const eyeOffIcon = document.getElementById('eye-off-icon');
-
-    if (toggleBtn && pwdInput) {
-      toggleBtn.addEventListener('click', function() {
-        const isPassword = pwdInput.type === 'password';
-        pwdInput.type = isPassword ? 'text' : 'password';
-        eyeIcon.classList.toggle('hidden', isPassword);
-        eyeOffIcon.classList.toggle('hidden', !isPassword);
-      });
+    const errorSummary = document.getElementById('error-summary');
+    if (errorSummary) {
+      errorSummary.focus();
     }
   });
 </script>

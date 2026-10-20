@@ -95,18 +95,36 @@ class CustomSignupForm(SignupForm):
         "last_name",
         "email",
         "password1",
-        "password2",
         "terms",
         "website",
     ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if "first_name" in self.fields:
+            self.fields["first_name"].widget.attrs.update(
+                {
+                    "placeholder": "e.g. Roshan or राम",
+                    "autocomplete": "given-name",
+                    "autocapitalize": "words",
+                }
+            )
+        if "last_name" in self.fields:
+            self.fields["last_name"].widget.attrs.update(
+                {
+                    "placeholder": "e.g. Adhikari or अधिकारी",
+                    "autocomplete": "family-name",
+                    "autocapitalize": "words",
+                }
+            )
         if "email" in self.fields:
             self.fields["email"].widget.attrs.update(
                 {
                     "placeholder": "you@example.com",
                     "autocomplete": "email",
+                    "autocapitalize": "none",
+                    "inputmode": "email",
+                    "spellcheck": "false",
                 }
             )
         if "password1" in self.fields:
@@ -114,13 +132,8 @@ class CustomSignupForm(SignupForm):
                 {
                     "placeholder": "At least 10 characters or a passphrase",
                     "autocomplete": "new-password",
-                }
-            )
-        if "password2" in self.fields:
-            self.fields["password2"].widget.attrs.update(
-                {
-                    "placeholder": "Re-enter your password",
-                    "autocomplete": "new-password",
+                    "autocapitalize": "none",
+                    "spellcheck": "false",
                 }
             )
 
@@ -155,6 +168,9 @@ class CustomLoginForm(LoginForm):
                 {
                     "placeholder": "you@example.com",
                     "autocomplete": "email",
+                    "autocapitalize": "none",
+                    "inputmode": "email",
+                    "spellcheck": "false",
                 }
             )
         if "password" in self.fields:
@@ -162,5 +178,7 @@ class CustomLoginForm(LoginForm):
                 {
                     "placeholder": "••••••••••••",
                     "autocomplete": "current-password",
+                    "autocapitalize": "none",
+                    "spellcheck": "false",
                 }
             )
