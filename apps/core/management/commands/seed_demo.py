@@ -60,6 +60,16 @@ class Command(BaseCommand):
         student2.set_unusable_password()
         student2.save()
 
+        # Ensure verified EmailAddress records for seeded users
+        from allauth.account.models import EmailAddress
+
+        for u in [teacher, student1, student2]:
+            EmailAddress.objects.update_or_create(
+                user=u,
+                email=u.email,
+                defaults={"verified": True, "primary": True},
+            )
+
         self.stdout.write(
             "  [OK] Users created (teacher@example.com, student1@example.com, student2@example.com)"
         )

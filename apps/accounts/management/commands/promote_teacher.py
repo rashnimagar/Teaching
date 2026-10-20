@@ -31,5 +31,17 @@ class Command(BaseCommand):
             user.set_unusable_password()
         user.save()
 
+        # Ensure an active verified EmailAddress row exists for allauth authentication & password reset
+        from allauth.account.models import EmailAddress
+
+        email_obj, email_created = EmailAddress.objects.get_or_create(
+            user=user,
+            email=email,
+            defaults={"verified": True, "primary": True},
+        )
+        if not email_obj.verified:
+            email_obj.verified = True
+            email_obj.save(update_fields=["verified"])
+
         action = "Created new teacher account" if created else "Updated existing user to teacher"
         self.stdout.write(self.style.SUCCESS(f"{action}: {email} (role=teacher, is_staff=True)"))
