@@ -1,0 +1,50 @@
+{% comment %}
+Reusable Accessible Progress Bar Component
+Parameters:
+  - value: number (0 to 100)
+  - label: string (optional)
+  - show_percent: boolean (default: true)
+  - variant: "brand" | "success" | "warning" (default: "brand")
+  - size: "sm" | "md" | "lg" (default: "md")
+  - extra_classes: string
+{% endcomment %}
+<div class="w-full space-y-1.5 {% if extra_classes %}{{ extra_classes }}{% endif %}">
+  {% if label or show_percent %}
+    <div class="flex justify-between items-center text-xs font-semibold">
+      {% if label %}
+        <span class="text-slate-700 dark:text-slate-300">{{ label }}</span>
+      {% endif %}
+      {% if show_percent %}
+        <span class="text-slate-600 dark:text-slate-400 ml-auto">{{ value|default:0 }}%</span>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div
+    role="progressbar"
+    aria-valuenow="{{ value|default:0 }}"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    {% if label %}aria-label="{{ label }}"{% endif %}
+    class="w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden
+    {% if size == 'sm' %}
+      h-1.5
+    {% elif size == 'lg' %}
+      h-4
+    {% else %}
+      h-2.5
+    {% endif %}"
+  >
+    <div
+      class="h-full rounded-full transition-all duration-300
+      {% if variant == 'success' %}
+        bg-emerald-600 dark:bg-emerald-500
+      {% elif variant == 'warning' %}
+        bg-amber-500 dark:bg-amber-400
+      {% else %}
+        bg-indigo-600 dark:bg-indigo-500
+      {% endif %}"
+      style="width: {{ value|default:0 }}%;"
+    ></div>
+  </div>
+</div>

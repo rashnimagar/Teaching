@@ -1,0 +1,30 @@
+{% comment %}
+Reusable Card Component
+Parameters:
+  - header_html: string (optional)
+  - body_html: string (required)
+  - footer_html: string (optional)
+  - is_interactive: boolean (default: false)
+  - extra_classes: string
+{% endcomment %}
+<div class="rounded-2xl border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden flex flex-col
+{% if is_interactive %}
+  transition-all duration-200 hover:shadow-md hover:border-slate-400 dark:hover:border-slate-700 hover:-translate-y-0.5
+{% endif %}
+{% if extra_classes %}{{ extra_classes }}{% endif %}">
+  {% if header_html %}
+    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+      {{ header_html|safe }}
+    </div>
+  {% endif %}
+
+  <div class="p-6 flex-grow">
+    {{ body_html|safe }}
+  </div>
+
+  {% if footer_html %}
+    <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-800 mt-auto">
+      {{ footer_html|safe }}
+    </div>
+  {% endif %}
+</div>

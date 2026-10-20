@@ -1,0 +1,43 @@
+{% comment %}
+Reusable Badge Component
+Parameters:
+  - variant: "neutral" | "brand" | "success" | "warning" | "danger" (default: "neutral")
+  - size: "sm" | "md" (default: "sm")
+  - text: string
+  - dot: boolean (default: false)
+  - extra_classes: string
+{% endcomment %}
+<span class="inline-flex items-center font-semibold rounded-full border transition-colors select-none
+{% if size == 'md' %}
+  text-xs px-3 py-1 gap-1.5
+{% else %}
+  text-xs px-2.5 py-0.5 gap-1
+{% endif %}
+{% if variant == 'brand' %}
+  bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800
+{% elif variant == 'success' %}
+  bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800
+{% elif variant == 'warning' %}
+  bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800
+{% elif variant == 'danger' %}
+  bg-red-50 text-red-800 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800
+{% else %}
+  bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700
+{% endif %}
+{% if extra_classes %}{{ extra_classes }}{% endif %}">
+  {% if dot %}
+    <span class="w-1.5 h-1.5 rounded-full shrink-0
+    {% if variant == 'brand' %}
+      bg-indigo-600 dark:bg-indigo-400
+    {% elif variant == 'success' %}
+      bg-emerald-600 dark:bg-emerald-400
+    {% elif variant == 'warning' %}
+      bg-amber-600 dark:bg-amber-400
+    {% elif variant == 'danger' %}
+      bg-red-600 dark:bg-red-400
+    {% else %}
+      bg-slate-500 dark:bg-slate-400
+    {% endif %}" aria-hidden="true"></span>
+  {% endif %}
+  <span>{{ text }}</span>
+</span>

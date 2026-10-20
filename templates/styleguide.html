@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+
+{% block title %}Design System & Styleguide — Teaching Platform{% endblock title %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-16">
+
+  <!-- Header -->
+  <div class="border-b border-slate-200 dark:border-slate-800 pb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 mb-3">
+        DEBUG MODE ONLY
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display">
+        Design System & Component Styleguide
+      </h1>
+      <p class="mt-2 text-base text-slate-600 dark:text-slate-400 max-w-3xl">
+        Live catalogue of tokens, reusable template partials, WCAG AA contrast compliance, and accessibility patterns in both light and dark themes.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      {% include "components/button.html" with text="Toggle Theme" variant="outline" size="md" id="styleguide-theme-toggle" extra_classes="data-theme-toggle" %}
+    </div>
+  </div>
+
+  <!-- SECTION 1: WCAG AA CONTRAST MATRIX -->
+  <section class="space-y-6">
+    <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white font-display">
+        1. WCAG 2.1 AA Contrast Ratios (Target >= 4.5:1 Text, >= 3.0:1 UI)
+      </h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        Mathematically verified relative luminance contrast values across light and dark color pairs.
+      </p>
+    </div>
+
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-left text-sm">
+        <thead class="bg-slate-100 dark:bg-slate-900 font-semibold text-slate-700 dark:text-slate-300">
+          <tr>
+            <th scope="col" class="px-6 py-3.5">Theme</th>
+            <th scope="col" class="px-6 py-3.5">Color Pair Role</th>
+            <th scope="col" class="px-6 py-3.5">Background</th>
+            <th scope="col" class="px-6 py-3.5">Foreground</th>
+            <th scope="col" class="px-6 py-3.5">Contrast Ratio</th>
+            <th scope="col" class="px-6 py-3.5">Compliance Level</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-950 font-mono text-xs">
+          {% for row in contrast_matrix %}
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+              <td class="px-6 py-3 font-sans font-medium text-slate-800 dark:text-slate-200">{{ row.theme }}</td>
+              <td class="px-6 py-3 font-sans font-semibold text-slate-900 dark:text-slate-100">{{ row.pair }}</td>
+              <td class="px-6 py-3 text-slate-600 dark:text-slate-400">
+                <span class="inline-block w-3 h-3 rounded-full mr-1.5 border border-slate-300" style="background-color: {{ row.bg }};"></span>
+                {{ row.bg }}
+              </td>
+              <td class="px-6 py-3 text-slate-600 dark:text-slate-400">
+                <span class="inline-block w-3 h-3 rounded-full mr-1.5 border border-slate-300" style="background-color: {{ row.fg }};"></span>
+                {{ row.fg }}
+              </td>
+              <td class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ row.ratio }}</td>
+              <td class="px-6 py-3 font-sans">
+                {% if row.level == 'AAA' %}
+                  {% include "components/badge.html" with text=row.level variant="success" size="sm" %}
+                {% else %}
+                  {% include "components/badge.html" with text=row.level variant="brand" size="sm" %}
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SECTION 2: TYPOGRAPHY & DEVANAGARI (NEPALI) CONJUNCTS -->
+  <section class="space-y-6">
+    <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white font-display">
+        2. Typography & Devanagari (Nepali) Conjuncts
+      </h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        Self-hosted variable WOFF2 fonts (Inter + Plus Jakarta Sans) with Noto Sans Devanagari fallback covering conjuncts like क्ष, ज्ञ, त्र, श्र, द्ध.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- English Typography -->
+      <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
+        <h3 class="text-xs uppercase tracking-wider font-semibold text-slate-500">English Type Hierarchy</h3>
+        <div class="space-y-3">
+          <div>
+            <p class="text-xs text-slate-400 font-mono">Display / Hero (48px)</p>
+            <p class="text-4xl font-extrabold text-slate-900 dark:text-white font-display">Master Full-Stack Engineering</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400 font-mono">Heading 2 (28px)</p>
+            <p class="text-2xl font-bold text-slate-900 dark:text-white font-display">Structured Video Lessons & Timed Tests</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400 font-mono">Body Regular (16px)</p>
+            <p class="text-base text-slate-700 dark:text-slate-300">
+              Join thousands of students building real production software with Django, Python, and modern Tailwind design systems.
+            </p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400 font-mono">Caption / Muted (14px)</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              Verified certificates issued upon successful curriculum completion.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nepali Devanagari Typography -->
+      <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
+        <h3 class="text-xs uppercase tracking-wider font-semibold text-slate-500">Devanagari (नेपाली) & Complex Conjuncts</h3>
+        <div class="space-y-3">
+          <div>
+            <p class="text-xs text-slate-400 font-mono">शीर्षक (Heading 1) - Testing क्ष, ज्ञ, त्र</p>
+            <p class="text-3xl font-extrabold text-slate-900 dark:text-white font-display">
+              दक्ष शिक्षकबाट ज्ञान र प्रविधि शिक्षा
+            </p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400 font-mono">विवरण (Body) - Testing श्र, द्ध, ष्ट</p>
+            <p class="text-base text-slate-700 dark:text-slate-300">
+              हाम्रो उत्कृष्ट अनलाइन कक्षामा सहभागी भई आधुनिक कम्प्युटर प्रोग्रामिङ सिक्नुहोस् र भविष्य उज्ज्वल बनाउनुहोस्।
+            </p>
+          </div>
+          <div class="pt-2 flex flex-wrap gap-3">
+            {% include "components/button.html" with text="नयाँ खाता सिर्जना गर्नुहोस्" variant="primary" size="md" %}
+            {% include "components/button.html" with text="लगइन गर्नुहोस्" variant="outline" size="md" %}
+          </div>
+          <div class="pt-2">
+            <p class="text-xs text-red-600 dark:text-red-400 font-medium">
+              * त्रुटि: पासवर्ड कम्तिमा १० अक्षरको हुनुपर्छ र स्पष्ट हुनुपर्छ।
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: BUTTONS -->
+  <section class="space-y-6">
+    <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white font-display">
+        3. Buttons (Variants, Sizes & States)
+      </h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        All variants enforce >= 44px min-height in medium/large, visible focus rings, and zero string-interpolated classes.
+      </p>
+    </div>
+
+    <!-- Variants -->
+    <div class="space-y-3">
+      <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Button Variants</h3>
+      <div class="flex flex-wrap gap-4 items-center">
+        {% include "components/button.html" with text="Primary Button" variant="primary" size="md" %}
+        {% include "components/button.html" with text="Secondary Button" variant="secondary" size="md" %}
+        {% include "components/button.html" with text="Outline Button" variant="outline" size="md" %}
+        {% include "components/button.html" with text="Ghost Button" variant="ghost" size="md" %}
+        {% include "components/button.html" with text="Danger Button" variant="danger" size="md" %}
+      </div>
+    </div>
+
+    <!-- Sizes -->
+    <div class="space-y-3">
+      <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Button Sizes</h3>
+      <div class="flex flex-wrap gap-4 items-center">
+        {% include "components/button.html" with text="Small (36px)" variant="primary" size="sm" %}
+        {% include "components/button.html" with text="Medium (44px)" variant="primary" size="md" %}
+        {% include "components/button.html" with text="Large (48px)" variant="primary" size="lg" %}
+      </div>
+    </div>
+
+    <!-- States: Disabled & Loading -->
+    <div class="space-y-3">
+      <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Disabled & Loading States</h3>
+      <div class="flex flex-wrap gap-4 items-center">
+        {% include "components/button.html" with text="Disabled Primary" variant="primary" size="md" disabled=True %}
+        {% include "components/button.html" with text="Disabled Outline" variant="outline" size="md" disabled=True %}
+        {% include "components/button.html" with text="Saving Progress..." variant="primary" size="md" is_loading=True %}
+        {% include "components/button.html" with text="Deleting Course..." variant="danger" size="md" is_loading=True %}
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: FORM CONTROLS & INPUTS -->
+  <section class="space-y-6">
+    <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white font-display">
+        4. Form Controls & Inputs
+      </h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        Accessible labels, required indicators, inline errors with ARIA linkage, and 44px min-height touch targets.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Standard Input & Textarea -->
+      <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-6">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Text Inputs & Select</h3>
+
+        <div>
+          <label for="demo-email" class="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+            Email Address <span class="text-red-500">*</span>
+          </label>
+          {% include "components/input.html" with id="demo-email" name="email" type="email" placeholder="you@example.com" help_text="We'll never share your email with third parties." %}
+        </div>
+
+        <div>
+          <label for="demo-select" class="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+            Select Course Level
+          </label>
+          {% include "components/select.html" with id="demo-select" name="level" options_html="<option value='beginner'>Beginner Fundamentals</option><option value='intermediate'>Intermediate Backend</option><option value='advanced'>Advanced Microservices</option>" %}
+        </div>
+
+        <div>
+          <label for="demo-notes" class="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+            Lesson Notes / Submission
+          </label>
+          {% include "components/textarea.html" with id="demo-notes" name="notes" placeholder="Paste your repository link or notes here..." rows=3 %}
+        </div>
+      </div>
+
+      <!-- Error State & Checkboxes -->
+      <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-6">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Validation Error & Checkboxes</h3>
+
+        <div>
+          <label for="demo-password-error" class="block text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+            Account Password <span class="text-red-500">*</span>
+          </label>
+          {% include "components/input.html" with id="demo-password-error" name="password" type="password" value="secret" error="Password must be at least 10 characters long." %}
+          <p id="demo-password-error-error" class="mt-1.5 text-xs text-red-600 dark:text-red-400 font-medium" role="alert">
+            Password must be at least 10 characters long.
+          </p>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+          <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Interactive Checkboxes (44px target)</p>
+          {% include "components/checkbox.html" with id="demo-agree" name="agree" label="I agree to the Terms of Service and Privacy Policy" checked=True %}
+          {% include "components/checkbox.html" with id="demo-newsletter" name="newsletter" label="Send me notifications about newly released courses" help_text="You can unsubscribe anytime." %}
+          {% include "components/checkbox.html" with id="demo-error-check" name="required_check" label="I confirm my submission is my own original work" error="You must accept this condition before submitting." %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 5: BADGES & CHIPS -->
+  <section class="space-y-6">
+    <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white font-display">
+        5. Badges & Status Chips
+      </h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        High-contrast role badges, course tags, and enrollment indicators.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-3 items-center">
+      {% include "components/badge.html" with text="Neutral / Default" variant="neutral" size="md" %}
+      {% include "components/badge.html" with text="Brand / Student" variant="brand" size="md" dot=True %}
+      {% include "components/badge.html" with text="Success / Enrolled" variant="success" size="md" dot=True %}
+      {% include "components/badge.html" with text="Warning / Pending" variant="warning" size="md" dot=True %}
+      {% include "components/badge.html" with text="Danger / Revoked" variant="danger" size="md" dot=True %}
+    </div>
+
+    <div class="flex flex-wrap gap-3 items-center pt-2">
+      {% include "components/badge.html" with text="Free Course" variant="success" size="sm" %}
+      {% include "components/badge.html" with text="Featured" variant="brand" size="sm" %}
+      {% include "components/badge.html" with text="3 Lessons" variant="neutral" size="sm" %}
+      {% include "components/badge.html" with text="Deadline Tomorrow" variant="warning" size="sm" %}
+    </div>
+  </section>
+
+  <!-- SECTION 6: CARDS -->
+  <section class="space-y-6">
+    <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white font-display">
+        6. Cards (Standard & Interactive Surface)
+      </h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        Solid surfaces, subtle border contrast, header/body/footer slots.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Standard Card -->
+      {% include "components/card.html" with header_html="<h3 class='font-bold text-slate-900 dark:text-white'>Standard Course Details</h3>" body_html="<p class='text-sm text-slate-600 dark:text-slate-300'>This card contains static informational content without hover transformation.</p>" footer_html="<span class='text-xs text-slate-500'>Updated 2 days ago</span>" %}
+
+      <!-- Interactive Card -->
+      {% include "components/card.html" with is_interactive=True header_html="<h3 class='font-bold text-indigo-600 dark:text-indigo-400'>Interactive Course Card</h3>" body_html="<p class='text-sm text-slate-600 dark:text-slate-300'>Hovering lifts this card with subtle elevation and border highlight.</p>" footer_html="<a href='#' class='text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline'>View Full Syllabus &rarr;</a>" %}
+    </div>
+  </section>
+
+  <!-- SECTION 7: ALERTS & TOASTS -->
+  <section class="space-y-6">
+    <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white font-display">
+        7. Alerts & Toast Notifications
+      </h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        Screen-reader accessible status announcements with SVG icons and dismiss behavior.
+      </p>
+    </div>
+
+    <div class="space-y-4 max-w-3xl">
+      {% include "components/alert.html" with variant="info" title="System Maintenance" message="Platform maintenance is scheduled for Sunday at 02:00 UTC." dismissible=True %}
+      {% include "components/alert.html" with variant="success" title="Assignment Submitted" message="Your code submission has been recorded. Your instructor will grade it shortly." dismissible=True %}
+      {% include "components/alert.html" with variant="warning" title="Submission Window Closing" message="Only 2 hours remain before the deadline for Assignment 2." dismissible=True %}
+      {% include "components/alert.html" with variant="danger" title="Access Denied" message="You do not have an active enrollment for this course." dismissible=True %}
+    </div>
+
+    <!-- Toast notification demo -->
+    <div class="pt-4">
+      <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Toast Notification (aria-live="polite")</h3>
+      {% include "components/toast.html" with id="demo-toast" variant="success" message="Lesson progress saved automatically." duration=0 %}
+    </div>
+  </section>
+
+  <!-- SECTION 8: NAVIGATION & WAYFINDING (TABS, BREADCRUMB, PAGINATION) -->
+  <section class="space-y-6">
+    <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white font-display">
+        8. Navigation & Wayfinding
+      </h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        Breadcrumbs with truncation safety, responsive pagination, and WAI-ARIA tabs with keyboard arrow navigation.
+      </p>
+    </div>
+
+    <!-- Breadcrumb -->
+    <div class="space-y-2">
+      <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Breadcrumb Component</h3>
+      {% include "components/breadcrumb.html" with items=dummy_breadcrumbs %}
+    </div>
+
+    <!-- Accessible Tabs -->
+    <div class="space-y-4 pt-4">
+      <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Accessible Tabs (Arrow Keys Navigation)</h3>
+      {% include "components/tabs.html" with tabs_id="demo-tablist" tabs=dummy_tabs active_tab_id="tab-overview" %}
+
+      <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <div id="tab-overview-panel" role="tabpanel" aria-labelledby="tab-overview-tab">
+          <h4 class="font-bold text-slate-900 dark:text-white mb-2">Course Overview Panel</h4>
+          <p class="text-sm text-slate-600 dark:text-slate-300">
+            Welcome to the course overview. Use the Left and Right arrow keys on your keyboard while focused on the tabs to switch between panels with roving tabindex.
+          </p>
+        </div>
+        <div id="tab-curriculum-panel" role="tabpanel" aria-labelledby="tab-curriculum-tab" class="hidden" hidden>
+          <h4 class="font-bold text-slate-900 dark:text-white mb-2">Curriculum Panel (12 Lessons)</h4>
+          <p class="text-sm text-slate-600 dark:text-slate-300">
+            Ordered lessons, video durations, and status badges appear here.
+          </p>
+        </div>
+        <div id="tab-assignments-panel" role="tabpanel" aria-labelledby="tab-assignments-tab" class="hidden" hidden>
+          <h4 class="font-bold text-slate-900 dark:text-white mb-2">Assignments Panel (3 Active)</h4>
+          <p class="text-sm text-slate-600 dark:text-slate-300">
+            Upcoming assignment deadlines and submission buttons appear here.
+          </p>
+        </div>
+        <div id="tab-discussions-panel" role="tabpanel" aria-labelledby="tab-discussions-tab" class="hidden" hidden>
+          <h4 class="font-bold text-slate-900 dark:text-white mb-2">Community Q&A Panel</h4>
+          <p class="text-sm text-slate-600 dark:text-slate-300">
+            Instructor and peer responses to lesson inquiries appear here.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 9: PROGRESS & SKELETON LOADERS -->
+  <section class="space-y-6">
+    <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white font-display">
+        9. Progress & Skeleton Loaders
+      </h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        Accessible progress bars (`role="progressbar"`) and async shimmer loaders.
+      </p>
+    </div>
+
+    <!-- Progress Bars -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
+        <h3 class="text-xs font-semibold uppercase text-slate-500">Brand Progress (65%)</h3>
+        {% include "components/progress_bar.html" with value=65 label="Python Fundamentals" variant="brand" size="md" %}
+      </div>
+      <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
+        <h3 class="text-xs font-semibold uppercase text-slate-500">Success Progress (100%)</h3>
+        {% include "components/progress_bar.html" with value=100 label="Completed Course" variant="success" size="md" %}
+      </div>
+      <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-4">
+        <h3 class="text-xs font-semibold uppercase text-slate-500">Warning Progress (25%)</h3>
+        {% include "components/progress_bar.html" with value=25 label="Getting Started" variant="warning" size="md" %}
+      </div>
+    </div>
+
+    <!-- Skeleton Loaders -->
+    <div class="space-y-4 pt-4">
+      <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Async Skeleton Loading Placeholders</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <p class="text-xs text-slate-500 mb-2 font-mono">Video Placeholder</p>
+          {% include "components/skeleton_loader.html" with type="video" %}
+        </div>
+        <div>
+          <p class="text-xs text-slate-500 mb-2 font-mono">Course Card Placeholder</p>
+          {% include "components/skeleton_loader.html" with type="card" %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 10: EMPTY STATE COMPONENT -->
+  <section class="space-y-6">
+    <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white font-display">
+        10. Empty State Component
+      </h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        Used whenever student has zero enrolled courses or search returns no results.
+      </p>
+    </div>
+
+    {% include "components/empty_state.html" with title="No courses enrolled yet" description="Explore our catalog of instructor-led courses and start learning today." action_text="Browse All Courses" action_url="/courses/" icon_type="courses" %}
+  </section>
+
+  <!-- SECTION 11: MODAL & DRAWER DIALOGS -->
+  <section class="space-y-6">
+    <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white font-display">
+        11. Accessible Modal & Off-Canvas Drawer (Focus Trap, Esc to close)
+      </h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        Traps keyboard Tab navigation inside dialog, closes on Escape or backdrop click, and restores focus to trigger.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-4 items-center">
+      <button
+        type="button"
+        data-dialog-trigger="styleguide-modal"
+        class="inline-flex items-center justify-center font-semibold text-sm px-4 py-2.5 min-h-[44px] rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shadow-sm"
+      >
+        Open Accessible Modal
+      </button>
+
+      <button
+        type="button"
+        data-dialog-trigger="styleguide-drawer"
+        class="inline-flex items-center justify-center font-semibold text-sm px-4 py-2.5 min-h-[44px] rounded-xl bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
+      >
+        Open Off-Canvas Drawer
+      </button>
+    </div>
+
+    <!-- Modal Dialog -->
+    {% include "components/modal_drawer.html" with id="styleguide-modal" type="modal" title="Confirm Assignment Submission" body_html="<p class='mb-4'>Are you sure you are ready to submit your code for Assignment 1? Once submitted, the deadline timer stops and submissions cannot be modified.</p><div class='p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 text-xs font-medium'>Submission deadline: Today at 23:59 UTC</div>" footer_html="<button type='button' data-dialog-close class='px-4 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'>Cancel</button><button type='button' data-dialog-close class='px-4 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500'>Submit Final</button>" %}
+
+    <!-- Drawer Dialog -->
+    {% include "components/modal_drawer.html" with id="styleguide-drawer" type="drawer" title="Course Syllabus & Progress" body_html="<div class='space-y-4'><div class='p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700'><p class='font-bold text-sm text-slate-900 dark:text-white'>1. Introduction & Setup</p><span class='text-xs text-emerald-600 font-semibold'>Completed</span></div><div class='p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700'><p class='font-bold text-sm text-slate-900 dark:text-white'>2. Environment Variables & Security</p><span class='text-xs text-indigo-600 font-semibold'>Current Lesson</span></div><div class='p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700'><p class='font-bold text-sm text-slate-900 dark:text-white'>3. Database Models & Migrations</p><span class='text-xs text-slate-500 font-semibold'>Up Next</span></div></div>" footer_html="<button type='button' data-dialog-close class='w-full py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500'>Close Syllabus</button>" %}
+  </section>
+
+</div>
+{% endblock content %}

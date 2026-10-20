@@ -1,0 +1,68 @@
+{% comment %}
+Reusable Alert / Banner Component
+Parameters:
+  - variant: "info" | "success" | "warning" | "danger" (default: "info")
+  - title: string (optional)
+  - message: string (required)
+  - dismissible: boolean (default: false)
+  - id: string
+  - extra_classes: string
+{% endcomment %}
+<div
+  {% if id %}id="{{ id }}"{% endif %}
+  role="alert"
+  class="rounded-xl border p-4 transition-all duration-200 flex items-start gap-3
+  {% if variant == 'success' %}
+    bg-emerald-50 text-emerald-900 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-200 dark:border-emerald-800
+  {% elif variant == 'warning' %}
+    bg-amber-50 text-amber-950 border-amber-300 dark:bg-amber-950/50 dark:text-amber-200 dark:border-amber-800
+  {% elif variant == 'danger' %}
+    bg-red-50 text-red-950 border-red-300 dark:bg-red-950/50 dark:text-red-200 dark:border-red-800
+  {% else %}
+    bg-indigo-50 text-indigo-950 border-indigo-300 dark:bg-indigo-950/50 dark:text-indigo-200 dark:border-indigo-800
+  {% endif %}
+  {% if extra_classes %}{{ extra_classes }}{% endif %}"
+>
+  <!-- Icon -->
+  <div class="shrink-0 mt-0.5">
+    {% if variant == 'success' %}
+      <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    {% elif variant == 'warning' %}
+      <svg class="h-5 w-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+    {% elif variant == 'danger' %}
+      <svg class="h-5 w-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    {% else %}
+      <svg class="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    {% endif %}
+  </div>
+
+  <!-- Content -->
+  <div class="flex-grow text-sm">
+    {% if title %}
+      <h3 class="font-bold mb-0.5">{{ title }}</h3>
+    {% endif %}
+    <div>{{ message|safe }}</div>
+  </div>
+
+  <!-- Optional Dismiss Button -->
+  {% if dismissible %}
+    <button
+      type="button"
+      data-dismiss="alert"
+      class="shrink-0 -mr-1 -mt-1 p-1.5 rounded-lg text-current opacity-70 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-current transition-opacity"
+      aria-label="Dismiss alert"
+    >
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  {% endif %}
+</div>

@@ -8,6 +8,7 @@ from django.views.generic.base import RedirectView
 from apps.accounts.views import rate_limited_admin_login_view
 from apps.core.sitemaps import CourseSitemap, StaticViewSitemap
 from apps.core.views import robots_txt_view
+from apps.core.views_styleguide import styleguide_view
 
 sitemaps = {
     "static": StaticViewSitemap,
@@ -34,6 +35,7 @@ urlpatterns = [
         {"sitemaps": sitemaps},
         name="django.contrib.sitemaps.views.sitemap",
     ),
+    path("styleguide/", styleguide_view, name="styleguide"),
     path("", include("apps.core.urls", namespace="core")),
 ]
 

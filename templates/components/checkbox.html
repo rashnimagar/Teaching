@@ -1,0 +1,51 @@
+{% comment %}
+Reusable Checkbox Component
+Enforces 44px min-height touch target container for mobile accessibility
+Parameters:
+  - id: string
+  - name: string
+  - checked: boolean
+  - disabled: boolean
+  - required: boolean
+  - label: string
+  - help_text: string
+  - error: string
+  - extra_classes: string
+{% endcomment %}
+<div class="flex items-start min-h-[44px] py-1.5 {% if extra_classes %}{{ extra_classes }}{% endif %}">
+  <div class="flex items-center h-5 mt-0.5">
+    <input
+      id="{{ id }}"
+      name="{{ name }}"
+      type="checkbox"
+      {% if checked %}checked{% endif %}
+      {% if required %}required{% endif %}
+      {% if disabled %}disabled aria-disabled="true"{% endif %}
+      {% if error %}
+        aria-invalid="true"
+        aria-describedby="{{ id }}-error"
+      {% elif help_text %}
+        aria-describedby="{{ id }}-help"
+      {% endif %}
+      class="h-5 w-5 rounded-md border-2 border-slate-500 dark:border-slate-500 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 bg-white dark:bg-slate-900 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+    >
+  </div>
+  <div class="ml-3 text-sm">
+    {% if label %}
+      <label for="{{ id }}" class="font-medium text-slate-800 dark:text-slate-200 cursor-pointer select-none">
+        {{ label|safe }}
+        {% if required %}<span class="text-red-500 ml-0.5" aria-hidden="true">*</span>{% endif %}
+      </label>
+    {% endif %}
+    {% if help_text and not error %}
+      <p id="{{ id }}-help" class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+        {{ help_text }}
+      </p>
+    {% endif %}
+    {% if error %}
+      <p id="{{ id }}-error" class="text-xs text-red-600 dark:text-red-400 mt-0.5 font-medium" role="alert">
+        {{ error }}
+      </p>
+    {% endif %}
+  </div>
+</div>

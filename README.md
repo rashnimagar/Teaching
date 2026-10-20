@@ -194,3 +194,14 @@ python manage.py createsuperuser
 #  so the teacher's first Google login seamlessly links to teacher role)
 python manage.py promote_teacher teacher@example.com
 ```
+
+---
+
+## Attributions & Font Licenses
+
+All self-hosted web fonts bundled with this platform are open-source and distributed under the **SIL Open Font License (OFL) 1.1**:
+
+- **Inter**: Designed by Rasmus Andersson. Licensed under SIL Open Font License 1.1. [Source](https://rsms.me/inter/)
+- **Plus Jakarta Sans**: Designed by Tokotype. Licensed under SIL Open Font License 1.1. [Source](https://github.com/tokotype/PlusJakartaSans)
+- **Noto Sans Devanagari**: Designed by Google Fonts. Variable woff2 font subset covering Devanagari conjuncts (`U+0900-097F`, `U+200C-200D`, `U+25CC`). Licensed under SIL Open Font License (OFL) 1.1. [Source](https://fonts.google.com/noto/specimen/Noto+Sans+Devanagari)
+

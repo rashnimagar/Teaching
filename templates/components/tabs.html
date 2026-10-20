@@ -1,0 +1,50 @@
+{% comment %}
+Reusable Accessible Tabs Component
+Parameters:
+  - tabs_id: string (container id)
+  - tabs: list of objects with:
+      - id: string
+      - label: string
+      - count: number (optional)
+  - active_tab_id: string
+  - extra_classes: string
+{% endcomment %}
+<div class="border-b border-slate-200 dark:border-slate-800 {% if extra_classes %}{{ extra_classes }}{% endif %}">
+  <nav
+    id="{{ tabs_id }}"
+    role="tablist"
+    aria-label="Tabs"
+    class="flex space-x-2 -mb-px overflow-x-auto scrollbar-none"
+    data-tablist
+  >
+    {% for tab in tabs %}
+      <button
+        type="button"
+        role="tab"
+        id="{{ tab.id }}-tab"
+        aria-controls="{{ tab.id }}-panel"
+        aria-selected="{% if tab.id == active_tab_id %}true{% else %}false{% endif %}"
+        tabindex="{% if tab.id == active_tab_id %}0{% else %}-1{% endif %}"
+        data-tab-trigger="{{ tab.id }}"
+        class="inline-flex items-center gap-2 px-4 py-3 min-h-[44px] text-sm font-semibold border-b-2 transition-all duration-150 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-t-lg
+        {% if tab.id == active_tab_id %}
+          border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400
+        {% else %}
+          border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700
+        {% endif %}"
+      >
+        <span>{{ tab.label }}</span>
+        {% if tab.count is not None %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
+          {% if tab.id == active_tab_id %}
+            bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300
+          {% else %}
+            bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400
+          {% endif %}">
+            {{ tab.count }}
+          </span>
+        {% endif %}
+      </button>
+    {% endfor %}
+  </nav>
+</div>

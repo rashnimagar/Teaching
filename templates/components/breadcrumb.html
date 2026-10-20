@@ -1,0 +1,33 @@
+{% comment %}
+Reusable Breadcrumb Component
+Parameters:
+  - items: list of objects/dicts, each with:
+      - name: string
+      - url: string (optional, absent on last item)
+  - extra_classes: string
+{% endcomment %}
+<nav aria-label="Breadcrumb" class="flex items-center overflow-x-auto py-2 {% if extra_classes %}{{ extra_classes }}{% endif %}">
+  <ol class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
+    {% for item in items %}
+      <li class="flex items-center gap-1.5">
+        {% if not forloop.first %}
+          <svg class="w-3.5 h-3.5 text-slate-400 dark:text-slate-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        {% endif %}
+        {% if item.url and not forloop.last %}
+          <a
+            href="{{ item.url }}"
+            class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded px-1"
+          >
+            {{ item.name }}
+          </a>
+        {% else %}
+          <span class="text-slate-900 dark:text-white font-semibold truncate max-w-[200px] sm:max-w-xs" aria-current="page">
+            {{ item.name }}
+          </span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+</nav>

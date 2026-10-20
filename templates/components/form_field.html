@@ -1,0 +1,38 @@
+{% comment %}
+Reusable Form Field Wrapper Component
+Parameters:
+  - id: string (target input id)
+  - label: string (field label)
+  - required: boolean (default: false)
+  - help_text: string (optional hint text)
+  - error: string or error object (optional validation error message)
+  - extra_classes: string
+{% endcomment %}
+<div class="flex flex-col gap-1.5 {% if extra_classes %}{{ extra_classes }}{% endif %}">
+  {% if label %}
+    <label for="{{ id }}" class="block text-sm font-semibold text-slate-800 dark:text-slate-200">
+      {{ label }}
+      {% if required %}
+        <span class="text-red-500 ml-0.5" aria-hidden="true">*</span>
+        <span class="sr-only">(required)</span>
+      {% endif %}
+    </label>
+  {% endif %}
+
+  {{ field_html }}
+
+  {% if help_text and not error %}
+    <p id="{{ id }}-help" class="text-xs text-slate-600 dark:text-slate-400">
+      {{ help_text }}
+    </p>
+  {% endif %}
+
+  {% if error %}
+    <div id="{{ id }}-error" class="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 font-medium" role="alert">
+      <svg class="w-4 h-4 shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>{{ error }}</span>
+    </div>
+  {% endif %}
+</div>
