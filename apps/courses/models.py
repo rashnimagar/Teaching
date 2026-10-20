@@ -100,7 +100,20 @@ class Lesson(TimeStampedModel):
         choices=VideoProvider.choices,
         default=VideoProvider.BUNNY,
     )
-    video_id = models.CharField(_("video identifier"), max_length=255, blank=True)
+    video_id = models.CharField(
+        _("video identifier"),
+        max_length=255,
+        blank=True,
+        help_text=_(
+            "Videos from other channels may have embedding disabled. Check Share > Embed on YouTube."
+        ),
+    )
+    video_hash = models.CharField(
+        _("video privacy hash"),
+        max_length=64,
+        blank=True,
+        help_text=_("Optional security hash for unlisted/private Vimeo videos."),
+    )
     duration = models.DurationField(_("duration"), null=True, blank=True)
     is_preview = models.BooleanField(_("is preview"), default=False)
     is_published = models.BooleanField(_("is published"), default=False, db_index=True)
@@ -120,6 +133,16 @@ class Lesson(TimeStampedModel):
     def clean(self):
         super().clean()
         if self.video_id:
+            from apps.courses.services.video import extract_video_info
+
+            extracted = extract_video_info(self.video_id, self.video_provider)
+            if extracted["video_id"] != self.video_id:
+                self.video_id = extracted["video_id"]
+            if extracted.get("provider"):
+                self.video_provider = extracted["provider"]
+            if extracted.get("video_hash") and not self.video_hash:
+                self.video_hash = extracted["video_hash"]
+
             vid = self.video_id.strip()
             if self.video_provider == self.VideoProvider.YOUTUBE:
                 # Standard YouTube video IDs are 11 characters alphanumeric + _ -
@@ -139,6 +162,13 @@ class Lesson(TimeStampedModel):
                     raise ValidationError(
                         {"video_id": _("Bunny Stream video ID must be a valid GUID/UUID.")}
                     )
+
+        if self.video_hash:
+            vhash = self.video_hash.strip()
+            if not re.match(r"^[0-9a-zA-Z_-]{6,64}$", vhash):
+                raise ValidationError(
+                    {"video_hash": _("Vimeo video privacy hash must be an alphanumeric string.")}
+                )
 
 
 class Enrollment(TimeStampedModel):

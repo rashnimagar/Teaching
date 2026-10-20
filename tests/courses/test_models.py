@@ -109,6 +109,38 @@ class TestLessonModel:
         ):
             invalid_lesson.clean()
 
+    def test_lesson_video_id_help_text(self):
+        field = Lesson._meta.get_field("video_id")
+        assert (
+            str(field.help_text)
+            == "Videos from other channels may have embedding disabled. Check Share > Embed on YouTube."
+        )
+
+    def test_lesson_clean_extracts_id_and_provider_from_full_url(self, course_factory):
+        course = course_factory()
+        lesson = Lesson(
+            course=course,
+            title="Full URL Lesson",
+            video_id="https://youtu.be/dQw4w9WgXcQ",
+            video_provider=Lesson.VideoProvider.BUNNY,
+        )
+        lesson.clean()
+        assert lesson.video_id == "dQw4w9WgXcQ"
+        assert lesson.video_provider == Lesson.VideoProvider.YOUTUBE
+
+    def test_lesson_clean_extracts_vimeo_id_and_hash(self, course_factory):
+        course = course_factory()
+        lesson = Lesson(
+            course=course,
+            title="Vimeo URL Lesson",
+            video_id="https://vimeo.com/76979871/d7a12b45e8",
+            video_provider=Lesson.VideoProvider.BUNNY,
+        )
+        lesson.clean()
+        assert lesson.video_id == "76979871"
+        assert lesson.video_provider == Lesson.VideoProvider.VIMEO
+        assert lesson.video_hash == "d7a12b45e8"
+
 
 @pytest.mark.django_db
 class TestEnrollmentModel:

@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ lesson.title }} — {{ course.title }} — {{ site_settings.site_name }}{% endblock title %}
+
+{% block meta %}
+<meta name="robots" content="noindex, nofollow">
+{% endblock meta %}
+
+{% block content %}
+<div id="learning-container"
+     class="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors"
+     data-csrf-token="{{ csrf_token }}"
+     data-toggle-url="{% url 'learn:toggle_complete' course_slug=course.slug lesson_id=lesson.id %}"
+     data-position-url="{% url 'learn:playback_position' course_slug=course.slug lesson_id=lesson.id %}"
+     data-last-position="{{ last_position_seconds }}"
+     data-provider="{{ lesson.video_provider }}">
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- Breadcrumb / Course bar -->
+    <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-200 dark:border-gray-800">
+      <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        <a href="{% url 'dashboard:student' %}" class="hover:text-gray-900 dark:hover:text-white transition">Dashboard</a>
+        <span>/</span>
+        <a href="{% url 'courses:detail' slug=course.slug %}" class="hover:text-gray-900 dark:hover:text-white transition">{{ course.title }}</a>
+        <span>/</span>
+        <span class="text-gray-900 dark:text-white font-medium line-clamp-1">Lesson {{ lesson.order }}</span>
+      </div>
+
+      <!-- Mobile Syllabus Trigger -->
+      <button id="open-syllabus-drawer-btn"
+              type="button"
+              aria-expanded="false"
+              aria-controls="mobile-syllabus-drawer"
+              class="lg:hidden inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+        <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <span>Course Syllabus</span>
+        <span class="px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold course-progress-percent">{{ progress_percentage }}%</span>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <!-- MAIN LEARNING COLUMN (Left) -->
+      <div class="lg:col-span-8 flex flex-col gap-6">
+
+        <!-- 16:9 Video Container -->
+        <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/10">
+          {% if embed_url %}
+            <iframe id="lesson-video-iframe"
+                    src="{{ embed_url }}"
+                    title="{{ lesson.title }}"
+                    class="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox"
+                    loading="lazy">
+            </iframe>
+          {% else %}
+            <!-- Video Coming Soon State -->
+            <div class="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-gray-900 via-gray-950 to-black text-gray-300">
+              <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4 ring-1 ring-indigo-500/30">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              <h2 class="text-xl font-bold text-white tracking-tight">Video Coming Soon</h2>
+              <p class="mt-2 text-sm text-gray-400 max-w-sm">
+                The video tutorial for this lesson is currently being prepared. Check back shortly or continue reading the lesson notes below.
+              </p>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if lesson.video_provider == 'youtube' and lesson.video_id %}
+          <div class="flex items-center justify-end -mt-3 mb-1">
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Video not loading?
+              <a href="https://www.youtube.com/watch?v={{ lesson.video_id }}"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1">
+                <span>Open on YouTube</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+              </a>
+            </p>
+          </div>
+        {% endif %}
+
+        <!-- Lesson Meta & Completion Action Bar -->
+        <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                Lesson {{ lesson.order }} of {{ total_published }}
+              </span>
+              {% if lesson.is_preview %}
+                <span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+                  Free Preview
+                </span>
+              {% endif %}
+            </div>
+            <h1 class="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+              {{ lesson.title }}
+            </h1>
+          </div>
+
+          <!-- Mark Complete Toggle Button -->
+          <div class="flex items-center gap-3">
+            <button id="toggle-complete-btn"
+                    type="button"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 {% if is_current_completed %}bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700{% else %}bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750{% endif %}">
+              <svg id="toggle-btn-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {% if is_current_completed %}
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                {% else %}
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                {% endif %}
+              </svg>
+              <span id="toggle-btn-text">{% if is_current_completed %}Completed{% else %}Mark as Complete{% endif %}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Previous / Next Controls -->
+        <div class="flex items-center justify-between gap-4 py-2">
+          {% if prev_lesson %}
+            <a href="{% url 'learn:lesson' course_slug=course.slug lesson_id=prev_lesson.id %}"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+              <span class="hidden sm:inline">Previous:</span>
+              <span class="line-clamp-1 max-w-[150px] sm:max-w-xs">{{ prev_lesson.title }}</span>
+            </a>
+          {% else %}
+            <div></div>
+          {% endif %}
+
+          {% if next_lesson %}
+            <a href="{% url 'learn:lesson' course_slug=course.slug lesson_id=next_lesson.id %}"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ml-auto">
+              <span class="hidden sm:inline">Next:</span>
+              <span class="line-clamp-1 max-w-[150px] sm:max-w-xs">{{ next_lesson.title }}</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </a>
+          {% endif %}
+        </div>
+
+        <!-- Lesson Description & Notes -->
+        {% if lesson.description %}
+          <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-gray-800 shadow-sm">
+            <h2 class="text-base font-bold text-gray-900 dark:text-white uppercase tracking-wider text-xs mb-4">
+              Lesson Notes & Resources
+            </h2>
+            <div class="text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-relaxed whitespace-pre-line">
+              {{ lesson.description }}
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Course Assignments Section -->
+        {% if assignments %}
+          <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-gray-800 shadow-sm">
+            <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
+              <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              <span>Course Assignments & Deadlines</span>
+            </h2>
+
+            <div class="space-y-3">
+              {% for assignment in assignments %}
+                <div class="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ assignment.title }}
+                    </h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      Max Score: {{ assignment.max_score }} pts
+                      {% if assignment.lesson %} • Tied to Lesson {{ assignment.lesson.order }}{% endif %}
+                    </p>
+                  </div>
+
+                  <div class="flex items-center gap-2 text-xs">
+                    {% if assignment.is_closed %}
+                      <span class="px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300">
+                        Closed: {{ assignment.due_at|date:"M d, H:i" }}
+                      </span>
+                    {% elif assignment.is_open %}
+                      <span class="px-2 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                        Due: {{ assignment.due_at|date:"M d, H:i" }}
+                      </span>
+                    {% else %}
+                      <span class="px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                        Opens: {{ assignment.opens_at|date:"M d" }}
+                      </span>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- DESKTOP SYLLABUS SIDEBAR (Right) -->
+      <div class="hidden lg:block lg:col-span-4 sticky top-24">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col">
+          <!-- Sidebar Header -->
+          <div class="p-5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
+            <h2 class="text-base font-bold text-gray-900 dark:text-white line-clamp-1">
+              {{ course.title }}
+            </h2>
+            <!-- Course Progress Bar -->
+            <div class="mt-3">
+              <div class="flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                <span><span class="course-completed-count">{{ completed_count }}</span> of {{ total_published }} completed</span>
+                <span class="text-indigo-600 dark:text-indigo-400 course-progress-percent">{{ progress_percentage }}%</span>
+              </div>
+              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300 ease-out course-progress-bar"
+                     style="width: {{ progress_percentage }}%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lessons List -->
+          <div class="p-2 space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto">
+            {% for item in sidebar_items %}
+              {% if item.is_accessible %}
+                <a href="{% url 'learn:lesson' course_slug=course.slug lesson_id=item.id %}"
+                   class="sidebar-lesson-item group flex items-start gap-3 p-3 rounded-xl text-sm transition {% if item.is_current %}bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-medium ring-1 ring-indigo-500/30{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60{% endif %}"
+                   data-current="{% if item.is_current %}true{% else %}false{% endif %}">
+                  <div class="lesson-status-icon mt-0.5 flex-shrink-0">
+                    {% if item.is_completed %}
+                      <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                      </span>
+                    {% elif item.is_current %}
+                      <span class="w-5 h-5 rounded-full border-2 border-indigo-500 flex items-center justify-center">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                      </span>
+                    {% else %}
+                      <span class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center text-[10px] text-gray-500">
+                        {{ item.order }}
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5">
+                      <span class="line-clamp-2 leading-snug">{{ item.title }}</span>
+                    </div>
+                    {% if item.is_preview and not is_active_enrolled %}
+                      <span class="inline-block mt-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">Preview</span>
+                    {% endif %}
+                  </div>
+                </a>
+              {% else %}
+                <!-- Locked Lesson -->
+                <div class="flex items-start gap-3 p-3 rounded-xl text-sm text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-75">
+                  <div class="mt-0.5 flex-shrink-0">
+                    <svg class="w-4 h-4 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <span class="line-clamp-2 leading-snug">{{ item.title }}</span>
+                  </div>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE SYLLABUS DRAWER -->
+  <div id="mobile-syllabus-drawer" class="hidden fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+    <div id="drawer-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div class="w-screen max-w-sm bg-white dark:bg-gray-900 shadow-2xl p-6 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800">
+            <h2 class="text-base font-bold text-gray-900 dark:text-white line-clamp-1">
+              Course Syllabus
+            </h2>
+            <button id="close-syllabus-drawer-btn"
+                    type="button"
+                    class="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <!-- Progress -->
+          <div class="py-4 border-b border-gray-100 dark:border-gray-800">
+            <div class="flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+              <span><span class="course-completed-count">{{ completed_count }}</span> of {{ total_published }} completed</span>
+              <span class="text-indigo-600 dark:text-indigo-400 course-progress-percent">{{ progress_percentage }}%</span>
+            </div>
+            <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+              <div class="bg-indigo-600 h-2 rounded-full course-progress-bar" style="width: {{ progress_percentage }}%;"></div>
+            </div>
+          </div>
+
+          <!-- Mobile Lessons -->
+          <div class="py-2 space-y-1 max-h-[calc(100vh-220px)] overflow-y-auto">
+            {% for item in sidebar_items %}
+              {% if item.is_accessible %}
+                <a href="{% url 'learn:lesson' course_slug=course.slug lesson_id=item.id %}"
+                   class="flex items-start gap-3 p-3 rounded-xl text-sm transition {% if item.is_current %}bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-medium{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
+                  <div class="mt-0.5 flex-shrink-0">
+                    {% if item.is_completed %}
+                      <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                      </span>
+                    {% elif item.is_current %}
+                      <span class="w-5 h-5 rounded-full border-2 border-indigo-500 flex items-center justify-center">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                      </span>
+                    {% else %}
+                      <span class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center text-[10px] text-gray-500">
+                        {{ item.order }}
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <span class="line-clamp-2">{{ item.title }}</span>
+                  </div>
+                </a>
+              {% else %}
+                <div class="flex items-start gap-3 p-3 rounded-xl text-sm text-gray-400 dark:text-gray-600 opacity-75">
+                  <svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                  </svg>
+                  <span class="line-clamp-2">{{ item.title }}</span>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Player.js SDK and Learning Interaction Script -->
+<script defer src="{% static 'js/vendor/player.min.js' %}"></script>
+<script defer src="{% static 'js/learning.js' %}"></script>
+{% endblock content %}
