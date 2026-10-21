@@ -26,6 +26,7 @@ urlpatterns = [
     path("accounts/", include("apps.accounts.urls")),
     path("accounts/", include("allauth.urls")),
     path("courses/", include("apps.courses.urls", namespace="courses")),
+    path("learn/<slug:slug>/", include("apps.assignments.urls", namespace="assignments")),
     path("learn/", include("apps.courses.learn_urls", namespace="learn")),
     path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),
     path("robots.txt", robots_txt_view, name="robots_txt"),

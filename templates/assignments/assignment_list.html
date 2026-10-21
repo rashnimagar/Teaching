@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Assignments — {{ course.title }} | Teaching Platform{% endblock %}
+{% block meta_description %}Browse and submit assignments for {{ course.title }}.{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-server-time="{{ server_time_iso }}">
+  <!-- Breadcrumb Navigation -->
+  <nav aria-label="Breadcrumb" class="mb-6 flex items-center text-xs sm:text-sm text-gray-500 dark:text-gray-400 gap-2">
+    <a href="{% url 'dashboard:student' %}" class="hover:text-gray-900 dark:hover:text-white transition">Dashboard</a>
+    <span class="text-gray-300 dark:text-gray-600">/</span>
+    <a href="{% url 'learn:course' course_slug=course.slug %}" class="hover:text-gray-900 dark:hover:text-white transition truncate max-w-xs sm:max-w-md">
+      {{ course.title }}
+    </a>
+    <span class="text-gray-300 dark:text-gray-600">/</span>
+    <span class="text-gray-900 dark:text-white font-medium" aria-current="page">Assignments</span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-gray-100 dark:border-gray-800">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+        Course Assignments
+      </h1>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        {{ course.title }} • Timed deadlines enforced in Asia/Kathmandu time.
+      </p>
+    </div>
+    <a href="{% url 'learn:course' course_slug=course.slug %}"
+       class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition">
+      <span>&larr; Back to Course Player</span>
+    </a>
+  </div>
+
+  <!-- Course Summary Stats (Requirement 18: Overall score = points earned / max points of graded only) -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 my-8">
+    <div class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-xs">
+      <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Total Tasks</span>
+      <div class="mt-2 text-2xl font-black text-gray-900 dark:text-white">{{ total_count }}</div>
+    </div>
+    <div class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-xs">
+      <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Submitted</span>
+      <div class="mt-2 text-2xl font-black text-indigo-600 dark:text-indigo-400">{{ submitted_count }}</div>
+    </div>
+    <div class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-xs">
+      <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Graded</span>
+      <div class="mt-2 text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ graded_count }}</div>
+    </div>
+    <div class="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-xs">
+      <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Overall Score</span>
+      <div class="mt-2 flex items-baseline gap-1.5">
+        {% if overall_percentage is not None %}
+          <span class="text-2xl font-black text-gray-900 dark:text-white">{{ overall_percentage }}%</span>
+          <span class="text-xs text-gray-400 font-medium">({{ earned_points|floatformat:"0" }}/{{ graded_max_points }} pts)</span>
+        {% else %}
+          <span class="text-2xl font-black text-gray-400 dark:text-gray-500">—</span>
+          <span class="text-xs text-gray-400 font-medium">Not yet graded</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Assignments Grid / List -->
+  {% if assignments %}
+    <div class="space-y-4">
+      {% for item in assignments %}
+        <div class="p-6 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm hover:border-gray-200 dark:hover:border-gray-700 transition flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+              {% include "components/badge.html" with variant=item.status.badge_variant text=item.status.label dot=True %}
+              {% if item.linked_lesson %}
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                  Lesson {{ item.linked_lesson.order }}: {{ item.linked_lesson.title }}
+                </span>
+              {% endif %}
+              <span class="text-xs font-bold text-gray-400 dark:text-gray-500">
+                • Max {{ item.assignment.max_score }} Points
+              </span>
+            </div>
+
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+              <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                {{ item.assignment.title }}
+              </a>
+            </h2>
+
+            {% if item.instructions %}
+              <p class="mt-1.5 text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                {{ item.instructions }}
+              </p>
+            {% elif item.is_not_open %}
+              <p class="mt-1.5 text-xs text-gray-400 italic">
+                Instructions will be visible once this assignment opens on {{ item.assignment.opens_at|date:"M j, Y, g:i A" }}.
+              </p>
+            {% endif %}
+
+            <!-- Deadline & Live Cosmetic Countdown -->
+            <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+              <div class="flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Due: {{ item.assignment.due_at|date:"M j, Y, g:i A" }}</span>
+              </div>
+              <span class="text-gray-300 dark:text-gray-700">•</span>
+              <span class="font-semibold text-indigo-600 dark:text-indigo-400" data-countdown-due="{{ item.assignment.due_at.isoformat }}">
+                Calculating countdown...
+              </span>
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <div class="shrink-0">
+            {% if item.is_not_open %}
+              <button type="button" disabled
+                      class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed">
+                Opens {{ item.assignment.opens_at|date:"M j" }}
+              </button>
+            {% elif item.status.code == 'graded' %}
+              <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}"
+                 class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 transition shadow-xs">
+                View Feedback &rarr;
+              </a>
+            {% elif item.status.code == 'submitted' or item.status.code == 'late' %}
+              <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}"
+                 class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition shadow-xs">
+                View / Edit Submission &rarr;
+              </a>
+            {% else %}
+              <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}"
+                 class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-sm hover:shadow">
+                Submit Assignment &rarr;
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <!-- Empty State -->
+    {% include "components/empty_state.html" with title="No assignments posted yet" message="The teacher has not added any assignments to this course yet. Check back soon!" %}
+  {% endif %}
+</div>
+
+<script src="{% static 'js/assignments.js' %}" defer></script>
+{% endblock %}

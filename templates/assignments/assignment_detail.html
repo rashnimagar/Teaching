@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ assignment.title }} — {{ course.title }} | Teaching Platform{% endblock %}
+{% block meta_description %}Assignment details and submission for {{ assignment.title }}.{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-server-time="{{ server_time_iso }}">
+  <!-- Breadcrumb Navigation -->
+  <nav aria-label="Breadcrumb" class="mb-6 flex items-center text-xs sm:text-sm text-gray-500 dark:text-gray-400 gap-2 flex-wrap">
+    <a href="{% url 'dashboard:student' %}" class="hover:text-gray-900 dark:hover:text-white transition">Dashboard</a>
+    <span class="text-gray-300 dark:text-gray-600">/</span>
+    <a href="{% url 'learn:course' course_slug=course.slug %}" class="hover:text-gray-900 dark:hover:text-white transition truncate max-w-[150px] sm:max-w-xs">
+      {{ course.title }}
+    </a>
+    <span class="text-gray-300 dark:text-gray-600">/</span>
+    <a href="{% url 'assignments:list' slug=course.slug %}" class="hover:text-gray-900 dark:hover:text-white transition">
+      Assignments
+    </a>
+    <span class="text-gray-300 dark:text-gray-600">/</span>
+    <span class="text-gray-900 dark:text-white font-medium truncate max-w-[150px] sm:max-w-xs" aria-current="page">
+      {{ assignment.title }}
+    </span>
+  </nav>
+
+  <!-- Assignment Header -->
+  <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-gray-800 shadow-sm mb-6">
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      {% include "components/badge.html" with variant=status.badge_variant text=status.label dot=True %}
+      {% if linked_lesson %}
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+          Lesson {{ linked_lesson.order }}: {{ linked_lesson.title }}
+        </span>
+      {% endif %}
+      <span class="text-xs font-bold text-gray-400 dark:text-gray-500 ml-auto">
+        Maximum Score: {{ assignment.max_score }} Points
+      </span>
+    </div>
+
+    <h1 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+      {{ assignment.title }}
+    </h1>
+
+    <!-- Timing & Deadline Banner -->
+    <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span>
+          <strong class="text-gray-900 dark:text-white">Due:</strong> {{ assignment.due_at|date:"M j, Y, g:i A" }} (Asia/Kathmandu)
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-indigo-600 dark:text-indigo-400" data-countdown-due="{{ assignment.due_at.isoformat }}">
+          Calculating countdown...
+        </span>
+        <span class="text-gray-300 dark:text-gray-700">•</span>
+        <span class="italic text-xs">
+          {% if assignment.allow_late %}Late submissions permitted{% else %}Strict deadline (no late submissions){% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Instructions Section -->
+  <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-gray-800 shadow-sm mb-6">
+    <h2 class="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">
+      Instructions &amp; Requirements
+    </h2>
+
+    {% if is_not_open and not request.user.is_staff %}
+      <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm">
+        <div class="flex items-center gap-2 font-semibold mb-1">
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+          <span>Assignment Not Open Yet</span>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          This assignment will open on <strong>{{ assignment.opens_at|date:"M j, Y, g:i A" }}</strong>. Full instructions will be revealed once the assignment opens.
+        </p>
+      </div>
+    {% else %}
+      {% if instructions %}
+        <!-- Escaped plain text with auto-linking and preserved line breaks (Requirement 1: NO Markdown, NO |safe) -->
+        <div class="text-sm sm:text-base text-gray-700 dark:text-gray-200 leading-relaxed break-words">
+          {{ instructions|urlize|linebreaksbr }}
+        </div>
+      {% else %}
+        <p class="text-sm text-gray-400 italic">No additional instructions provided for this assignment.</p>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <!-- Graded Feedback Card (If Graded) -->
+  {% if submission and submission.grade is not None %}
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 border border-emerald-200 dark:border-emerald-800 shadow-sm mb-6 relative overflow-hidden">
+      <div class="absolute top-0 left-0 right-0 h-1.5 bg-emerald-500"></div>
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <div>
+          <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Teacher Grade</span>
+          <div class="mt-1 flex items-baseline gap-2">
+            <span class="text-3xl font-black text-gray-900 dark:text-white">{{ submission.grade|floatformat:"0" }}</span>
+            <span class="text-base font-semibold text-gray-500 dark:text-gray-400">/ {{ assignment.max_score }} Points</span>
+          </div>
+        </div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 sm:text-right">
+          <div>Graded by: <strong class="text-gray-900 dark:text-white">{{ submission.graded_by.get_full_name|default:submission.graded_by.email }}</strong></div>
+          {% if submission.graded_at %}
+            <div class="mt-0.5">{{ submission.graded_at|date:"M j, Y, g:i A" }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if submission.feedback %}
+        <div class="pt-4 border-t border-gray-100 dark:border-gray-800">
+          <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Teacher Feedback</h3>
+          <div class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl">
+            {{ submission.feedback|urlize|linebreaksbr }}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+        <span>This submission has been graded and is locked from further edits.</span>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Existing Submission Overview Card (If Submitted) -->
+  {% if submission %}
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-gray-800 shadow-sm mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+          Your Current Submission
+        </h2>
+        {% if submission.is_late %}
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+            Late Submission
+          </span>
+        {% else %}
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+            On-Time Submission
+          </span>
+        {% endif %}
+      </div>
+
+      <div class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        Submitted at: <strong>{{ submission.submitted_at|date:"M j, Y, g:i A" }}</strong>
+      </div>
+
+      {% if submission.file %}
+        <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3 mb-4">
+          <div class="flex items-center gap-3 min-w-0">
+            <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <div class="min-w-0">
+              <div class="text-xs font-bold text-gray-900 dark:text-white truncate">
+                {{ submission.original_filename|default:submission.file.name }}
+              </div>
+              <div class="text-[11px] text-gray-500 dark:text-gray-400">Attached File</div>
+            </div>
+          </div>
+          <a href="{% url 'assignments:download' slug=course.slug submission_id=submission.id %}"
+             class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 transition">
+            Download My File
+          </a>
+        </div>
+      {% endif %}
+
+      {% if submission.content_text %}
+        <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Your Written Response</span>
+          <div class="mt-2 text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800/30 p-4 rounded-xl break-words">
+            {{ submission.content_text|urlize|linebreaksbr }}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <!-- Submission Form (If Actionable) -->
+  {% if can_submit %}
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-gray-800 shadow-sm">
+      <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+        {% if submission %}Edit Your Submission{% else %}Turn in Your Work{% endif %}
+      </h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">
+        You may edit your submission until the deadline. Provide either a written response or an attached file (or both).
+      </p>
+
+      {% if form_error %}
+        <div class="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-xs sm:text-sm font-medium" role="alert">
+          {{ form_error }}
+        </div>
+      {% endif %}
+
+      <form method="POST"
+            enctype="multipart/form-data"
+            data-submit-protect
+            class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Written Response Field -->
+        <div>
+          <label for="content_text" class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+            Written Response <span class="text-gray-400 normal-case font-normal">(Optional if attaching a file)</span>
+          </label>
+          <textarea id="content_text"
+                    name="content_text"
+                    rows="8"
+                    maxlength="{{ max_text_len }}"
+                    placeholder="Type or paste your response, explanations, or links here..."
+                    class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition leading-relaxed">{{ initial_text }}</textarea>
+          <div class="mt-1 flex justify-between text-xs text-gray-400">
+            <span>Maximum {{ max_text_len }} characters</span>
+          </div>
+        </div>
+
+        <!-- File Attachment Field -->
+        <div>
+          <label for="file_upload" class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+            Attach Document / Image <span class="text-gray-400 normal-case font-normal">(Optional if text provided)</span>
+          </label>
+          <input type="file"
+                 id="file_upload"
+                 name="file"
+                 accept=".pdf,.docx,.pptx,.txt,.png,.jpg,.jpeg"
+                 class="block w-full text-xs text-gray-500 dark:text-gray-400
+                        file:mr-4 file:py-2.5 file:px-4
+                        file:rounded-xl file:border-0
+                        file:text-xs file:font-bold
+                        file:bg-indigo-50 file:text-indigo-700
+                        hover:file:bg-indigo-100
+                        dark:file:bg-indigo-950/60 dark:file:text-indigo-300
+                        cursor-pointer border border-gray-200 dark:border-gray-700 rounded-xl p-2 bg-gray-50/50 dark:bg-gray-800/40">
+          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            Allowed formats: <strong>PDF, DOCX, PPTX, TXT, PNG, JPG</strong> (Maximum 10 MB).
+            {% if submission and submission.file %}
+              <span class="text-amber-600 dark:text-amber-400 block mt-1">Uploading a new file will replace your existing file.</span>
+            {% endif %}
+          </p>
+        </div>
+
+        <!-- Submit Button (Requirement 14: Double-submit protection & Upload message) -->
+        <div class="pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <button type="submit"
+                  id="assignment-submit-btn"
+                  class="px-6 py-3 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 transition shadow-sm hover:shadow flex items-center justify-center">
+            {% if submission %}Update Submission{% else %}Turn in Assignment{% endif %}
+          </button>
+          <span class="text-xs text-gray-400">Idempotent server-side save</span>
+        </div>
+      </form>
+    </div>
+  {% else %}
+    <!-- Locked States Notice -->
+    {% if not is_not_open and not submission.grade %}
+      <div class="p-6 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-center text-red-800 dark:text-red-200">
+        <h3 class="text-base font-bold mb-1">Submissions Closed</h3>
+        <p class="text-xs sm:text-sm text-red-600 dark:text-red-300">
+          The deadline for this assignment has passed and late submissions are disabled.
+        </p>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+
+<script src="{% static 'js/assignments.js' %}" defer></script>
+{% endblock %}

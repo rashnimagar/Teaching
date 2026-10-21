@@ -25,3 +25,9 @@ The following items are postponed to the final hardening and production deployme
 - **HTTPS & Security Headers:** Enforce `SECURE_SSL_REDIRECT = True`, `SESSION_COOKIE_SECURE = True`, `CSRF_COOKIE_SECURE = True`, HSTS, and secure proxy headers (`HTTP_X_FORWARDED_FOR` / `HTTP_X_FORWARDED_PROTO`).
 - **Error Monitoring:** Wire Sentry SDK (`sentry-sdk[django]`) with environment-based traces sample rate.
 - **Automated Backups:** Implement automated daily PostgreSQL database backups and media storage snapshot procedures.
+
+## 6. File Uploads & Assignment Infrastructure
+- **Web-Server Upload Limits & Worker Timeouts:** Configure reverse proxy (Nginx `client_max_body_size 12M`, Gunicorn `--timeout 60`) so slow client uploads or oversized payloads are rejected early before consuming Django application workers.
+- **Optional Antivirus / ClamAV Scanning:** Deploy an asynchronous background file scan hook (ClamAV daemon or containerized scanner) for uploaded student submissions in production environments with high upload volumes.
+- **PostgreSQL Deadline Boundary Test:** Execute the deadline concurrency and `select_for_update` row-locking test suite against a live PostgreSQL instance prior to production launch to verify transactional isolation under high concurrent write loads.
+

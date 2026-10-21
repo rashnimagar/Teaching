@@ -74,10 +74,10 @@ A Django-based learning platform where a teacher uploads course videos, students
 - [x] Enrollment access check on every course/lesson view
 
 ## Phase 6 — Assignments and submissions
-- [ ] Assignment list per course with live countdown
-- [ ] Submit text and/or file (type and size validation)
-- [ ] Server-side deadline enforcement (reject after `due_at`; handle edge case of deadline passing mid-submission)
-- [ ] Student view of grade and feedback
+- [x] Assignment list per course with live countdown
+- [x] Submit text and/or file (type and size validation)
+- [x] Server-side deadline enforcement (reject after `due_at`; handle edge case of deadline passing mid-submission)
+- [x] Student view of grade and feedback
 
 ## Phase 7 — Teacher dashboard (custom)
 - [ ] Overview stats: students, submissions, upcoming deadlines

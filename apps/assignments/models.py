@@ -109,6 +109,12 @@ class Submission(TimeStampedModel):
         verbose_name=_("student"),
     )
     content_text = models.TextField(_("written response"), blank=True)
+    original_filename = models.CharField(
+        _("original file name"),
+        max_length=255,
+        blank=True,
+        help_text=_("Sanitized original filename preserved for user-facing display."),
+    )
     file = models.FileField(
         _("attached file"),
         storage=get_private_storage,
@@ -155,6 +161,18 @@ class Submission(TimeStampedModel):
 
     def clean(self):
         super().clean()
+        # Text length validation (Requirement 12)
+        max_text_len = getattr(settings, "ASSIGNMENT_MAX_TEXT_LENGTH", 20000)
+        if self.content_text and len(self.content_text) > max_text_len:
+            raise ValidationError(
+                {
+                    "content_text": _(
+                        "Written response exceeds maximum length of %(max_len)s characters."
+                    )
+                    % {"max_len": max_text_len}
+                }
+            )
+
         # Enforce that either written text or an uploaded file is supplied
         if not self.content_text.strip() and not self.file:
             raise ValidationError(
@@ -174,8 +192,21 @@ class Submission(TimeStampedModel):
                     }
                 )
 
-        # Enforce editing rules: students may edit until the deadline or if late is allowed
+        # Requirement 1: Lock editing once a submission is graded
         if self.pk and self.assignment_id:
+            orig = (
+                Submission.objects.filter(pk=self.pk)
+                .values("grade", "content_text", "file")
+                .first()
+            )
+            if orig and orig["grade"] is not None:
+                if orig["content_text"] != self.content_text or orig["file"] != (
+                    self.file.name if self.file else ""
+                ):
+                    raise ValidationError(
+                        _("This submission has already been graded and can no longer be edited.")
+                    )
+
             now = timezone.now()
             if now > self.assignment.due_at and not self.assignment.allow_late:
                 raise ValidationError(
@@ -185,15 +216,36 @@ class Submission(TimeStampedModel):
                 )
 
     def save(self, *args, **kwargs):
-        # Compute is_late from the same timestamp used for submitted_at
+        # With allow_late, is_late follows the latest save; submitted_at and is_late use one now() value.
+        now = timezone.now()
         if not self.pk:
             if not self.submitted_at:
-                self.submitted_at = timezone.now()
+                self.submitted_at = now
             if self.assignment_id:
+                self.is_late = self.submitted_at > self.assignment.due_at
+        else:
+            if self.assignment_id and self.submitted_at:
                 self.is_late = self.submitted_at > self.assignment.due_at
 
         # Automatically record graded_at when a grade is first assigned
         if self.grade is not None and not self.graded_at:
-            self.graded_at = timezone.now()
+            self.graded_at = now
 
         super().save(*args, **kwargs)
+
+
+from django.db.models.signals import post_delete  # noqa: E402
+from django.dispatch import receiver  # noqa: E402
+
+
+@receiver(post_delete, sender=Submission)
+def cleanup_submission_file_on_delete(sender, instance, **kwargs):
+    """
+    Remove physical private file when a submission is deleted.
+    Gracefully handles missing files without crashing (Requirement 19).
+    """
+    if instance.file:
+        try:
+            instance.file.storage.delete(instance.file.name)
+        except (FileNotFoundError, OSError):
+            pass

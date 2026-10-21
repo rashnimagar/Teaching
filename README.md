@@ -97,6 +97,13 @@ The platform supports both **Email & Password Authentication** and **Google Sing
 - **Honeypot Protection:** Registration forms include an invisible honeypot field (`website`) to deflect automated bot submissions.
 - **Role Enforcement:** All public signups are strictly pinned to `role=student`. Teacher and administrative permissions can only be granted via `python manage.py promote_teacher` or the Django admin.
 
+### File Upload Security & Submissions
+All student assignment submissions uploaded to the platform are validated through multi-layer verification:
+- **Private Storage:** Files are stored under random, unguessable UUID filenames in private storage (`STORAGES["private"]`), never directly accessible via public web URLs.
+- **Permission-Checked Downloads:** Files can only be downloaded through authenticated, permission-checked endpoints by the student who submitted the file or authorized staff.
+- **Format Allowlist & Real Content Inspection:** Only allowed formats (`pdf`, `docx`, `pptx`, `txt`, `png`, `jpg`/`jpeg`) are accepted. Extensions, MIME types, magic byte signatures, Office XML structures, and image pixel dimensions are strictly validated server-side. Macro-enabled documents (`vbaProject.bin`), zip bombs, executable binaries (`PE`, `ELF`), and filenames with dangerous intermediate extensions (e.g. `file.exe.pdf`) are rejected.
+- **Security Notice:** *Note that server-side file type and structural validation significantly reduces attack surface and operational risk, but is not an antivirus scanner.* For high-volume production deployments, consider integrating an asynchronous antivirus daemon (e.g., ClamAV) as noted in [DEFERRED.md](file:///c:/Users/Lenovo/Desktop/projects/Teaching/DEFERRED.md).
+
 ### Google OAuth 2.0 Configuration
 1. Go to the [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials).
 2. Create an **OAuth 2.0 Client ID** (Application type: *Web application*).

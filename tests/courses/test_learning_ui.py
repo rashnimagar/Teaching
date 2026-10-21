@@ -183,9 +183,9 @@ class TestLessonLearningUI:
         html = resp.content.decode("utf-8")
 
         assert "Create React Components" in html
-        assert "Maximum Score: 50 pts" in html
-        assert "Submissions open soon" in html
-        assert '<button type="submit">Submit' not in html
+        assert "50 pts" in html
+        assert "Open" in html
+        assert "Submit Assignment" in html
 
     def test_syllabus_lock_states(self, client, user_factory):
         """Syllabus displays locked icons for inaccessible lessons."""

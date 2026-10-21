@@ -327,8 +327,47 @@ def lesson_learn_view(request, course_slug, lesson_id):
             }
         )
 
-    # Course assignments
-    assignments = course.assignments.select_related("lesson").order_by("due_at")
+    # Course assignments with student submission status
+    now = timezone.now()
+    raw_assignments = list(course.assignments.select_related("lesson").order_by("due_at"))
+    student_submissions = {}
+    if request.user.is_authenticated:
+        from apps.assignments.models import Submission
+
+        subs = Submission.objects.filter(
+            assignment__course=course, student=request.user
+        ).select_related("assignment")
+        student_submissions = {s.assignment_id: s for s in subs}
+
+    from apps.assignments.status import get_assignment_status
+
+    assignments_data = []
+    for assign in raw_assignments:
+        sub = student_submissions.get(assign.id)
+        status_info = get_assignment_status(assign, sub, now=now)
+        # Requirement 2: Server-side hide instructions if not open for non-staff
+        if now < assign.opens_at and not request.user.is_staff:
+            display_instructions = ""
+            linked_lesson = None
+        else:
+            display_instructions = assign.instructions
+            if assign.lesson:
+                linked_lesson = (
+                    assign.lesson if (assign.lesson.is_published or request.user.is_staff) else None
+                )
+            else:
+                linked_lesson = None
+
+        assignments_data.append(
+            {
+                "assignment": assign,
+                "submission": sub,
+                "status": status_info,
+                "instructions": display_instructions,
+                "linked_lesson": linked_lesson,
+                "is_not_open": now < assign.opens_at,
+            }
+        )
 
     is_teacher = request.user.is_authenticated and (
         getattr(request.user, "role", None) == "teacher" or request.user.is_staff
@@ -343,12 +382,13 @@ def lesson_learn_view(request, course_slug, lesson_id):
         "last_position_seconds": last_position_seconds,
         "is_current_completed": is_current_completed,
         "sidebar_items": sidebar_items,
-        "assignments": assignments,
+        "assignments": assignments_data,
         "total_published": total_published,
         "completed_count": completed_count,
         "progress_percentage": progress_percentage,
         "is_active_enrolled": is_active_enrolled,
         "is_teacher": is_teacher,
+        "server_time_iso": now.isoformat(),
     }
 
     response = render(request, "courses/lesson_learn.html", context)
