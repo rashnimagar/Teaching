@@ -330,6 +330,10 @@ def lesson_learn_view(request, course_slug, lesson_id):
     # Course assignments
     assignments = course.assignments.select_related("lesson").order_by("due_at")
 
+    is_teacher = request.user.is_authenticated and (
+        getattr(request.user, "role", None) == "teacher" or request.user.is_staff
+    )
+
     context = {
         "course": course,
         "lesson": lesson,
@@ -344,6 +348,7 @@ def lesson_learn_view(request, course_slug, lesson_id):
         "completed_count": completed_count,
         "progress_percentage": progress_percentage,
         "is_active_enrolled": is_active_enrolled,
+        "is_teacher": is_teacher,
     }
 
     response = render(request, "courses/lesson_learn.html", context)

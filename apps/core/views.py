@@ -122,3 +122,10 @@ def handler404(request, exception=None):
 def handler500(request):
     """Custom 500 Internal Server Error view."""
     return render(request, "500.html", status=500)
+
+
+def csrf_failure(request, reason=""):
+    """
+    Custom styled CSRF failure view matching platform theme and providing clear recovery steps.
+    """
+    return render(request, "403_csrf.html", {"reason": reason}, status=403)

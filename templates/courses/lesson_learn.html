@@ -9,53 +9,138 @@
 
 {% block content %}
 <div id="learning-container"
-     class="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors"
+     class="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors pb-16"
      data-csrf-token="{{ csrf_token }}"
      data-toggle-url="{% url 'learn:toggle_complete' course_slug=course.slug lesson_id=lesson.id %}"
      data-position-url="{% url 'learn:playback_position' course_slug=course.slug lesson_id=lesson.id %}"
      data-last-position="{{ last_position_seconds }}"
-     data-provider="{{ lesson.video_provider }}">
+     data-provider="{{ lesson.video_provider }}"
+     data-video-id="{{ lesson.video_id }}">
+
+  <!-- Accessible Toast Notification for Optimistic UI Rollbacks and Offline Errors -->
+  <div id="toast-container"
+       class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+       aria-live="polite"
+       aria-atomic="true"></div>
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <!-- Breadcrumb / Course bar -->
-    <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-200 dark:border-gray-800">
-      <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-        <a href="{% url 'dashboard:student' %}" class="hover:text-gray-900 dark:hover:text-white transition">Dashboard</a>
-        <span>/</span>
-        <a href="{% url 'courses:detail' slug=course.slug %}" class="hover:text-gray-900 dark:hover:text-white transition">{{ course.title }}</a>
-        <span>/</span>
-        <span class="text-gray-900 dark:text-white font-medium line-clamp-1">Lesson {{ lesson.order }}</span>
+
+    <!-- Teacher Notice Banner (Requirement 10) -->
+    {% if is_teacher %}
+      <aside aria-label="Teacher preview mode"
+             class="no-print mb-4 px-4 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 text-amber-900 dark:text-amber-200 text-xs sm:text-sm font-medium flex items-center justify-between gap-3 shadow-xs">
+        <div class="flex items-center gap-2 min-w-0">
+          <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+          <span class="truncate">Viewing as teacher (full preview &amp; syllabus access enabled)</span>
+        </div>
+        <a href="{% url 'admin:courses_lesson_change' lesson.id %}"
+           class="underline font-semibold hover:text-amber-950 dark:hover:text-amber-100 shrink-0 text-xs">
+          Edit in Admin &rarr;
+        </a>
+      </aside>
+    {% endif %}
+
+    <!-- Separate Breadcrumb Bar (Gracefully truncated on mobile to never collide with syllabus button) -->
+    <nav aria-label="Breadcrumb" class="no-print flex items-center justify-between gap-3 pb-4 mb-4 border-b border-gray-200 dark:border-gray-800">
+      <div class="flex items-center gap-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400 min-w-0 flex-1 truncate">
+        <a href="{% url 'dashboard:student' %}" class="hover:text-gray-900 dark:hover:text-white transition shrink-0">Dashboard</a>
+        <span class="shrink-0 text-gray-300 dark:text-gray-600">/</span>
+        <a href="{% url 'courses:detail' slug=course.slug %}" class="hover:text-gray-900 dark:hover:text-white transition truncate max-w-[120px] sm:max-w-xs md:max-w-md">
+          {{ course.title }}
+        </a>
+        <span class="shrink-0 text-gray-300 dark:text-gray-600">/</span>
+        <span class="text-gray-900 dark:text-white font-medium shrink-0">Lesson {{ lesson.order }}</span>
       </div>
 
-      <!-- Mobile Syllabus Trigger -->
+      <!-- Mobile Syllabus Trigger (Hidden on Desktop) -->
       <button id="open-syllabus-drawer-btn"
               type="button"
               aria-expanded="false"
               aria-controls="mobile-syllabus-drawer"
-              class="lg:hidden inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+              class="lg:hidden shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
         <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        <span>Course Syllabus</span>
-        <span class="px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold course-progress-percent">{{ progress_percentage }}%</span>
+        <span>Syllabus</span>
+        <span class="px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 font-bold course-progress-percent">{{ progress_percentage }}%</span>
       </button>
+    </nav>
+
+    <!-- Printable Header (Visible only when printing) -->
+    <div class="hidden print:block mb-6">
+      <h1 class="text-2xl font-bold text-black">{{ lesson.title }}</h1>
+      <p class="text-sm text-gray-600 mt-1">{{ course.title }} • Lesson {{ lesson.order }} of {{ total_published }}</p>
+      <hr class="my-4 border-gray-300">
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       <!-- MAIN LEARNING COLUMN (Left) -->
       <div class="lg:col-span-8 flex flex-col gap-6">
 
-        <!-- 16:9 Video Container -->
-        <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/10">
+        <!-- Theater Video Frame (16:9 Aspect Ratio) -->
+        <div id="video-theater-frame" class="no-print relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/10">
           {% if embed_url %}
-            <iframe id="lesson-video-iframe"
-                    src="{{ embed_url }}"
-                    title="{{ lesson.title }}"
-                    class="w-full h-full border-0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowfullscreen
-                    referrerpolicy="strict-origin-when-cross-origin"
-                    sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox"
-                    loading="lazy">
-            </iframe>
+            {% if lesson.video_provider == 'youtube' and lesson.video_id and not request.GET.direct_player %}
+              <!-- YouTube Click-to-Load Facade (Materially speeds up initial Lighthouse score) -->
+              <button type="button"
+                      id="youtube-facade"
+                      class="relative w-full h-full cursor-pointer group bg-black flex items-center justify-center overflow-hidden border-0 p-0 text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500"
+                      data-embed-url="{{ embed_url }}"
+                      data-video-title="{{ lesson.title }}"
+                      aria-label="Play video: {{ lesson.title }}">
+                <img src="https://i.ytimg.com/vi/{{ lesson.video_id }}/hqdefault.jpg"
+                     alt=""
+                     aria-hidden="true"
+                     class="w-full h-full object-cover opacity-85 group-hover:opacity-95 group-hover:scale-105 transition duration-500"
+                     loading="eager"
+                     width="640"
+                     height="360">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40"></div>
+
+                <!-- Red Play Button -->
+                <div class="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                  <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-red-600 group-hover:bg-red-500 text-white flex items-center justify-center shadow-2xl transition duration-300 group-hover:scale-110 ring-4 ring-white/20">
+                    <svg class="w-8 h-8 sm:w-10 sm:h-10 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Title Overlay on Poster -->
+                <div class="absolute top-4 left-4 right-4 flex items-center justify-between text-white drop-shadow-md pointer-events-none" aria-hidden="true">
+                  <span class="text-xs sm:text-sm font-bold line-clamp-1 bg-black/40 px-2.5 py-1 rounded-md backdrop-blur-xs">
+                    {{ lesson.title }}
+                  </span>
+                </div>
+
+                <!-- Pre-defined sanitized iframe template (rendered into DOM on user interaction) -->
+                <template id="youtube-iframe-template">
+                  <iframe id="lesson-video-iframe"
+                          src="{{ embed_url }}"
+                          title="{{ lesson.title }}"
+                          class="w-full h-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowfullscreen
+                          referrerpolicy="strict-origin-when-cross-origin"
+                          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox"
+                          loading="lazy">
+                  </iframe>
+                </template>
+              </button>
+            {% else %}
+              <!-- Bunny Stream / Vimeo iframe with player.js -->
+              <iframe id="lesson-video-iframe"
+                      src="{{ embed_url }}"
+                      title="{{ lesson.title }}"
+                      class="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowfullscreen
+                      referrerpolicy="strict-origin-when-cross-origin"
+                      sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox"
+                      loading="lazy">
+              </iframe>
+            {% endif %}
           {% else %}
             <!-- Video Coming Soon State -->
             <div class="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-gray-900 via-gray-950 to-black text-gray-300">
@@ -66,14 +151,15 @@
               </div>
               <h2 class="text-xl font-bold text-white tracking-tight">Video Coming Soon</h2>
               <p class="mt-2 text-sm text-gray-400 max-w-sm">
-                The video tutorial for this lesson is currently being prepared. Check back shortly or continue reading the lesson notes below.
+                The video tutorial for this lesson is currently being prepared. Check back shortly or read through the notes below.
               </p>
             </div>
           {% endif %}
         </div>
 
+        {# YouTube Fallback Link (Rendered strictly for YouTube lessons) #}
         {% if lesson.video_provider == 'youtube' and lesson.video_id %}
-          <div class="flex items-center justify-end -mt-3 mb-1">
+          <div class="no-print flex items-center justify-end -mt-3 mb-1">
             <p class="text-xs text-gray-500 dark:text-gray-400">
               Video not loading?
               <a href="https://www.youtube.com/watch?v={{ lesson.video_id }}"
@@ -90,7 +176,7 @@
         {% endif %}
 
         <!-- Lesson Meta & Completion Action Bar -->
-        <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="no-print bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div class="flex items-center gap-2 mb-1">
               <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
@@ -107,12 +193,18 @@
             </h1>
           </div>
 
-          <!-- Mark Complete Toggle Button -->
-          <div class="flex items-center gap-3">
+          <!-- Mark Complete Toggle Button (Optimistic UI, Loading Spinner Without Layout Shift) -->
+          <div class="flex items-center gap-3 shrink-0">
             <button id="toggle-complete-btn"
                     type="button"
-                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 {% if is_current_completed %}bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700{% else %}bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750{% endif %}">
-              <svg id="toggle-btn-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 min-w-[170px] {% if is_current_completed %}bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700{% else %}bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750{% endif %}">
+              <!-- Loading spinner icon (hidden by default, shown during fetch) -->
+              <svg id="toggle-btn-spinner" class="hidden w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <!-- Checkmark / Status Icon -->
+              <svg id="toggle-btn-icon" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {% if is_current_completed %}
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                 {% else %}
@@ -124,86 +216,140 @@
           </div>
         </div>
 
-        <!-- Previous / Next Controls -->
-        <div class="flex items-center justify-between gap-4 py-2">
-          {% if prev_lesson %}
+        <!-- Previous / Next Controls Bar (Fixed Position Under Video Bar) -->
+        <div id="lesson-controls-bar" class="no-print flex items-center justify-between gap-4 py-1">
+          {% if prev_lesson and is_active_enrolled or prev_lesson and prev_lesson.is_preview %}
             <a href="{% url 'learn:lesson' course_slug=course.slug lesson_id=prev_lesson.id %}"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 shadow-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
               <span class="hidden sm:inline">Previous:</span>
-              <span class="line-clamp-1 max-w-[150px] sm:max-w-xs">{{ prev_lesson.title }}</span>
+              <span class="truncate max-w-[130px] sm:max-w-xs">{{ prev_lesson.title }}</span>
             </a>
           {% else %}
             <div></div>
           {% endif %}
 
-          {% if next_lesson %}
+          {% if next_lesson and is_active_enrolled or next_lesson and next_lesson.is_preview %}
             <a href="{% url 'learn:lesson' course_slug=course.slug lesson_id=next_lesson.id %}"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ml-auto">
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ml-auto">
               <span class="hidden sm:inline">Next:</span>
-              <span class="line-clamp-1 max-w-[150px] sm:max-w-xs">{{ next_lesson.title }}</span>
+              <span class="truncate max-w-[130px] sm:max-w-xs">{{ next_lesson.title }}</span>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </a>
           {% endif %}
         </div>
 
-        <!-- Lesson Description & Notes -->
-        {% if lesson.description %}
-          <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-gray-800 shadow-sm">
-            <h2 class="text-base font-bold text-gray-900 dark:text-white uppercase tracking-wider text-xs mb-4">
-              Lesson Notes & Resources
+
+        <!-- TABS CONTAINER (Lesson Notes & Assignments) -->
+        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+          <!-- Tab Navigation (Accessible tablist) -->
+          <div class="no-print flex border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 px-6 pt-3" role="tablist" aria-label="Lesson content">
+            <button id="tab-notes-btn"
+                    role="tab"
+                    type="button"
+                    aria-selected="true"
+                    aria-controls="panel-notes"
+                    class="tab-btn pb-3 px-4 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 focus:outline-none transition">
+              Lesson Notes
+            </button>
+            <button id="tab-assignments-btn"
+                    role="tab"
+                    type="button"
+                    aria-selected="false"
+                    aria-controls="panel-assignments"
+                    class="tab-btn pb-3 px-4 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none transition flex items-center gap-2">
+              <span>Assignments</span>
+              {% if assignments %}
+                <span class="px-1.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                  {{ assignments|length }}
+                </span>
+              {% endif %}
+            </button>
+          </div>
+
+          <!-- TAB PANEL 1: Lesson Notes -->
+          <!-- Escaped plain text with auto-linked URLs and preserved linebreaks (Requirement 1: NO Markdown, NO |safe) -->
+          <div id="panel-notes" role="tabpanel" aria-labelledby="tab-notes-btn" class="p-6 sm:p-8">
+            <h2 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">
+              Lesson Notes &amp; Resources
             </h2>
-            <div class="text-gray-700 dark:text-gray-300 text-sm sm:text-base leading-relaxed whitespace-pre-line">
-              {{ lesson.description }}
+            <div id="lesson-notes-content" class="text-gray-800 dark:text-gray-200 text-sm sm:text-base leading-relaxed break-words">
+              {% if lesson.description %}
+                {{ lesson.description|urlize|linebreaksbr }}
+              {% else %}
+                <p class="text-gray-500 dark:text-gray-400 italic">No notes provided for this lesson.</p>
+              {% endif %}
             </div>
           </div>
-        {% endif %}
 
-        <!-- Course Assignments Section -->
-        {% if assignments %}
-          <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-gray-800 shadow-sm">
-            <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-              <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-              <span>Course Assignments & Deadlines</span>
-            </h2>
+          <!-- TAB PANEL 2: Assignments (Requirement 6: Real assignments, deadlines, open/closed status, no submit button) -->
+          <div id="panel-assignments" role="tabpanel" aria-labelledby="tab-assignments-btn" class="hidden p-6 sm:p-8">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                Course Assignments &amp; Deadlines
+              </h2>
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300">
+                Submissions open soon
+              </span>
+            </div>
 
-            <div class="space-y-3">
-              {% for assignment in assignments %}
-                <div class="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-                      {{ assignment.title }}
-                    </h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Max Score: {{ assignment.max_score }} pts
-                      {% if assignment.lesson %} • Tied to Lesson {{ assignment.lesson.order }}{% endif %}
-                    </p>
-                  </div>
+            {% if assignments %}
+              <div class="space-y-4">
+                {% for assignment in assignments %}
+                  <div class="p-5 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 flex flex-col gap-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">
+                          {{ assignment.title }}
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          Maximum Score: {{ assignment.max_score }} pts
+                          {% if assignment.lesson %} • Tied to Lesson {{ assignment.lesson.order }}{% endif %}
+                        </p>
+                      </div>
 
-                  <div class="flex items-center gap-2 text-xs">
-                    {% if assignment.is_closed %}
-                      <span class="px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300">
-                        Closed: {{ assignment.due_at|date:"M d, H:i" }}
-                      </span>
-                    {% elif assignment.is_open %}
-                      <span class="px-2 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                        Due: {{ assignment.due_at|date:"M d, H:i" }}
-                      </span>
-                    {% else %}
-                      <span class="px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                        Opens: {{ assignment.opens_at|date:"M d" }}
-                      </span>
+                      <div class="flex items-center gap-2">
+                        {% if assignment.is_closed %}
+                          <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300">
+                            Closed: {{ assignment.due_at|date:"M d, H:i" }}
+                          </span>
+                        {% elif assignment.is_open %}
+                          <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                            Due: {{ assignment.due_at|date:"M d, H:i" }}
+                          </span>
+                        {% else %}
+                          <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                            Opens: {{ assignment.opens_at|date:"M d, H:i" }}
+                          </span>
+                        {% endif %}
+                      </div>
+                    </div>
+
+                    {% if assignment.instructions %}
+                      <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-800 break-words">
+                        {{ assignment.instructions|urlize|linebreaksbr }}
+                      </div>
                     {% endif %}
+
+                    <!-- Submission notice placeholder (no submission upload active in this chunk) -->
+                    <div class="pt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <span>{% if assignment.allow_late %}Late submissions permitted{% else %}Strict deadline enforcement{% endif %}</span>
+                      <span class="italic text-indigo-600 dark:text-indigo-400 font-medium">Submissions open soon</span>
+                    </div>
                   </div>
-                </div>
-              {% endfor %}
-            </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+                No assignments have been posted for this course yet.
+              </div>
+            {% endif %}
           </div>
-        {% endif %}
+        </div>
       </div>
 
-      <!-- DESKTOP SYLLABUS SIDEBAR (Right) -->
-      <div class="hidden lg:block lg:col-span-4 sticky top-24">
+      <!-- DESKTOP SYLLABUS SIDEBAR (Right, Sticky) -->
+      <aside id="syllabus-sidebar" aria-label="Course Syllabus" class="no-print hidden lg:block lg:col-span-4 sticky top-24">
         <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col">
           <!-- Sidebar Header -->
           <div class="p-5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
@@ -230,7 +376,7 @@
                 <a href="{% url 'learn:lesson' course_slug=course.slug lesson_id=item.id %}"
                    class="sidebar-lesson-item group flex items-start gap-3 p-3 rounded-xl text-sm transition {% if item.is_current %}bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-medium ring-1 ring-indigo-500/30{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60{% endif %}"
                    data-current="{% if item.is_current %}true{% else %}false{% endif %}">
-                  <div class="lesson-status-icon mt-0.5 flex-shrink-0">
+                  <div class="lesson-status-icon mt-0.5 shrink-0">
                     {% if item.is_completed %}
                       <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
@@ -246,9 +392,7 @@
                     {% endif %}
                   </div>
                   <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-1.5">
-                      <span class="line-clamp-2 leading-snug">{{ item.title }}</span>
-                    </div>
+                    <span class="line-clamp-2 leading-snug">{{ item.title }}</span>
                     {% if item.is_preview and not is_active_enrolled %}
                       <span class="inline-block mt-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">Preview</span>
                     {% endif %}
@@ -257,7 +401,7 @@
               {% else %}
                 <!-- Locked Lesson -->
                 <div class="flex items-start gap-3 p-3 rounded-xl text-sm text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-75">
-                  <div class="mt-0.5 flex-shrink-0">
+                  <div class="mt-0.5 shrink-0">
                     <svg class="w-4 h-4 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                     </svg>
@@ -270,18 +414,18 @@
             {% endfor %}
           </div>
         </div>
-      </div>
+      </aside>
     </div>
   </div>
 
   <!-- MOBILE SYLLABUS DRAWER -->
-  <div id="mobile-syllabus-drawer" class="hidden fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
-    <div id="drawer-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
+  <div id="mobile-syllabus-drawer" class="no-print hidden fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+    <div id="drawer-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"></div>
     <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
       <div class="w-screen max-w-sm bg-white dark:bg-gray-900 shadow-2xl p-6 flex flex-col justify-between">
         <div>
           <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800">
-            <h2 class="text-base font-bold text-gray-900 dark:text-white line-clamp-1">
+            <h2 id="drawer-title" class="text-base font-bold text-gray-900 dark:text-white line-clamp-1">
               Course Syllabus
             </h2>
             <button id="close-syllabus-drawer-btn"
@@ -291,7 +435,7 @@
             </button>
           </div>
 
-          <!-- Progress -->
+          <!-- Progress Bar in Drawer -->
           <div class="py-4 border-b border-gray-100 dark:border-gray-800">
             <div class="flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
               <span><span class="course-completed-count">{{ completed_count }}</span> of {{ total_published }} completed</span>
@@ -302,13 +446,13 @@
             </div>
           </div>
 
-          <!-- Mobile Lessons -->
+          <!-- Mobile Lessons List -->
           <div class="py-2 space-y-1 max-h-[calc(100vh-220px)] overflow-y-auto">
             {% for item in sidebar_items %}
               {% if item.is_accessible %}
                 <a href="{% url 'learn:lesson' course_slug=course.slug lesson_id=item.id %}"
                    class="flex items-start gap-3 p-3 rounded-xl text-sm transition {% if item.is_current %}bg-indigo-50 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 font-medium{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %}">
-                  <div class="mt-0.5 flex-shrink-0">
+                  <div class="mt-0.5 shrink-0">
                     {% if item.is_completed %}
                       <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
@@ -329,7 +473,7 @@
                 </a>
               {% else %}
                 <div class="flex items-start gap-3 p-3 rounded-xl text-sm text-gray-400 dark:text-gray-600 opacity-75">
-                  <svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 mt-0.5 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                   </svg>
                   <span class="line-clamp-2">{{ item.title }}</span>

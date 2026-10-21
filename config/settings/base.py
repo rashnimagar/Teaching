@@ -268,3 +268,6 @@ LOGGING = {
 BUNNY_STREAM_LIBRARY_ID = env("BUNNY_STREAM_LIBRARY_ID", default="")
 BUNNY_STREAM_TOKEN_KEY = env("BUNNY_STREAM_TOKEN_KEY", default="")
 BUNNY_STREAM_SIGNING_ENABLED = env.bool("BUNNY_STREAM_SIGNING_ENABLED", default=False)
+
+# Custom CSRF Failure View
+CSRF_FAILURE_VIEW = "apps.core.views.csrf_failure"

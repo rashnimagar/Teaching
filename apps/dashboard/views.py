@@ -1,8 +1,11 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+from django.urls import reverse
 
+from apps.accounts.models import User
 from apps.accounts.permissions import teacher_required
-from apps.courses.models import Enrollment, Lesson, LessonProgress
+from apps.assignments.models import Submission
+from apps.courses.models import Course, Enrollment, Lesson, LessonProgress
 
 
 @login_required
@@ -36,6 +39,7 @@ def student_dashboard(request):
     )
 
     active_course_ids = [e.course_id for e in active_enrollments]
+    active_course_ids_set = set(active_course_ids)
 
     # Pre-fetch all published lessons for active courses in 1 query
     all_published_lessons = list(
@@ -53,7 +57,7 @@ def student_dashboard(request):
             student=request.user,
             lesson__course_id__in=active_course_ids,
             lesson__is_published=True,
-        ).select_related("lesson")
+        ).select_related("lesson", "lesson__course")
     )
     # Map progress: course_id -> {lesson_id: progress}
     progress_by_course = {}
@@ -77,7 +81,7 @@ def student_dashboard(request):
             round((completed_lessons / total_lessons) * 100) if total_lessons > 0 else 0
         )
 
-        # Determine continue lesson:
+        # Determine continue lesson for the card:
         # 1. Unfinished lesson with latest updated_at
         continue_lesson = None
         unfinished_progress = [
@@ -111,10 +115,39 @@ def student_dashboard(request):
             }
         )
 
+    # Determine global continue learning hero for the latest touched unfinished lesson
+    # Hidden for new students who have no progress records or whose started lessons are all complete
+    continue_learning_hero = None
+    unfinished_global = [
+        p
+        for p in user_progress_records
+        if p.completed_at is None and p.lesson.course_id in active_course_ids_set
+    ]
+    if unfinished_global:
+        latest_p = max(unfinished_global, key=lambda p: p.updated_at)
+        h_course = latest_p.lesson.course
+        h_lessons = lessons_by_course.get(h_course.id, [])
+        h_progress = progress_by_course.get(h_course.id, {})
+        h_total = len(h_lessons)
+        h_completed = sum(
+            1 for les in h_lessons if les.id in h_progress and h_progress[les.id].completed_at
+        )
+        h_pct = round((h_completed / h_total) * 100) if h_total > 0 else 0
+        continue_learning_hero = {
+            "lesson": latest_p.lesson,
+            "course": h_course,
+            "progress_percentage": h_pct,
+            "completed_lessons": h_completed,
+            "total_lessons": h_total,
+            "last_position_seconds": latest_p.last_position_seconds,
+            "updated_at": latest_p.updated_at,
+        }
+
     context = {
         "active_cards": active_cards,
         "pending_enrollments": pending_enrollments,
         "has_enrollments": bool(active_cards or pending_enrollments),
+        "continue_learning_hero": continue_learning_hero,
     }
     return render(request, "dashboard/student_dashboard.html", context)
 
@@ -122,6 +155,29 @@ def student_dashboard(request):
 @teacher_required
 def teacher_dashboard(request):
     """
-    Placeholder teacher portal for managing content, enrollments, and grading.
+    Teacher administration portal shell displaying real live metrics and
+    quick navigation links to existing Django admin management pages.
+    Custom frontend management views for courses, grading, and enrollments
+    will be introduced in Phase 7.
     """
-    return render(request, "dashboard/teacher_dashboard.html")
+    active_students_count = User.objects.filter(role=User.Role.STUDENT, is_active=True).count()
+    published_courses_count = Course.objects.filter(is_published=True).count()
+    pending_enrollments_count = Enrollment.objects.filter(status=Enrollment.Status.PENDING).count()
+    ungraded_submissions_count = Submission.objects.filter(grade__isnull=True).count()
+
+    context = {
+        "active_students_count": active_students_count,
+        "published_courses_count": published_courses_count,
+        "pending_enrollments_count": pending_enrollments_count,
+        "ungraded_submissions_count": ungraded_submissions_count,
+        "admin_courses_url": reverse("admin:courses_course_changelist"),
+        "admin_pending_enrollments_url": (
+            f"{reverse('admin:courses_enrollment_changelist')}?status__exact=pending"
+        ),
+        "admin_site_settings_url": reverse("admin:core_sitesettings_changelist"),
+        "admin_submissions_url": (
+            f"{reverse('admin:assignments_submission_changelist')}?grade__isnull=True"
+        ),
+        "admin_index_url": reverse("admin:index"),
+    }
+    return render(request, "dashboard/teacher_dashboard.html", context)

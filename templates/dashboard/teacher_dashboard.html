@@ -1,66 +1,194 @@
 {% extends "base.html" %}
 
-{% block title %}Teacher Dashboard — {{ site_settings.site_name }}{% endblock title %}
+{% block title %}Teacher Portal — {{ site_settings.site_name }}{% endblock title %}
 
 {% block meta %}
 <meta name="robots" content="noindex, nofollow">
 {% endblock meta %}
 
 {% block content %}
-<div class="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-  <div class="md:flex md:items-center md:justify-between mb-8 pb-6 border-b border-gray-200 dark:border-gray-800">
+<div class="py-8 sm:py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <!-- Header with Real Greeting (No Email in Heading) -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pb-6 border-b border-gray-200 dark:border-gray-800">
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-3">
         <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-          Teacher Administration Portal
+          {% if user.first_name %}Welcome back, {{ user.first_name }}{% else %}Teacher Portal{% endif %}
         </h1>
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">
           Teacher / Staff
         </span>
       </div>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        Logged in as <span class="font-medium text-gray-900 dark:text-white">{{ user.first_name|default:user.email }}</span>. Manage courses, review submissions, and view student progress.
+        Live overview of courses, student approvals, and assignment submissions.
       </p>
     </div>
-    <div class="mt-4 md:mt-0 flex gap-3">
-      <a
-        href="/admin/"
-        class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-xl shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750"
-      >
-        Django Admin
+    <div class="flex items-center gap-3">
+      <a href="{{ admin_site_settings_url }}"
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Site Settings
+      </a>
+      <a href="{{ admin_index_url }}"
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+        <span>Django Admin</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
       </a>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Courses & Lessons</h3>
-      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-        Create, edit, and organize video lessons across Bunny, Vimeo, and YouTube.
-      </p>
-      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-        <span class="text-xs font-medium text-indigo-600 dark:text-indigo-400">Phase 7 Integration Ready</span>
+  <!-- Real Metric Cards Grid (No fake placeholders, no dead links) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+    <!-- Published Courses Metric -->
+    <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider">Published Courses</span>
+          <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          </div>
+        </div>
+        <div class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          {{ published_courses_count }}
+        </div>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Public offerings active on site
+        </p>
+      </div>
+      <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+        <a href="{{ admin_courses_url }}" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1">
+          <span>Manage Courses in Admin</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
       </div>
     </div>
 
-    <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Submissions & Grading</h3>
-      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-        Review student files and text submissions, assign scores, and leave constructive feedback.
-      </p>
-      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-        <span class="text-xs font-medium text-indigo-600 dark:text-indigo-400">Phase 7 Integration Ready</span>
+    <!-- Pending Enrollments Metric -->
+    <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider">Pending Approvals</span>
+          <div class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+        </div>
+        <div class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          {{ pending_enrollments_count }}
+        </div>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Students waiting for review
+        </p>
+      </div>
+      <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+        <a href="{{ admin_pending_enrollments_url }}" class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-1">
+          <span>Review Enrollments</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
       </div>
     </div>
 
-    <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Student Enrollments</h3>
-      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-        Approve pending requests, review active students, and monitor video completion rates.
-      </p>
-      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-        <span class="text-xs font-medium text-indigo-600 dark:text-indigo-400">Phase 7 Integration Ready</span>
+    <!-- Active Students Metric -->
+    <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider">Active Students</span>
+          <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          </div>
+        </div>
+        <div class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          {{ active_students_count }}
+        </div>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Enrolled student accounts
+        </p>
       </div>
+      <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+        <a href="{{ admin_index_url }}" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
+          <span>View Users in Admin</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Ungraded Submissions Metric -->
+    <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider">Pending Submissions</span>
+          <div class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+        </div>
+        <div class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          {{ ungraded_submissions_count }}
+        </div>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Awaiting teacher grading
+        </p>
+      </div>
+      <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+        <a href="{{ admin_submissions_url }}" class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline inline-flex items-center gap-1">
+          <span>Grade in Admin</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {# Phase 7 Integration Note: In Phase 7, dedicated frontend management views will replace the admin links below. #}
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 sm:p-8 shadow-sm">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+      Administration Shortcuts
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <a href="{{ admin_courses_url }}"
+         class="p-4 rounded-xl border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition group flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
+            Course Management
+          </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            Create, reorder, and configure video lessons.
+          </p>
+        </div>
+      </a>
+
+      <a href="{{ admin_pending_enrollments_url }}"
+         class="p-4 rounded-xl border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition group flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition">
+            Pending Student Approvals
+          </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            Approve or revoke student course enrollments.
+          </p>
+        </div>
+      </a>
+
+      <a href="{{ admin_submissions_url }}"
+         class="p-4 rounded-xl border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition group flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition">
+            Submissions &amp; Grading
+          </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            Review student responses, files, and enter grades.
+          </p>
+        </div>
+      </a>
     </div>
   </div>
 </div>

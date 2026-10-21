@@ -110,3 +110,48 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Print Stylesheet (Title and Notes only, no chrome or video player) */
+@media print {
+  header,
+  footer,
+  nav,
+  aside,
+  button,
+  .no-print,
+  #toast-container,
+  #video-theater-frame,
+  #lesson-controls-bar,
+  #syllabus-sidebar,
+  #mobile-syllabus-drawer,
+  [role="tablist"] {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12pt !important;
+  }
+
+  #learning-container {
+    background: transparent !important;
+    padding: 0 !important;
+    min-height: auto !important;
+  }
+
+  #panel-notes {
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  #panel-assignments {
+    display: none !important;
+  }
+
+  a {
+    color: #000000 !important;
+    text-decoration: underline !important;
+  }
+}
+

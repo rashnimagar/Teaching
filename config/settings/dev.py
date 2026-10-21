@@ -13,17 +13,20 @@ DATABASES = {
 # Console Email Backend
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-# Django Debug Toolbar
-INSTALLED_APPS += ["debug_toolbar"]
+if env.bool("ENABLE_DEBUG_TOOLBAR", default=False):
+    # Django Debug Toolbar
+    INSTALLED_APPS += ["debug_toolbar"]
 
-# Insert DebugToolbarMiddleware right after WhiteNoiseMiddleware
-if "whitenoise.middleware.WhiteNoiseMiddleware" in MIDDLEWARE:
-    index = MIDDLEWARE.index("whitenoise.middleware.WhiteNoiseMiddleware") + 1
-    MIDDLEWARE.insert(index, "debug_toolbar.middleware.DebugToolbarMiddleware")
+    # Insert DebugToolbarMiddleware right after WhiteNoiseMiddleware
+    if "whitenoise.middleware.WhiteNoiseMiddleware" in MIDDLEWARE:
+        index = MIDDLEWARE.index("whitenoise.middleware.WhiteNoiseMiddleware") + 1
+        MIDDLEWARE.insert(index, "debug_toolbar.middleware.DebugToolbarMiddleware")
+    else:
+        MIDDLEWARE.append("debug_toolbar.middleware.DebugToolbarMiddleware")
+
+    INTERNAL_IPS = ["127.0.0.1", "::1"]
 else:
-    MIDDLEWARE.append("debug_toolbar.middleware.DebugToolbarMiddleware")
-
-INTERNAL_IPS = ["127.0.0.1", "::1"]
+    INTERNAL_IPS = []
 
 # Cache: In-memory local cache
 CACHES = {

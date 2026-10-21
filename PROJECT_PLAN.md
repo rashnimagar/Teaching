@@ -54,24 +54,24 @@ A Django-based learning platform where a teacher uploads course videos, students
 
 ## Phase 3 — Authentication (Standard Email/Password & Google Login)
 - [x] Google OAuth provider integration, verified emails only, auto-linking to existing accounts
-- [ ] Standard email + password login and signup with "Remember me" and show/hide password
-- [ ] Mandatory email verification before first login (`ACCOUNT_EMAIL_VERIFICATION = "mandatory"`) with resend verification flow
-- [ ] Password reset flow (request, sent, reset key, complete) with branded HTML & plain-text emails
-- [ ] Console email backend in dev; configurable SMTP in production via `.env`
-- [ ] Robust rate limiting (allauth `ACCOUNT_RATE_LIMITS` + custom IP limits) and anti-enumeration defenses
-- [ ] Strict student role defaults on signup; teacher/staff accounts managed securely via `promote_teacher` and admin
+- [x] Standard email + password login and signup with "Remember me" and show/hide password
+- [x] Mandatory email verification before first login (`ACCOUNT_EMAIL_VERIFICATION = "mandatory"`) with resend verification flow
+- [x] Password reset flow (request, sent, reset key, complete) with branded HTML & plain-text emails
+- [x] Console email backend in dev; configurable SMTP in production via `.env`
+- [x] Robust rate limiting (allauth `ACCOUNT_RATE_LIMITS` + custom IP limits) and anti-enumeration defenses
+- [x] Strict student role defaults on signup; teacher/staff accounts managed securely via `promote_teacher` and admin
 
 ## Phase 4 — Public home page
-- [ ] Hero/intro about the teacher and platform
-- [ ] "Available Courses" grid (thumbnail, title, description, lesson count, free/paid badge)
-- [ ] Course detail page (public syllabus, locked lessons, enroll/login call to action)
-- [ ] SEO basics, responsive layout
+- [x] Hero/intro about the teacher and platform
+- [x] "Available Courses" grid (thumbnail, title, description, lesson count, free/paid badge)
+- [x] Course detail page (public syllabus, locked lessons, enroll/login call to action)
+- [x] SEO basics, responsive layout
 
 ## Phase 5 — Student area
-- [ ] Dashboard: enrolled courses and progress
-- [ ] Course page with ordered lessons and embedded video player
-- [ ] Mark lessons complete; resume where they left off
-- [ ] Enrollment access check on every course/lesson view
+- [x] Dashboard: enrolled courses and progress
+- [x] Course page with ordered lessons and embedded video player
+- [x] Mark lessons complete; resume where they left off
+- [x] Enrollment access check on every course/lesson view
 
 ## Phase 6 — Assignments and submissions
 - [ ] Assignment list per course with live countdown
@@ -94,11 +94,11 @@ A Django-based learning platform where a teacher uploads course videos, students
 - [ ] Logging and error monitoring
 
 ## Phase 9 — UI/UX polish
-- [ ] Consistent design system (colors, typography, components)
-- [ ] Full responsive pass (phone, tablet, desktop)
-- [ ] Loading skeletons, empty states, toasts, form validation messages
-- [ ] Accessibility pass (contrast, keyboard, alt text)
-- [ ] Performance pass (image sizes, caching, query optimization)
+- [x] Consistent design system (colors, typography, components)
+- [x] Full responsive pass (phone, tablet, desktop)
+- [x] Loading skeletons, empty states, toasts, form validation messages
+- [x] Accessibility pass (contrast, keyboard, alt text)
+- [x] Performance pass (image sizes, caching, query optimization)
 
 ## Phase 10 — Deployment
 - [ ] Production settings, PostgreSQL, static/media handling

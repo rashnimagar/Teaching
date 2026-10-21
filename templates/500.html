@@ -1,22 +1,142 @@
-{% extends "base.html" %}
-
-{% block title %}500 Server Error — Teaching Platform{% endblock title %}
-
-{% block content %}
-<div class="min-h-[70vh] flex items-center justify-center px-4 sm:px-6 lg:px-8">
-  <div class="max-w-md w-full text-center py-12">
-    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 font-extrabold text-2xl mb-6">
-      500
-    </div>
-    <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Unexpected Error</h1>
-    <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-      Something went wrong on our end while processing your request. Our team has been notified.
-    </p>
-    <div class="mt-8 flex justify-center gap-4">
-      <a href="{% url 'core:home' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-        Return Home
-      </a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>500 — Server Error</title>
+  <meta name="robots" content="noindex, nofollow">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --secondary-bg: #f1f5f9;
+      --secondary-text: #334155;
+      --secondary-hover: #e2e8f0;
+      --danger-bg: #fee2e2;
+      --danger-text: #dc2626;
+      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #030712;
+        --card-bg: #111827;
+        --border: #1f2937;
+        --text: #f9fafb;
+        --text-muted: #9ca3af;
+        --primary: #6366f1;
+        --primary-hover: #4f46e5;
+        --secondary-bg: #1f2937;
+        --secondary-text: #e5e7eb;
+        --secondary-hover: #374151;
+        --danger-bg: rgba(185, 28, 28, 0.2);
+        --danger-text: #f87171;
+        --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+      }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+      line-height: 1.5;
+    }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1.5rem;
+      box-shadow: var(--shadow);
+      max-width: 32rem;
+      width: 100%;
+      padding: 2.5rem 2rem;
+      text-align: center;
+    }
+    .badge-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 4.5rem;
+      height: 4.5rem;
+      border-radius: 1.25rem;
+      background-color: var(--danger-bg);
+      color: var(--danger-text);
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 1.5rem;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.75rem;
+    }
+    p {
+      color: var(--text-muted);
+      font-size: 0.9375rem;
+      margin-bottom: 2rem;
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+    @media (min-width: 480px) {
+      .actions {
+        flex-direction: row;
+      }
+    }
+    a.btn-primary, button.btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 0.875rem;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background-color 0.15s ease, transform 0.1s ease;
+      border: none;
+    }
+    a.btn-primary {
+      background-color: var(--primary);
+      color: #ffffff;
+    }
+    a.btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+    button.btn-secondary {
+      background-color: var(--secondary-bg);
+      color: var(--secondary-text);
+    }
+    button.btn-secondary:hover {
+      background-color: var(--secondary-hover);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge-icon">500</div>
+    <h1>Unexpected Server Error</h1>
+    <p>Something went wrong on our end while processing your request. Please try reloading the page, or return home.</p>
+    <div class="actions">
+      <a href="/" class="btn-primary">Return Home</a>
+      <button type="button" onclick="window.location.reload()" class="btn-secondary">Try Again</button>
     </div>
   </div>
-</div>
-{% endblock content %}
+</body>
+</html>
