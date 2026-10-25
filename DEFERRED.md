@@ -7,6 +7,7 @@ The following items are postponed to the final hardening and production deployme
 - **DNS / Domain Records:** Set up SPF (`v=spf1 ...`), DKIM records, and DMARC policies for the sending domain.
 - **Diagnostic Management Command:** Add `python manage.py send_test_email <recipient>` to verify delivery end-to-end.
 - **Failure Resilience:** Comprehensive failure logging, graceful exception handling on SMTP connection drops, and user-friendly error notices on auth forms.
+- **Download Notification Emails (`NOTIFY_BY_EMAIL`):** Enable `NOTIFY_BY_EMAIL=True` in production environment variables once production SMTP and SPF/DKIM records are active. Default is `False` in development and initial deployment.
 
 ## 2. Honeypot Field Hardening
 - **Field Name Obfuscation:** Rename `website` to a non-obvious decoy attribute (e.g., `phone_secondary` or `address_line2`).
@@ -30,4 +31,8 @@ The following items are postponed to the final hardening and production deployme
 - **Web-Server Upload Limits & Worker Timeouts:** Configure reverse proxy (Nginx `client_max_body_size 12M`, Gunicorn `--timeout 60`) so slow client uploads or oversized payloads are rejected early before consuming Django application workers.
 - **Optional Antivirus / ClamAV Scanning:** Deploy an asynchronous background file scan hook (ClamAV daemon or containerized scanner) for uploaded student submissions in production environments with high upload volumes.
 - **PostgreSQL Deadline Boundary Test:** Execute the deadline concurrency and `select_for_update` row-locking test suite against a live PostgreSQL instance prior to production launch to verify transactional isolation under high concurrent write loads.
+
+## 7. Audit & Log Retention Policies
+- **DownloadLog Retention:** Implement an automated scheduled retention task to archive or purge `DownloadLog` audit records older than 90 days in accordance with data minimization standards.
+- **Notification Pruning:** Automate periodic execution of `python manage.py cleanup_old_notifications --days 90` to prune historical read notifications and keep database indexes compact.
 

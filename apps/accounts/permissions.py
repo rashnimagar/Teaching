@@ -5,6 +5,13 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
 
 
+def is_teacher_user(user) -> bool:
+    """Check if the user is authenticated and is a teacher or staff member."""
+    if not user or not user.is_authenticated:
+        return False
+    return bool(getattr(user, "is_teacher", False) or getattr(user, "is_staff", False))
+
+
 class TeacherRequiredMixin(UserPassesTestMixin):
     """
     CBV mixin that enforces that the user is authenticated and possesses
@@ -12,8 +19,7 @@ class TeacherRequiredMixin(UserPassesTestMixin):
     """
 
     def test_func(self) -> bool:
-        user = self.request.user
-        return bool(user.is_authenticated and (user.is_teacher or user.is_staff))
+        return is_teacher_user(self.request.user)
 
 
 def teacher_required(view_func):

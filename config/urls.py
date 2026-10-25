@@ -29,6 +29,7 @@ urlpatterns = [
     path("learn/<slug:slug>/", include("apps.assignments.urls", namespace="assignments")),
     path("learn/", include("apps.courses.learn_urls", namespace="learn")),
     path("dashboard/", include("apps.dashboard.urls", namespace="dashboard")),
+    path("notifications/", include("apps.notifications.urls", namespace="notifications")),
     path("robots.txt", robots_txt_view, name="robots_txt"),
     path(
         "sitemap.xml",

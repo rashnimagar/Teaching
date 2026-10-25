@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications — {{ site_settings.site_name }}{% endblock title %}
+
+{% block meta %}
+<meta name="robots" content="noindex, nofollow">
+{% endblock meta %}
+
+{% block content %}
+<div class="py-8 sm:py-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pb-6 border-b border-gray-200 dark:border-gray-800">
+    <div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+          Notifications
+        </h1>
+        {% if unread_notifications_count > 0 %}
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">
+            {{ unread_notifications_display }} Unread
+          </span>
+        {% endif %}
+      </div>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        Updates regarding course materials, download permissions, and assignment deadlines.
+      </p>
+    </div>
+
+    {% if unread_notifications_count > 0 %}
+      <form method="post" action="{% url 'notifications:mark_all_read' %}">
+        {% csrf_token %}
+        <button
+          type="submit"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 shadow-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        >
+          <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span>Mark all as read</span>
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+  <!-- Notification Items List -->
+  {% if notifications %}
+    <div class="space-y-4" role="feed" aria-label="Notifications list">
+      {% for notif in notifications %}
+        <article
+          class="p-5 sm:p-6 rounded-2xl border transition shadow-xs flex flex-col sm:flex-row sm:items-start justify-between gap-4 {% if not notif.is_read %}bg-indigo-50/40 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-900/60{% else %}bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800{% endif %}"
+          aria-labelledby="notif-title-{{ notif.id }}"
+        >
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2.5 mb-2">
+              {% if not notif.is_read %}
+                <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 shrink-0" title="Unread" aria-label="Unread notification"></span>
+              {% endif %}
+
+              <!-- Kind Badge -->
+              {% if notif.kind == "download_approved" %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  Approved
+                </span>
+              {% elif notif.kind == "download_denied" %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                  Denied
+                </span>
+              {% elif notif.kind == "download_revoked" %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                  Revoked
+                </span>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
+                  Update
+                </span>
+              {% endif %}
+
+              <time datetime="{{ notif.created_at|date:'c' }}" class="text-xs text-gray-500 dark:text-gray-400">
+                {{ notif.created_at|date:"M j, Y, g:i A" }} NPT
+              </time>
+            </div>
+
+            <h2 id="notif-title-{{ notif.id }}" class="text-base font-bold text-gray-900 dark:text-white mb-1.5">
+              {{ notif.title }}
+            </h2>
+
+            <!-- Escaped plain text body -->
+            <div class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed break-words">
+              {{ notif.body|linebreaksbr }}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 self-start sm:self-center shrink-0 pt-2 sm:pt-0">
+            {% if notif.has_safe_url %}
+              <a
+                href="{{ notif.url }}"
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 min-h-[36px]"
+              >
+                <span>View</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </a>
+            {% endif %}
+
+            {% if not notif.is_read %}
+              <form method="post" action="{% url 'notifications:mark_read' notif.id %}">
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  class="text-xs font-medium px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition min-h-[36px]"
+                  title="Mark as read"
+                >
+                  Mark read
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+      <nav class="mt-8 flex items-center justify-between border-t border-gray-200 dark:border-gray-800 pt-4" aria-label="Notifications pagination">
+        <div class="flex-1 flex justify-between sm:justify-end gap-2">
+          {% if page_obj.has_previous %}
+            <a
+              href="?page={{ page_obj.previous_page_number }}"
+              class="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              Previous
+            </a>
+          {% endif %}
+          <span class="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 self-center">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+          </span>
+          {% if page_obj.has_next %}
+            <a
+              href="?page={{ page_obj.next_page_number }}"
+              class="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              Next
+            </a>
+          {% endif %}
+        </div>
+      </nav>
+    {% endif %}
+  {% else %}
+    <!-- Empty State -->
+    <div class="p-12 text-center bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+      </div>
+      <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+        No notifications yet
+      </h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+        When your download requests are approved or new materials are released, you'll see them here.
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock content %}

@@ -1,0 +1,306 @@
+{% extends "dashboard/teacher_base.html" %}
+
+{% block title %}Lessons: {{ course.title }} — Teacher Portal — {{ site_settings.site_name }}{% endblock title %}
+
+{% block dashboard_content %}
+<div>
+  <!-- Breadcrumb -->
+  <nav class="mb-6 flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">
+    <a href="{% url 'dashboard:teacher' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      Teacher Portal
+    </a>
+    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
+    <a href="{% url 'dashboard:teacher_courses' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      Courses
+    </a>
+    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
+    <span class="font-medium text-slate-900 dark:text-white truncate max-w-xs" aria-current="page">
+      {{ course.title }} Lessons
+    </span>
+  </nav>
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
+    <div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display">
+          Syllabus Lessons
+        </h1>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+          {{ lessons|length }} Lesson{{ lessons|length|pluralize }}
+        </span>
+      </div>
+      <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+        Course: <strong class="text-slate-900 dark:text-white">{{ course.title }}</strong> (/{{ course.slug }})
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a
+        href="{% url 'dashboard:teacher_course_edit' course.slug %}"
+        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+      >
+        <span>Course Settings</span>
+      </a>
+      <a
+        href="{% url 'dashboard:teacher_lesson_create' course.slug %}"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 min-h-[44px]"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>Add Lesson</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Screen reader live region for reorder announcement (Requirement 11) -->
+  <div id="reorder-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Lessons List -->
+  {% if lessons %}
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden mb-6">
+      <div class="divide-y divide-slate-100 dark:divide-slate-800" role="list">
+        {% for lesson in lessons %}
+          <div
+            id="lesson-item-{{ lesson.id }}"
+            tabindex="-1"
+            class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            role="listitem"
+            data-lesson-id="{{ lesson.id }}"
+            data-lesson-title="{{ lesson.title }}"
+            data-lesson-order="{{ lesson.order }}"
+          >
+            <!-- Left: Order, Info, Badges -->
+            <div class="flex items-start sm:items-center gap-4 min-w-0">
+              <!-- Order badge -->
+              <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs shrink-0">
+                #{{ lesson.order }}
+              </span>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2 mb-1">
+                  <h2 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">
+                    {{ lesson.title }}
+                  </h2>
+
+                  <!-- Badges -->
+                  {% if lesson.is_published %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                      Published
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                      Draft
+                    </span>
+                  {% endif %}
+
+                  {% if lesson.is_preview %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                      Preview
+                    </span>
+                  {% endif %}
+
+                  {% if lesson.video_provider %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 uppercase tracking-wider text-[10px]">
+                      {{ lesson.video_provider }}
+                    </span>
+                  {% endif %}
+                </div>
+
+                <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                  {% if lesson.duration_seconds %}
+                    <span>{{ lesson.duration_formatted }}</span>
+                    <span>&bull;</span>
+                  {% endif %}
+                  {% if lesson.video_id %}
+                    <span class="font-mono text-slate-400">ID: {{ lesson.video_id }}</span>
+                  {% else %}
+                    <span class="text-amber-500">No video configured</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Reorder Up/Down + Actions -->
+            <div class="flex items-center flex-wrap gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
+              <!-- Reorder Up/Down buttons (Requirement 11) -->
+              <div class="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden shadow-2xs">
+                <form method="post" action="{% url 'dashboard:teacher_lesson_reorder' course.slug lesson.id %}" class="inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="direction" value="up">
+                  <button
+                    type="submit"
+                    {% if forloop.first %}disabled{% endif %}
+                    aria-label="Move lesson up"
+                    class="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                  </button>
+                </form>
+                <div class="w-px h-5 bg-slate-200 dark:bg-slate-700"></div>
+                <form method="post" action="{% url 'dashboard:teacher_lesson_reorder' course.slug lesson.id %}" class="inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="direction" value="down">
+                  <button
+                    type="submit"
+                    {% if forloop.last %}disabled{% endif %}
+                    aria-label="Move lesson down"
+                    class="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                  </button>
+                </form>
+              </div>
+
+              <!-- Toggle Publish Form -->
+              <form method="post" action="{% url 'dashboard:teacher_lesson_toggle_publish' course.slug lesson.id %}" class="inline">
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                >
+                  {% if lesson.is_published %}Unpublish{% else %}Publish{% endif %}
+                </button>
+              </form>
+
+              <!-- Edit Link -->
+              <a
+                href="{% url 'dashboard:teacher_lesson_edit' course.slug lesson.id %}"
+                class="px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/40 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition"
+              >
+                Edit
+              </a>
+
+              <!-- Delete Button (Protected against dependents) -->
+              <button
+                type="button"
+                data-lesson-id="{{ lesson.id }}"
+                data-lesson-title="{{ lesson.title }}"
+                class="delete-lesson-btn px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <!-- Empty State -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center shadow-xs">
+      <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center mb-4">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <h3 class="text-base font-bold text-slate-900 dark:text-white mb-1">
+        No lessons in this course yet
+      </h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-6">
+        Add video lessons with YouTube, Vimeo, or Bunny providers to build out your curriculum.
+      </p>
+      <a
+        href="{% url 'dashboard:teacher_lesson_create' course.slug %}"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition"
+      >
+        Add First Lesson
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Delete Lesson Modal -->
+<div
+  id="delete-lesson-modal"
+  class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="delete-lesson-modal-title"
+>
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-md w-full p-6">
+    <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-4">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    </div>
+    <h3 id="delete-lesson-modal-title" class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+      Delete Lesson
+    </h3>
+    <p id="delete-lesson-modal-desc" class="text-xs text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+      Are you sure you want to delete this lesson? If students have watched progress, assignments, or materials attached, deletion is blocked by policy to protect data integrity.
+    </p>
+
+    <form id="delete-lesson-form" method="post" action="">
+      {% csrf_token %}
+      <div class="flex items-center justify-end gap-3">
+        <button
+          type="button"
+          id="delete-lesson-modal-cancel"
+          class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-xs transition"
+        >
+          Confirm Delete
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // 1. Maintain focus and announce after reorder (Requirement 11)
+  const urlParams = new URLSearchParams(window.location.search);
+  const movedId = urlParams.get('moved');
+  if (movedId) {
+    const movedEl = document.getElementById('lesson-item-' + movedId);
+    if (movedEl) {
+      movedEl.focus();
+      movedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const announcer = document.getElementById('reorder-announcer');
+      if (announcer) {
+        const title = movedEl.dataset.lessonTitle || 'Lesson';
+        const order = movedEl.dataset.lessonOrder || '';
+        announcer.textContent = title + ' moved to position ' + order;
+      }
+    }
+  }
+
+  // 2. Delete Lesson Modal
+  const deleteModal = document.getElementById('delete-lesson-modal');
+  const deleteForm = document.getElementById('delete-lesson-form');
+  const deleteCancel = document.getElementById('delete-lesson-modal-cancel');
+  const courseSlug = '{{ course.slug }}';
+
+  document.querySelectorAll('.delete-lesson-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const lessonId = this.dataset.lessonId;
+      const title = this.dataset.lessonTitle;
+      deleteForm.action = '/dashboard/teacher/courses/' + courseSlug + '/lessons/' + lessonId + '/delete/';
+      document.getElementById('delete-lesson-modal-title').textContent = 'Delete Lesson: ' + title;
+      deleteModal.classList.remove('hidden');
+    });
+  });
+
+  if (deleteCancel) {
+    deleteCancel.addEventListener('click', function () {
+      deleteModal.classList.add('hidden');
+    });
+  }
+
+  deleteModal.addEventListener('click', function (e) {
+    if (e.target === deleteModal) {
+      deleteModal.classList.add('hidden');
+    }
+  });
+});
+</script>
+{% endblock dashboard_content %}

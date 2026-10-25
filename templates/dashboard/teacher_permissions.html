@@ -1,0 +1,990 @@
+{% extends "dashboard/teacher_base.html" %}
+
+{% block title %}Download Permissions Queue — {{ site_settings.site_name }}{% endblock title %}
+
+{% block dashboard_content %}
+<div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="mb-6 flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">
+    <a href="{% url 'dashboard:teacher' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      Teacher Portal
+    </a>
+    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
+    <span class="font-medium text-slate-900 dark:text-white" aria-current="page">
+      Download Permissions
+    </span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-6 border-b border-slate-200 dark:border-slate-800">
+    <div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display">
+          Download Permissions Queue
+        </h1>
+        {% if pending_count > 0 %}
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+            {{ pending_count }} Pending
+          </span>
+        {% endif %}
+      </div>
+      <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+        Review student download requests, manage file policies, and audit access permissions.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="{% url 'dashboard:teacher' %}"
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>Teacher Portal</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Status Tabs -->
+  <div class="flex flex-wrap items-center gap-2 mb-6 border-b border-slate-200 dark:border-slate-800 pb-3" role="tablist" aria-label="Status filters">
+    <a href="?status=all{% if course_filter %}&course={{ course_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+       class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors {% if status_filter == 'all' %}bg-indigo-600 text-white shadow-sm{% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
+      <span>All Requests</span>
+      <span class="px-1.5 py-0.2 rounded-full text-[11px] font-bold {% if status_filter == 'all' %}bg-indigo-700 text-white{% else %}bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300{% endif %}">
+        {{ all_count }}
+      </span>
+    </a>
+    <a href="?status=pending{% if course_filter %}&course={{ course_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+       class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors {% if status_filter == 'pending' %}bg-amber-600 text-white shadow-sm{% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
+      <span>Pending</span>
+      <span class="px-1.5 py-0.2 rounded-full text-[11px] font-bold {% if status_filter == 'pending' %}bg-amber-700 text-white{% else %}bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300{% endif %}">
+        {{ pending_count }}
+      </span>
+    </a>
+    <a href="?status=approved{% if course_filter %}&course={{ course_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+       class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors {% if status_filter == 'approved' %}bg-emerald-600 text-white shadow-sm{% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
+      <span>Approved</span>
+      <span class="px-1.5 py-0.2 rounded-full text-[11px] font-bold {% if status_filter == 'approved' %}bg-emerald-700 text-white{% else %}bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300{% endif %}">
+        {{ approved_count }}
+      </span>
+    </a>
+    <a href="?status=denied{% if course_filter %}&course={{ course_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+       class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors {% if status_filter == 'denied' %}bg-rose-600 text-white shadow-sm{% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
+      <span>Denied</span>
+      <span class="px-1.5 py-0.2 rounded-full text-[11px] font-bold {% if status_filter == 'denied' %}bg-rose-700 text-white{% else %}bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300{% endif %}">
+        {{ denied_count }}
+      </span>
+    </a>
+    <a href="?status=revoked{% if course_filter %}&course={{ course_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+       class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors {% if status_filter == 'revoked' %}bg-slate-700 text-white shadow-sm{% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
+      <span>Revoked</span>
+      <span class="px-1.5 py-0.2 rounded-full text-[11px] font-bold {% if status_filter == 'revoked' %}bg-slate-800 text-white{% else %}bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300{% endif %}">
+        {{ revoked_count }}
+      </span>
+    </a>
+  </div>
+
+  <!-- Search & Filter Controls -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 mb-6 shadow-sm">
+    <form method="get" class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+      <input type="hidden" name="status" value="{{ status_filter }}">
+
+      <!-- Search Input -->
+      <div class="sm:col-span-6 relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input
+          type="text"
+          name="q"
+          value="{{ search_query }}"
+          placeholder="Search student, material, file name..."
+          class="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+      </div>
+
+      <!-- Course Select -->
+      <div class="sm:col-span-4">
+        <select
+          name="course"
+          class="w-full py-2 px-3 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="">All Courses</option>
+          {% for course in courses %}
+            <option value="{{ course.id }}" {% if course_filter == course.id|stringformat:"s" %}selected{% endif %}>
+              {{ course.title }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Filter Buttons -->
+      <div class="sm:col-span-2 flex items-center gap-2">
+        <button
+          type="submit"
+          class="w-full py-2 px-4 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          Filter
+        </button>
+        {% if search_query or course_filter %}
+          <a
+            href="?status={{ status_filter }}"
+            class="p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            title="Clear filters"
+            aria-label="Clear filters"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Bulk Actions Bar -->
+  <div id="bulk-actions-bar" class="hidden bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-4 mb-6 transition-all">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold" id="selected-count-badge">
+          0
+        </span>
+        <span class="text-sm font-medium text-indigo-900 dark:text-indigo-200">
+          requests selected on this page
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          data-dialog-trigger="modal-bulk-approve"
+          class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs"
+        >
+          Approve Selected...
+        </button>
+        <button
+          type="button"
+          data-dialog-trigger="modal-bulk-deny"
+          class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 transition shadow-xs"
+        >
+          Deny Selected...
+        </button>
+        <button
+          type="button"
+          id="btn-clear-selection"
+          class="px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition"
+        >
+          Clear Selection
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Container -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    {% if page_obj %}
+      <!-- Mobile Card View (block md:hidden) -->
+      <div class="block md:hidden divide-y divide-slate-200 dark:divide-slate-800">
+        {% for req in page_obj %}
+          <div class="p-4 space-y-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <input
+                  type="checkbox"
+                  value="{{ req.id }}"
+                  class="row-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0"
+                  aria-label="Select request {{ req.id }}"
+                >
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold text-xs select-none shrink-0">
+                  {{ req.student.first_name|default:req.student.email|slice:":1"|upper }}
+                </span>
+                <div class="min-w-0">
+                  <p class="font-semibold text-sm text-slate-900 dark:text-white truncate">
+                    {{ req.student.get_full_name|default:req.student.email }}
+                  </p>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    {{ req.student.email }}
+                  </p>
+                </div>
+              </div>
+              <div class="shrink-0">
+                {% if req.status == 'pending' %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                    Pending
+                  </span>
+                {% elif req.status == 'approved' %}
+                  {% if req.is_expired %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                      Expired
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                      Approved
+                    </span>
+                  {% endif %}
+                {% elif req.status == 'denied' %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                    Denied
+                  </span>
+                {% elif req.status == 'revoked' %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200">
+                    Revoked
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Material File & Meta -->
+            <div class="pl-6 space-y-1">
+              <p class="font-bold text-xs text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span class="truncate">{{ req.material_item.title }}</span>
+              </p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                {{ req.material_item.material.course.title }}
+              </p>
+              <div class="flex items-center gap-2 pt-0.5">
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  {{ req.material_item.get_download_policy_display }}
+                </span>
+                <a href="{% url 'dashboard:teacher_download_history' req.material_item.id %}"
+                   class="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline">
+                  Audit History
+                </a>
+                <span class="text-[10px] text-slate-400 ml-auto">
+                  {{ req.requested_at|date:"M d, H:i" }}
+                </span>
+              </div>
+              {% if req.status == 'approved' and req.expires_at %}
+                <p class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
+                  Access valid until {{ req.expires_at|date:"M d, Y" }}
+                </p>
+              {% endif %}
+              {% if req.status == 'denied' and req.teacher_note %}
+                <p class="text-[11px] text-rose-600 dark:text-rose-400 italic mt-1 bg-rose-50 dark:bg-rose-950/40 p-2 rounded-lg">
+                  Note: &ldquo;{{ req.teacher_note }}&rdquo;
+                </p>
+              {% endif %}
+            </div>
+
+            <!-- Action Buttons for Mobile -->
+            <div class="pl-6 pt-1 flex items-center justify-end gap-1.5 flex-wrap">
+              {% if req.status == 'pending' %}
+                <button
+                  type="button"
+                  class="btn-open-approve px-3 py-1 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs"
+                  data-request-id="{{ req.id }}"
+                  data-student-name="{{ req.student.get_full_name|default:req.student.email }}"
+                  data-file-title="{{ req.material_item.title }}"
+                >
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  class="btn-open-deny px-3 py-1 rounded-xl text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:text-rose-300 transition"
+                  data-request-id="{{ req.id }}"
+                  data-student-name="{{ req.student.get_full_name|default:req.student.email }}"
+                  data-file-title="{{ req.material_item.title }}"
+                >
+                  Deny
+                </button>
+              {% elif req.status == 'approved' %}
+                <form method="post" action="{% url 'dashboard:teacher_permission_action' req.id %}" class="inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="revoke">
+                  <button
+                    type="submit"
+                    class="px-3 py-1 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 transition"
+                    onclick="return confirm('Revoke download access for {{ req.student.email }}?');"
+                  >
+                    Revoke
+                  </button>
+                </form>
+              {% elif req.status == 'denied' %}
+                <form method="post" action="{% url 'dashboard:teacher_permission_action' req.id %}" class="inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="restore">
+                  <button
+                    type="submit"
+                    class="px-3 py-1 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:text-indigo-300 transition"
+                  >
+                    Reconsider
+                  </button>
+                </form>
+              {% elif req.status == 'revoked' %}
+                <form method="post" action="{% url 'dashboard:teacher_permission_action' req.id %}" class="inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="restore">
+                  <button
+                    type="submit"
+                    class="px-3 py-1 rounded-xl text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 transition"
+                  >
+                    Restore
+                  </button>
+                </form>
+              {% endif %}
+
+              {% if req.material_item.download_policy == 'request_required' %}
+                <button
+                  type="button"
+                  class="btn-open-approve-all p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  title="Approve for all enrolled students"
+                  aria-label="Approve file for all enrolled students"
+                  data-item-id="{{ req.material_item.id }}"
+                  data-item-title="{{ req.material_item.title }}"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </button>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Desktop Table View (hidden md:block) -->
+      <div class="hidden md:block overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-left text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-semibold">
+            <tr>
+              <th scope="col" class="py-3.5 pl-4 pr-2 w-10">
+                <input
+                  type="checkbox"
+                  id="select-all-checkbox"
+                  class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  aria-label="Select all requests on this page"
+                >
+              </th>
+              <th scope="col" class="py-3.5 px-3">Student</th>
+              <th scope="col" class="py-3.5 px-3">Course &amp; Material File</th>
+              <th scope="col" class="py-3.5 px-3">Requested At</th>
+              <th scope="col" class="py-3.5 px-3">Status</th>
+              <th scope="col" class="py-3.5 pr-4 pl-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+            {% for req in page_obj %}
+              <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                <!-- Row Checkbox -->
+                <td class="py-4 pl-4 pr-2">
+                  <input
+                    type="checkbox"
+                    value="{{ req.id }}"
+                    class="row-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    aria-label="Select request {{ req.id }}"
+                  >
+                </td>
+
+                <!-- Student Information -->
+                <td class="py-4 px-3">
+                  <div class="flex items-center gap-2.5">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold text-xs select-none">
+                      {{ req.student.first_name|default:req.student.email|slice:":1"|upper }}
+                    </span>
+                    <div class="min-w-0">
+                      <p class="font-semibold text-slate-900 dark:text-white truncate">
+                        {{ req.student.get_full_name|default:req.student.email }}
+                      </p>
+                      <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                        {{ req.student.email }}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Course & Material Item -->
+                <td class="py-4 px-3">
+                  <div class="min-w-0 max-w-xs sm:max-w-sm">
+                    <p class="font-bold text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+                      <svg class="w-4 h-4 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span class="truncate" title="{{ req.material_item.title }}">{{ req.material_item.title }}</span>
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                      {{ req.material_item.material.course.title }} &bull; {{ req.material_item.material.title }}
+                    </p>
+                    <div class="mt-1 flex items-center gap-1.5">
+                      <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                        {{ req.material_item.get_download_policy_display }}
+                      </span>
+                      <a href="{% url 'dashboard:teacher_download_history' req.material_item.id %}"
+                         class="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline">
+                        Audit History
+                      </a>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Requested Timestamp -->
+                <td class="py-4 px-3 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                  {{ req.requested_at|date:"M d, Y H:i" }}
+                </td>
+
+                <!-- Status Badge & Meta -->
+                <td class="py-4 px-3">
+                  {% if req.status == 'pending' %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                      Pending
+                    </span>
+                  {% elif req.status == 'approved' %}
+                    <div>
+                      {% if req.is_expired %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                          Expired
+                        </span>
+                      {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                          Approved
+                        </span>
+                      {% endif %}
+                      {% if req.expires_at %}
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          Until {{ req.expires_at|date:"M d, Y" }}
+                        </p>
+                      {% else %}
+                        <p class="text-[11px] text-slate-400 mt-0.5">
+                          Permanent
+                        </p>
+                      {% endif %}
+                    </div>
+                  {% elif req.status == 'denied' %}
+                    <div>
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                        Denied
+                      </span>
+                      {% if req.teacher_note %}
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 italic mt-0.5 max-w-xs truncate" title="{{ req.teacher_note }}">
+                          &ldquo;{{ req.teacher_note }}&rdquo;
+                        </p>
+                      {% endif %}
+                    </div>
+                  {% elif req.status == 'revoked' %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200">
+                      Revoked
+                    </span>
+                  {% endif %}
+                </td>
+
+                <!-- Row Actions -->
+                <td class="py-4 pr-4 pl-3 text-right whitespace-nowrap">
+                  <div class="flex items-center justify-end gap-1.5">
+                    {% if req.status == 'pending' %}
+                      <!-- Quick Approve with Modal Trigger -->
+                      <button
+                        type="button"
+                        class="btn-open-approve px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        data-request-id="{{ req.id }}"
+                        data-student-name="{{ req.student.get_full_name|default:req.student.email }}"
+                        data-file-title="{{ req.material_item.title }}"
+                      >
+                        Approve
+                      </button>
+                      <!-- Deny Modal Trigger -->
+                      <button
+                        type="button"
+                        class="btn-open-deny px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:text-rose-300 dark:hover:bg-rose-900/60 transition focus:outline-none focus:ring-2 focus:ring-rose-500"
+                        data-request-id="{{ req.id }}"
+                        data-student-name="{{ req.student.get_full_name|default:req.student.email }}"
+                        data-file-title="{{ req.material_item.title }}"
+                      >
+                        Deny
+                      </button>
+                    {% elif req.status == 'approved' %}
+                      <!-- Revoke Button (POST) -->
+                      <form method="post" action="{% url 'dashboard:teacher_permission_action' req.id %}" class="inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="revoke">
+                        <button
+                          type="submit"
+                          class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition"
+                          onclick="return confirm('Revoke download access for {{ req.student.email }}?');"
+                        >
+                          Revoke
+                        </button>
+                      </form>
+                    {% elif req.status == 'denied' %}
+                      <!-- Reconsider / Approve Button (POST) -->
+                      <form method="post" action="{% url 'dashboard:teacher_permission_action' req.id %}" class="inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="restore">
+                        <button
+                          type="submit"
+                          class="px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:bg-indigo-900/60 transition"
+                        >
+                          Reconsider
+                        </button>
+                      </form>
+                    {% elif req.status == 'revoked' %}
+                      <!-- Restore Access (POST) -->
+                      <form method="post" action="{% url 'dashboard:teacher_permission_action' req.id %}" class="inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="restore">
+                        <button
+                          type="submit"
+                          class="px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-900/60 transition"
+                        >
+                          Restore
+                        </button>
+                      </form>
+                    {% endif %}
+
+                    <!-- Item Policy: Approve for All Enrolled Modal Trigger -->
+                    {% if req.material_item.download_policy == 'request_required' %}
+                      <button
+                        type="button"
+                        class="btn-open-approve-all p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                        title="Approve for all enrolled students"
+                        aria-label="Approve file for all enrolled students"
+                        data-item-id="{{ req.material_item.id }}"
+                        data-item-title="{{ req.material_item.title }}"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      {% if page_obj.has_other_pages %}
+        <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <p class="text-xs text-slate-500 dark:text-slate-400">
+            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} requests
+          </p>
+          <div class="flex items-center space-x-1">
+            {% if page_obj.has_previous %}
+              <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}{% if course_filter %}&course={{ course_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                 class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                Previous
+              </a>
+            {% endif %}
+
+            <span class="px-3 py-1.5 text-xs font-bold text-slate-900 dark:text-white">
+              Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}{% if course_filter %}&course={{ course_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                 class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                Next
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+
+    {% else %}
+      <!-- Empty State -->
+      <div class="p-12 text-center">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mb-4">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">
+          No download requests found
+        </h3>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+          {% if search_query or course_filter or status_filter != 'all' %}
+            No requests matched your filter criteria. Try clearing filters to see all requests.
+          {% else %}
+            No students have requested downloads yet. When students request access, requests will appear here for your review.
+          {% endif %}
+        </p>
+        {% if search_query or course_filter or status_filter != 'all' %}
+          <div class="mt-4">
+            <a href="?status=all" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+              Clear all filters
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- Modals (Accessible components with focus trap and backdrop)               -->
+<!-- ========================================================================= -->
+
+<!-- 1. Single Approve Modal -->
+<div id="modal-single-approve" role="dialog" aria-modal="true" aria-labelledby="modal-single-approve-title" aria-hidden="true" data-dialog-root="modal" class="fixed inset-0 z-50 hidden transition-opacity duration-200">
+  <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm" data-dialog-backdrop></div>
+  <div class="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 focus:outline-none" tabindex="-1">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+        <h3 id="modal-single-approve-title" class="text-lg font-bold text-slate-900 dark:text-white">
+          Approve Download Request
+        </h3>
+        <button type="button" data-dialog-close class="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="form-single-approve" method="post" action="">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="approve">
+        <div class="py-4 space-y-4 text-sm text-slate-700 dark:text-slate-300">
+          <p>
+            Grant download access to <strong id="approve-student-name" class="text-slate-900 dark:text-white"></strong> for <strong id="approve-file-title" class="text-slate-900 dark:text-white"></strong>.
+          </p>
+
+          <div>
+            <label for="approve-expiry" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+              Access Duration (Optional)
+            </label>
+            <select
+              id="approve-expiry"
+              name="expiry_days"
+              class="w-full py-2 px-3 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">No Expiry (Permanent)</option>
+              <option value="7">7 Days</option>
+              <option value="14">14 Days</option>
+              <option value="30">30 Days</option>
+              <option value="90">90 Days</option>
+            </select>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+              The student will receive an immediate notification with this decision.
+            </p>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+          <button type="button" data-dialog-close class="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs">
+            Confirm Approval
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Single Deny Modal -->
+<div id="modal-single-deny" role="dialog" aria-modal="true" aria-labelledby="modal-single-deny-title" aria-hidden="true" data-dialog-root="modal" class="fixed inset-0 z-50 hidden transition-opacity duration-200">
+  <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm" data-dialog-backdrop></div>
+  <div class="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 focus:outline-none" tabindex="-1">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+        <h3 id="modal-single-deny-title" class="text-lg font-bold text-slate-900 dark:text-white">
+          Deny Download Request
+        </h3>
+        <button type="button" data-dialog-close class="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="form-single-deny" method="post" action="">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="deny">
+        <div class="py-4 space-y-4 text-sm text-slate-700 dark:text-slate-300">
+          <p>
+            Deny request from <strong id="deny-student-name" class="text-slate-900 dark:text-white"></strong> for <strong id="deny-file-title" class="text-slate-900 dark:text-white"></strong>.
+          </p>
+
+          <div>
+            <label for="deny-note" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+              Teacher's Note (Optional)
+            </label>
+            <textarea
+              id="deny-note"
+              name="teacher_note"
+              rows="3"
+              placeholder="e.g. Please finish Lesson 2 assignments before requesting this material."
+              class="w-full py-2 px-3 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+            ></textarea>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+              The student will be notified with this note and may re-request after 24 hours.
+            </p>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+          <button type="button" data-dialog-close class="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 transition shadow-xs">
+            Confirm Denial
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Bulk Approve Modal -->
+<div id="modal-bulk-approve" role="dialog" aria-modal="true" aria-labelledby="modal-bulk-approve-title" aria-hidden="true" data-dialog-root="modal" class="fixed inset-0 z-50 hidden transition-opacity duration-200">
+  <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm" data-dialog-backdrop></div>
+  <div class="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 focus:outline-none" tabindex="-1">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+        <h3 id="modal-bulk-approve-title" class="text-lg font-bold text-slate-900 dark:text-white">
+          Bulk Approve Requests
+        </h3>
+        <button type="button" data-dialog-close class="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form method="post" action="{% url 'dashboard:teacher_permissions_bulk_action' %}">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" value="approve">
+        <div id="bulk-approve-ids-container"></div>
+
+        <div class="py-4 space-y-4 text-sm text-slate-700 dark:text-slate-300">
+          <p>
+            You are about to approve <strong class="bulk-count-label text-slate-900 dark:text-white">0</strong> selected requests.
+          </p>
+
+          <div>
+            <label for="bulk-expiry" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+              Access Duration (Optional)
+            </label>
+            <select
+              id="bulk-expiry"
+              name="bulk_expiry_days"
+              class="w-full py-2 px-3 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">No Expiry (Permanent)</option>
+              <option value="7">7 Days</option>
+              <option value="14">14 Days</option>
+              <option value="30">30 Days</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+          <button type="button" data-dialog-close class="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs">
+            Approve All Selected
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Bulk Deny Modal -->
+<div id="modal-bulk-deny" role="dialog" aria-modal="true" aria-labelledby="modal-bulk-deny-title" aria-hidden="true" data-dialog-root="modal" class="fixed inset-0 z-50 hidden transition-opacity duration-200">
+  <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm" data-dialog-backdrop></div>
+  <div class="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 focus:outline-none" tabindex="-1">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+        <h3 id="modal-bulk-deny-title" class="text-lg font-bold text-slate-900 dark:text-white">
+          Bulk Deny Requests
+        </h3>
+        <button type="button" data-dialog-close class="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form method="post" action="{% url 'dashboard:teacher_permissions_bulk_action' %}">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_action" value="deny">
+        <div id="bulk-deny-ids-container"></div>
+
+        <div class="py-4 space-y-4 text-sm text-slate-700 dark:text-slate-300">
+          <p>
+            You are about to deny <strong class="bulk-count-label text-slate-900 dark:text-white">0</strong> selected requests.
+          </p>
+
+          <div>
+            <label for="bulk-deny-note" class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
+              Teacher's Note (Optional)
+            </label>
+            <textarea
+              id="bulk-deny-note"
+              name="bulk_teacher_note"
+              rows="3"
+              placeholder="Reason for denial..."
+              class="w-full py-2 px-3 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+          <button type="button" data-dialog-close class="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 transition shadow-xs">
+            Deny All Selected
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 5. Approve for All Enrolled Confirmation Modal -->
+<div id="modal-approve-all" role="dialog" aria-modal="true" aria-labelledby="modal-approve-all-title" aria-hidden="true" data-dialog-root="modal" class="fixed inset-0 z-50 hidden transition-opacity duration-200">
+  <div class="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm" data-dialog-backdrop></div>
+  <div class="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 focus:outline-none" tabindex="-1">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+        <h3 id="modal-approve-all-title" class="text-lg font-bold text-slate-900 dark:text-white">
+          Open to All Enrolled Students
+        </h3>
+        <button type="button" data-dialog-close class="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="form-approve-all" method="post" action="">
+        {% csrf_token %}
+        <div class="py-4 space-y-3 text-sm text-slate-700 dark:text-slate-300">
+          <p>
+            Are you sure you want to open <strong id="approve-all-item-title" class="text-slate-900 dark:text-white"></strong> to <strong>all enrolled students</strong>?
+          </p>
+          <div class="p-3 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300">
+            <strong>Important:</strong> This will switch the file download policy to <em>Open to Enrolled</em> and automatically resolve and notify all existing pending requests for this file.
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+          <button type="button" data-dialog-close class="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-xs">
+            Confirm &amp; Open to All
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Page JavaScript for Permissions Queue -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const selectAll = document.getElementById('select-all-checkbox');
+  const rowCheckboxes = Array.from(document.querySelectorAll('.row-checkbox'));
+  const bulkBar = document.getElementById('bulk-actions-bar');
+  const countBadge = document.getElementById('selected-count-badge');
+  const bulkCountLabels = document.querySelectorAll('.bulk-count-label');
+  const bulkApproveContainer = document.getElementById('bulk-approve-ids-container');
+  const bulkDenyContainer = document.getElementById('bulk-deny-ids-container');
+  const btnClearSelection = document.getElementById('btn-clear-selection');
+
+  function updateBulkBar() {
+    const selected = rowCheckboxes.filter(cb => cb.checked);
+    const count = selected.length;
+    if (count > 0) {
+      bulkBar.classList.remove('hidden');
+      countBadge.textContent = count;
+      bulkCountLabels.forEach(el => el.textContent = count);
+
+      // Populate hidden inputs for bulk forms
+      bulkApproveContainer.innerHTML = '';
+      bulkDenyContainer.innerHTML = '';
+      selected.forEach(cb => {
+        const input1 = document.createElement('input');
+        input1.type = 'hidden';
+        input1.name = 'selected_ids';
+        input1.value = cb.value;
+        bulkApproveContainer.appendChild(input1);
+
+        const input2 = document.createElement('input');
+        input2.type = 'hidden';
+        input2.name = 'selected_ids';
+        input2.value = cb.value;
+        bulkDenyContainer.appendChild(input2);
+      });
+    } else {
+      bulkBar.classList.add('hidden');
+      if (selectAll) selectAll.checked = false;
+    }
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function () {
+      rowCheckboxes.forEach(cb => cb.checked = selectAll.checked);
+      updateBulkBar();
+    });
+  }
+
+  rowCheckboxes.forEach(cb => {
+    cb.addEventListener('change', updateBulkBar);
+  });
+
+  if (btnClearSelection) {
+    btnClearSelection.addEventListener('click', function () {
+      rowCheckboxes.forEach(cb => cb.checked = false);
+      if (selectAll) selectAll.checked = false;
+      updateBulkBar();
+    });
+  }
+
+  // Single Approve Modal Trigger
+  document.querySelectorAll('.btn-open-approve').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const reqId = btn.getAttribute('data-request-id');
+      const studentName = btn.getAttribute('data-student-name');
+      const fileTitle = btn.getAttribute('data-file-title');
+
+      document.getElementById('approve-student-name').textContent = studentName;
+      document.getElementById('approve-file-title').textContent = fileTitle;
+      document.getElementById('form-single-approve').action = '/dashboard/teacher/permissions/action/' + reqId + '/';
+
+      const modal = document.getElementById('modal-single-approve');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+      }
+    });
+  });
+
+  // Single Deny Modal Trigger
+  document.querySelectorAll('.btn-open-deny').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const reqId = btn.getAttribute('data-request-id');
+      const studentName = btn.getAttribute('data-student-name');
+      const fileTitle = btn.getAttribute('data-file-title');
+
+      document.getElementById('deny-student-name').textContent = studentName;
+      document.getElementById('deny-file-title').textContent = fileTitle;
+      document.getElementById('form-single-deny').action = '/dashboard/teacher/permissions/action/' + reqId + '/';
+
+      const modal = document.getElementById('modal-single-deny');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+      }
+    });
+  });
+
+  // Approve for All Enrolled Modal Trigger
+  document.querySelectorAll('.btn-open-approve-all').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const itemId = btn.getAttribute('data-item-id');
+      const itemTitle = btn.getAttribute('data-item-title');
+
+      document.getElementById('approve-all-item-title').textContent = itemTitle;
+      document.getElementById('form-approve-all').action = '/dashboard/teacher/permissions/approve-all/' + itemId + '/';
+
+      const modal = document.getElementById('modal-approve-all');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+      }
+    });
+  });
+});
+</script>
+</div>
+{% endblock dashboard_content %}

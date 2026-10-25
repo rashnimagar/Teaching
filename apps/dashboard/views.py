@@ -1,11 +1,14 @@
+from datetime import timedelta
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.accounts.permissions import teacher_required
-from apps.assignments.models import Submission
-from apps.courses.models import Course, Enrollment, Lesson, LessonProgress
+from apps.assignments.models import Assignment, Submission
+from apps.courses.models import Course, DownloadRequest, Enrollment, Lesson, LessonProgress
 
 
 @login_required
@@ -155,21 +158,72 @@ def student_dashboard(request):
 @teacher_required
 def teacher_dashboard(request):
     """
-    Teacher administration portal shell displaying real live metrics and
-    quick navigation links to existing Django admin management pages.
-    Custom frontend management views for courses, grading, and enrollments
-    will be introduced in Phase 7.
+    Teacher administration portal shell displaying real live metrics,
+    quick navigation links, and recent student activity feeds.
     """
-    active_students_count = User.objects.filter(role=User.Role.STUDENT, is_active=True).count()
-    published_courses_count = Course.objects.filter(is_published=True).count()
+    now = timezone.now()
+
+    # Requirement 9: Active students = students with at least one active enrollment
+    active_students_count = (
+        User.objects.filter(
+            role=User.Role.STUDENT,
+            enrollments__status=Enrollment.Status.ACTIVE,
+        )
+        .distinct()
+        .count()
+    )
+
+    published_courses_count = Course.objects.filter(is_published=True, is_archived=False).count()
     pending_enrollments_count = Enrollment.objects.filter(status=Enrollment.Status.PENDING).count()
-    ungraded_submissions_count = Submission.objects.filter(grade__isnull=True).count()
+    pending_permissions_count = DownloadRequest.objects.filter(status=DownloadRequest.Status.PENDING).count()
+
+    # Requirement 9: Ungraded submissions = ungraded submissions of published assignments in non-archived courses
+    ungraded_submissions_count = Submission.objects.filter(
+        grade__isnull=True,
+        assignment__is_published=True,
+        assignment__course__is_archived=False,
+    ).count()
+
+    # Deadlines in next 7 days
+    upcoming_deadlines_count = Assignment.objects.filter(
+        is_published=True,
+        course__is_archived=False,
+        due_at__gte=now,
+        due_at__lte=now + timedelta(days=7),
+    ).count()
+
+    # Recent activity lists (bounded O(1) queries)
+    recent_submissions = list(
+        Submission.objects.filter(
+            assignment__is_published=True,
+            assignment__course__is_archived=False,
+        )
+        .select_related("student", "assignment", "assignment__course")
+        .order_by("-submitted_at")[:5]
+    )
+
+    recent_enrollments = list(
+        Enrollment.objects.select_related("student", "course")
+        .order_by("-created_at")[:5]
+    )
+
+    recent_requests = list(
+        DownloadRequest.objects.select_related("student", "material_item", "material_item__material__course")
+        .order_by("-requested_at")[:5]
+    )
 
     context = {
         "active_students_count": active_students_count,
         "published_courses_count": published_courses_count,
         "pending_enrollments_count": pending_enrollments_count,
         "ungraded_submissions_count": ungraded_submissions_count,
+        "pending_permissions_count": pending_permissions_count,
+        "upcoming_deadlines_count": upcoming_deadlines_count,
+        "recent_submissions": recent_submissions,
+        "recent_enrollments": recent_enrollments,
+        "recent_requests": recent_requests,
+        "teacher_courses_url": reverse("dashboard:teacher_courses"),
+        "teacher_permissions_url": reverse("dashboard:teacher_permissions"),
         "admin_courses_url": reverse("admin:courses_course_changelist"),
         "admin_pending_enrollments_url": (
             f"{reverse('admin:courses_enrollment_changelist')}?status__exact=pending"

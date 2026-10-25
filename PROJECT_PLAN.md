@@ -79,12 +79,22 @@ A Django-based learning platform where a teacher uploads course videos, students
 - [x] Server-side deadline enforcement (reject after `due_at`; handle edge case of deadline passing mid-submission)
 - [x] Student view of grade and feedback
 
+## Materials, Download Permissions & Notifications (Client Milestone — Built Now)
+- [ ] Course Materials & Items: posts per course, file/link/video items with validation, embed preview, reorder, and download policies (`request_required`, `open_to_enrolled`)
+- [ ] Student Download Requests & State Machine: request download, 24h denial cooldown, active enrollment access check, download logging
+- [ ] Teacher Permissions Queue (`/dashboard/teacher/permissions/`): filterable queue (status, course, student, file), search, pagination, pending count badge
+- [ ] Teacher Actions: race-safe approve (with optional expiry), deny (with note), revoke, reconsider, and "approve for all enrolled students"
+- [ ] Bulk Actions: bulk approve/deny with count confirmation modal
+- [ ] Download History: audit trail per file from `DownloadLog` (who, when, IP)
+- [ ] Student Notification System: `Notification` model, unread bell in navbar, `/notifications/` page, mark read, strict student isolation
+- [ ] Email Channel: notification delivery behind `NOTIFY_BY_EMAIL` flag via `transaction.on_commit`, safe against SMTP failures
+
 ## Phase 7 — Teacher dashboard (custom)
-- [ ] Overview stats: students, submissions, upcoming deadlines
-- [ ] CRUD for courses, lessons, assignments
-- [ ] Enrollment management (approve, remove, add manually)
-- [ ] Submissions: filter, review, grade, see who missed the deadline
-- [ ] Student list with progress
+- [x] Overview stats: students, submissions, upcoming deadlines (7A)
+- [x] Course, lesson, and assignment management with draft protections, slug fallback, reordering, and safeguards (7A)
+- [ ] Enrollment management (approve, remove, add manually) (7B)
+- [ ] Submissions: filter, review, grade, see who missed the deadline (7B)
+- [ ] Student list with progress and CSV export (7B)
 
 ## Phase 8 — Security and rate limiting
 - [ ] Rate limits on login, submissions, uploads, and any API endpoints (django-ratelimit or DRF throttling)

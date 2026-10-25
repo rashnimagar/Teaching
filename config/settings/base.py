@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.courses.apps.CoursesConfig",
     "apps.assignments.apps.AssignmentsConfig",
     "apps.dashboard.apps.DashboardConfig",
+    "apps.notifications.apps.NotificationsConfig",
 ]
 
 MIDDLEWARE = [
@@ -69,6 +70,8 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.site_settings",
+                "apps.notifications.context_processors.notifications_context",
+                "apps.dashboard.context_processors.teacher_nav_context",
             ],
         },
     },
@@ -173,6 +176,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Default Sending Email Address
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Teaching Platform <noreply@example.com>")
+NOTIFY_BY_EMAIL = env.bool("NOTIFY_BY_EMAIL", default=False)
 
 # Internationalization & Localization
 LANGUAGE_CODE = "en-us"

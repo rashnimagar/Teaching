@@ -48,15 +48,21 @@ def course_assignments_view(request, slug):
     now = timezone.now()
 
     # Load assignments for the course with lessons
-    assignments = list(course.assignments.select_related("lesson").order_by("due_at", "id"))
+    assign_qs = course.assignments.all()
+    if not request.user.is_staff:
+        assign_qs = assign_qs.filter(is_published=True)
+    assignments = list(assign_qs.select_related("lesson").order_by("due_at", "id"))
 
     # Load current student's submissions
     submissions_dict = {}
     if request.user.is_authenticated:
-        student_submissions = Submission.objects.filter(
+        sub_qs = Submission.objects.filter(
             assignment__course=course,
             student=request.user,
-        ).select_related("assignment")
+        )
+        if not request.user.is_staff:
+            sub_qs = sub_qs.filter(assignment__is_published=True)
+        student_submissions = sub_qs.select_related("assignment")
         submissions_dict = {sub.assignment_id: sub for sub in student_submissions}
 
     # Format assignment cards
@@ -135,6 +141,9 @@ def assignment_detail_view(request, slug, assignment_id):
         pk=assignment_id,
         course=course,
     )
+
+    if not request.user.is_staff and not assignment.is_published:
+        raise Http404(_("Assignment not found."))
 
     now = timezone.now()
 
@@ -429,6 +438,9 @@ def submission_download_view(request, slug, submission_id):
         return HttpResponseForbidden(
             _("You do not have permission to download this submission file.")
         )
+
+    if not request.user.is_staff and not submission.assignment.is_published:
+        raise Http404(_("Assignment not found."))
 
     if not submission.file:
         raise Http404(_("No file is attached to this submission."))

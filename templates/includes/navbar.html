@@ -51,6 +51,22 @@
         </button>
 
         {% if user.is_authenticated %}
+          <!-- Notifications Bell Link -->
+          <a
+            href="{% url 'notifications:list' %}"
+            class="relative p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
+            aria-label="Notifications{% if unread_notifications_count %} ({{ unread_notifications_display }} unread){% endif %}"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            {% if unread_notifications_count > 0 %}
+              <span class="absolute top-1.5 right-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-indigo-600 rounded-full shadow-sm min-w-[18px]">
+                {{ unread_notifications_display }}
+              </span>
+            {% endif %}
+          </a>
+
           <!-- User Details & Role Badge -->
           <div class="flex items-center gap-3">
             {% if user.is_teacher or user.is_staff %}
@@ -130,6 +146,24 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
           </svg>
         </button>
+
+        {% if user.is_authenticated %}
+          <!-- Mobile Notifications Bell Link -->
+          <a
+            href="{% url 'notifications:list' %}"
+            class="relative p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-center"
+            aria-label="Notifications{% if unread_notifications_count %} ({{ unread_notifications_display }} unread){% endif %}"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            {% if unread_notifications_count > 0 %}
+              <span class="absolute top-1.5 right-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-indigo-600 rounded-full shadow-sm min-w-[18px]">
+                {{ unread_notifications_display }}
+              </span>
+            {% endif %}
+          </a>
+        {% endif %}
 
         <!-- Mobile Menu Drawer Trigger -->
         <button
@@ -250,6 +284,23 @@
                       <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold">Student</span>
                     </a>
                   {% endif %}
+
+                  <a
+                    href="{% url 'notifications:list' %}"
+                    class="flex items-center justify-between px-4 py-3 rounded-xl font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 min-h-[44px]"
+                  >
+                    <div class="flex items-center gap-2.5">
+                      <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      <span>Notifications</span>
+                    </div>
+                    {% if unread_notifications_count > 0 %}
+                      <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-indigo-600 rounded-full">
+                        {{ unread_notifications_display }}
+                      </span>
+                    {% endif %}
+                  </a>
                 </div>
 
                 <form method="post" action="{% url 'account_logout' %}" class="pt-2">

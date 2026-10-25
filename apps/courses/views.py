@@ -329,7 +329,10 @@ def lesson_learn_view(request, course_slug, lesson_id):
 
     # Course assignments with student submission status
     now = timezone.now()
-    raw_assignments = list(course.assignments.select_related("lesson").order_by("due_at"))
+    assign_qs = course.assignments.all()
+    if not (request.user.is_authenticated and request.user.is_staff):
+        assign_qs = assign_qs.filter(is_published=True)
+    raw_assignments = list(assign_qs.select_related("lesson").order_by("due_at"))
     student_submissions = {}
     if request.user.is_authenticated:
         from apps.assignments.models import Submission
@@ -373,6 +376,9 @@ def lesson_learn_view(request, course_slug, lesson_id):
         getattr(request.user, "role", None) == "teacher" or request.user.is_staff
     )
 
+    from apps.courses.views_materials import get_decorated_course_materials
+    course_materials = get_decorated_course_materials(course, request.user)
+
     context = {
         "course": course,
         "lesson": lesson,
@@ -383,6 +389,7 @@ def lesson_learn_view(request, course_slug, lesson_id):
         "is_current_completed": is_current_completed,
         "sidebar_items": sidebar_items,
         "assignments": assignments_data,
+        "materials": course_materials,
         "total_published": total_published,
         "completed_count": completed_count,
         "progress_percentage": progress_percentage,

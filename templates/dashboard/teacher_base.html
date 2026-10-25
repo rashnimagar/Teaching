@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block meta %}
+<meta name="robots" content="noindex, nofollow">
+{% endblock meta %}
+
+{% block content %}
+<div class="py-6 sm:py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <!-- Mobile Navigation Header & Drawer Trigger -->
+  <div class="lg:hidden flex items-center justify-between p-3.5 mb-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-600 text-white font-bold text-xs">
+        T
+      </span>
+      <span class="font-bold text-sm text-slate-900 dark:text-white">
+        Teacher Portal
+      </span>
+    </div>
+    <button
+      type="button"
+      id="teacher-drawer-toggle"
+      class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+      aria-expanded="false"
+      aria-controls="teacher-sidebar-menu"
+      aria-label="Toggle Teacher Navigation Menu"
+    >
+      <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+      </svg>
+      <span>Menu</span>
+      {% if nav_pending_permissions_count > 0 or nav_pending_enrollments_count > 0 %}
+        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+      {% endif %}
+    </button>
+  </div>
+
+  <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
+    <!-- Sidebar Navigation (Desktop column & Mobile Drawer) -->
+    <aside
+      id="teacher-sidebar-menu"
+      class="hidden lg:block lg:col-span-3 space-y-6"
+      aria-label="Teacher Dashboard Navigation"
+    >
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs">
+        <!-- Teacher Profile Header -->
+        <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold text-sm select-none">
+            {{ user.first_name|default:user.email|slice:":1"|upper }}
+          </span>
+          <div class="min-w-0">
+            <p class="font-bold text-sm text-slate-900 dark:text-white truncate">
+              {{ user.get_full_name|default:user.email }}
+            </p>
+            <span class="inline-flex items-center text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+              Instructor / Staff
+            </span>
+          </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="space-y-1.5" aria-label="Teacher Portal Links">
+          <!-- Overview -->
+          <a
+            href="{% url 'dashboard:teacher' %}"
+            class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition {% if request.resolver_match.url_name == 'teacher' %}bg-indigo-600 text-white shadow-xs{% else %}text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60{% endif %}"
+          >
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 {% if request.resolver_match.url_name == 'teacher' %}text-white{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span>Overview</span>
+            </div>
+          </a>
+
+          <!-- Courses -->
+          <a
+            href="{% url 'dashboard:teacher_courses' %}"
+            class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition {% if 'course' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-xs{% else %}text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60{% endif %}"
+          >
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 {% if 'course' in request.resolver_match.url_name %}text-white{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <span>Courses</span>
+            </div>
+          </a>
+
+          <!-- Permissions Queue (Existing) -->
+          <a
+            href="{% url 'dashboard:teacher_permissions' %}"
+            class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition {% if 'permission' in request.resolver_match.url_name %}bg-indigo-600 text-white shadow-xs{% else %}text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60{% endif %}"
+          >
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 {% if 'permission' in request.resolver_match.url_name %}text-white{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+              <span>Permissions</span>
+            </div>
+            {% if nav_pending_permissions_count > 0 %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold {% if 'permission' in request.resolver_match.url_name %}bg-indigo-800 text-white{% else %}bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300{% endif %}">
+                {{ nav_pending_permissions_count }}
+              </span>
+            {% endif %}
+          </a>
+
+          <!-- Django Admin (Visible strictly for superusers) -->
+          {% if user.is_superuser %}
+            <div class="pt-2 mt-2 border-t border-slate-100 dark:border-slate-800">
+              <a
+                href="{% url 'admin:index' %}"
+                class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition"
+              >
+                <div class="flex items-center gap-3">
+                  <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Django Admin</span>
+                </div>
+                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </div>
+          {% endif %}
+        </nav>
+      </div>
+
+      <!-- Quick Back to Site Link -->
+      <div class="px-2">
+        <a href="{% url 'core:home' %}" class="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Exit to Main Site</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="lg:col-span-9 min-w-0" id="main-content">
+      {% block dashboard_content %}{% endblock dashboard_content %}
+    </main>
+  </div>
+</div>
+
+<!-- Mobile Drawer Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const toggle = document.getElementById('teacher-drawer-toggle');
+  const menu = document.getElementById('teacher-sidebar-menu');
+  if (toggle && menu) {
+    toggle.addEventListener('click', function () {
+      const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', !isExpanded);
+      menu.classList.toggle('hidden');
+    });
+  }
+});
+</script>
+{% endblock content %}

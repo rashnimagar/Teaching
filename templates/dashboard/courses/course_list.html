@@ -1,0 +1,360 @@
+{% extends "dashboard/teacher_base.html" %}
+
+{% block title %}Courses — Teacher Portal — {{ site_settings.site_name }}{% endblock title %}
+
+{% block dashboard_content %}
+<div>
+  <!-- Breadcrumb -->
+  <nav class="mb-6 flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">
+    <a href="{% url 'dashboard:teacher' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      Teacher Portal
+    </a>
+    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
+    <span class="font-medium text-slate-900 dark:text-white" aria-current="page">
+      Courses
+    </span>
+  </nav>
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display">
+        Courses
+      </h1>
+      <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+        Manage your catalog, syllabus lessons, and assignment deadlines.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a
+        href="{% url 'dashboard:teacher_course_create' %}"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 min-h-[44px]"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>Create Course</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters & Search Form -->
+  <form method="get" action="{% url 'dashboard:teacher_courses' %}" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 mb-6 shadow-xs flex flex-col md:flex-row items-stretch md:items-center gap-3">
+    <!-- Search Query -->
+    <div class="relative flex-1">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+      <input
+        type="search"
+        name="q"
+        value="{{ search_query }}"
+        placeholder="Search courses by title or description..."
+        class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      />
+    </div>
+
+    <!-- Status Filter -->
+    <div class="w-full md:w-44">
+      <select
+        name="status"
+        onchange="this.form.submit()"
+        class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      >
+        <option value="" {% if not status_filter %}selected{% endif %}>All Statuses</option>
+        <option value="published" {% if status_filter == 'published' %}selected{% endif %}>Published</option>
+        <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Drafts</option>
+        <option value="archived" {% if status_filter == 'archived' %}selected{% endif %}>Archived</option>
+      </select>
+    </div>
+
+    <!-- Pricing Filter -->
+    <div class="w-full md:w-36">
+      <select
+        name="pricing"
+        onchange="this.form.submit()"
+        class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      >
+        <option value="" {% if not pricing_filter %}selected{% endif %}>All Types</option>
+        <option value="free" {% if pricing_filter == 'free' %}selected{% endif %}>Free</option>
+        <option value="paid" {% if pricing_filter == 'paid' %}selected{% endif %}>Paid</option>
+      </select>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        type="submit"
+        class="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+      >
+        Filter
+      </button>
+      {% if search_query or status_filter or pricing_filter %}
+        <a
+          href="{% url 'dashboard:teacher_courses' %}"
+          class="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+        >
+          Reset
+        </a>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- Courses List -->
+  {% if courses %}
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden mb-6">
+      <div class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for course in courses %}
+          <div class="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+            <!-- Left Info -->
+            <div class="flex items-start gap-4 min-w-0">
+              <!-- Thumbnail or Fallback -->
+              <div class="w-16 h-12 sm:w-20 sm:h-14 rounded-xl bg-slate-100 dark:bg-slate-800 shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                {% if course.thumbnail_webp %}
+                  <img src="{{ course.thumbnail_webp.url }}" alt="{{ course.title }}" class="w-full h-full object-cover" />
+                {% elif course.thumbnail %}
+                  <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="w-full h-full object-cover" />
+                {% else %}
+                  <div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-base">
+                    {{ course.title|slice:":1"|upper }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2 mb-1">
+                  <h2 class="text-base font-bold text-slate-900 dark:text-white truncate">
+                    {{ course.title }}
+                  </h2>
+                  <!-- Badges -->
+                  {% if course.is_archived %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      Archived
+                    </span>
+                  {% elif course.is_published %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                      Published
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                      Draft
+                    </span>
+                  {% endif %}
+
+                  {% if course.is_free %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                      Free
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                      रू {{ course.price }}
+                    </span>
+                  {% endif %}
+                </div>
+
+                <div class="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-500 dark:text-slate-400">
+                  <span class="font-mono text-slate-400 dark:text-slate-500">/{{ course.slug }}</span>
+                  <span>&bull;</span>
+                  <span>{{ course.lesson_count }} lesson{{ course.lesson_count|pluralize }}</span>
+                  <span>&bull;</span>
+                  <span>{{ course.assignment_count }} assignment{{ course.assignment_count|pluralize }}</span>
+                  <span>&bull;</span>
+                  <span>{{ course.active_student_count }} active student{{ course.active_student_count|pluralize }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Actions -->
+            <div class="flex items-center flex-wrap gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800">
+              <a
+                href="{% url 'dashboard:teacher_lessons' course.slug %}"
+                class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+              >
+                Lessons ({{ course.lesson_count }})
+              </a>
+              <a
+                href="{% url 'dashboard:teacher_assignments' course.slug %}"
+                class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+              >
+                Assignments ({{ course.assignment_count }})
+              </a>
+              <a
+                href="{% url 'dashboard:teacher_course_edit' course.slug %}"
+                class="px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/40 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition"
+              >
+                Edit
+              </a>
+
+              <!-- Archive / Unarchive Toggle Button -->
+              <button
+                type="button"
+                data-course-slug="{{ course.slug }}"
+                data-course-title="{{ course.title }}"
+                data-course-archived="{% if course.is_archived %}true{% else %}false{% endif %}"
+                data-active-students="{{ course.active_student_count }}"
+                class="archive-toggle-btn px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                {% if course.is_archived %}Restore{% else %}Archive{% endif %}
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+      <nav class="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-6 bg-white dark:bg-slate-900 rounded-2xl shadow-xs" aria-label="Pagination">
+        <div class="hidden sm:block">
+          <p class="text-xs text-slate-700 dark:text-slate-300">
+            Showing page <span class="font-bold">{{ page_obj.number }}</span> of <span class="font-bold">{{ page_obj.paginator.num_pages }}</span>
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          {% if page_obj.has_previous %}
+            <a
+              href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if pricing_filter %}&pricing={{ pricing_filter }}{% endif %}"
+              class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+            >
+              Previous
+            </a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a
+              href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if pricing_filter %}&pricing={{ pricing_filter }}{% endif %}"
+              class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+            >
+              Next
+            </a>
+          {% endif %}
+        </div>
+      </nav>
+    {% endif %}
+
+  {% else %}
+    <!-- Empty State -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center shadow-xs">
+      <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center mb-4">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      </div>
+      <h3 class="text-base font-bold text-slate-900 dark:text-white mb-1">
+        No courses found
+      </h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-6">
+        {% if search_query or status_filter or pricing_filter %}
+          No courses match your current search or filters. Try resetting the filters.
+        {% else %}
+          You haven't created any courses yet. Start building your first course syllabus now!
+        {% endif %}
+      </p>
+      {% if search_query or status_filter or pricing_filter %}
+        <a
+          href="{% url 'dashboard:teacher_courses' %}"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+        >
+          Clear Filters
+        </a>
+      {% else %}
+        <a
+          href="{% url 'dashboard:teacher_course_create' %}"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition"
+        >
+          Create First Course
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<!-- Archive / Restore Confirmation Modal -->
+<div
+  id="archive-modal"
+  class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="archive-modal-title"
+>
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-md w-full p-6 transform transition-all">
+    <h3 id="archive-modal-title" class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+      Archive Course
+    </h3>
+    <p id="archive-modal-desc" class="text-xs text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+      Archiving hides the course from the public catalog, but currently enrolled students will retain access to lessons and submitted work.
+    </p>
+
+    <form id="archive-form" method="post" action="">
+      {% csrf_token %}
+      <div class="flex items-center justify-end gap-3">
+        <button
+          type="button"
+          id="archive-modal-cancel"
+          class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          id="archive-modal-submit"
+          class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 shadow-xs transition"
+        >
+          Confirm Archive
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const modal = document.getElementById('archive-modal');
+  const modalTitle = document.getElementById('archive-modal-title');
+  const modalDesc = document.getElementById('archive-modal-desc');
+  const modalSubmit = document.getElementById('archive-modal-submit');
+  const form = document.getElementById('archive-form');
+  const cancelBtn = document.getElementById('archive-modal-cancel');
+
+  document.querySelectorAll('.archive-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const slug = this.dataset.courseSlug;
+      const title = this.dataset.courseTitle;
+      const isArchived = this.dataset.courseArchived === 'true';
+      const activeStudents = parseInt(this.dataset.activeStudents || '0', 10);
+
+      form.action = '/dashboard/teacher/courses/' + slug + '/archive/';
+
+      if (isArchived) {
+        modalTitle.textContent = 'Restore Course: ' + title;
+        modalDesc.textContent = 'Restoring this course will make it visible in the public catalog and search listings again if published.';
+        modalSubmit.textContent = 'Restore Course';
+        modalSubmit.className = 'px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition';
+      } else {
+        modalTitle.textContent = 'Archive Course: ' + title;
+        modalDesc.textContent = 'Archiving hides the course from public catalog and search. Currently ' + activeStudents + ' active student(s) will keep access to learn and submit work. (Requirement 5: Courses cannot be hard-deleted in the dashboard).';
+        modalSubmit.textContent = 'Confirm Archive';
+        modalSubmit.className = 'px-4 py-2 rounded-xl text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 shadow-xs transition';
+      }
+
+      modal.classList.remove('hidden');
+    });
+  });
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', function () {
+      modal.classList.add('hidden');
+    });
+  }
+
+  // Close on outside click
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) {
+      modal.classList.add('hidden');
+    }
+  });
+});
+</script>
+{% endblock dashboard_content %}

@@ -347,64 +347,56 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // --------------------------------------------------------------------------
-  // 5. Tabs Controller (Lesson Notes & Course Assignments)
+  // 5. Tabs Controller (Lesson Notes, Course Assignments, & Materials)
   // --------------------------------------------------------------------------
   const tabNotesBtn = document.getElementById("tab-notes-btn");
   const tabAssignmentsBtn = document.getElementById("tab-assignments-btn");
+  const tabMaterialsBtn = document.getElementById("tab-materials-btn");
   const panelNotes = document.getElementById("panel-notes");
   const panelAssignments = document.getElementById("panel-assignments");
+  const panelMaterials = document.getElementById("panel-materials");
 
-  function switchTab(target) {
-    if (target === "notes") {
-      if (tabNotesBtn) {
-        tabNotesBtn.setAttribute("aria-selected", "true");
-        tabNotesBtn.classList.remove("border-transparent", "text-gray-500", "dark:text-gray-400");
-        tabNotesBtn.classList.add("border-indigo-600", "text-indigo-600", "dark:text-indigo-400");
+  const tabDefs = [
+    { id: "notes", btn: tabNotesBtn, panel: panelNotes },
+    { id: "assignments", btn: tabAssignmentsBtn, panel: panelAssignments },
+    { id: "materials", btn: tabMaterialsBtn, panel: panelMaterials },
+  ].filter((t) => t.btn && t.panel);
+
+  function switchTab(targetId) {
+    tabDefs.forEach((t) => {
+      const isTarget = t.id === targetId;
+      t.btn.setAttribute("aria-selected", isTarget ? "true" : "false");
+      if (isTarget) {
+        t.btn.classList.remove("border-transparent", "text-gray-500", "dark:text-gray-400");
+        t.btn.classList.add("border-indigo-600", "text-indigo-600", "dark:text-indigo-400");
+        t.panel.classList.remove("hidden");
+      } else {
+        t.btn.classList.remove("border-indigo-600", "text-indigo-600", "dark:text-indigo-400");
+        t.btn.classList.add("border-transparent", "text-gray-500", "dark:text-gray-400");
+        t.panel.classList.add("hidden");
       }
-      if (tabAssignmentsBtn) {
-        tabAssignmentsBtn.setAttribute("aria-selected", "false");
-        tabAssignmentsBtn.classList.remove("border-indigo-600", "text-indigo-600", "dark:text-indigo-400");
-        tabAssignmentsBtn.classList.add("border-transparent", "text-gray-500", "dark:text-gray-400");
-      }
-      if (panelNotes) panelNotes.classList.remove("hidden");
-      if (panelAssignments) panelAssignments.classList.add("hidden");
-    } else {
-      if (tabAssignmentsBtn) {
-        tabAssignmentsBtn.setAttribute("aria-selected", "true");
-        tabAssignmentsBtn.classList.remove("border-transparent", "text-gray-500", "dark:text-gray-400");
-        tabAssignmentsBtn.classList.add("border-indigo-600", "text-indigo-600", "dark:text-indigo-400");
-      }
-      if (tabNotesBtn) {
-        tabNotesBtn.setAttribute("aria-selected", "false");
-        tabNotesBtn.classList.remove("border-indigo-600", "text-indigo-600", "dark:text-indigo-400");
-        tabNotesBtn.classList.add("border-transparent", "text-gray-500", "dark:text-gray-400");
-      }
-      if (panelAssignments) panelAssignments.classList.remove("hidden");
-      if (panelNotes) panelNotes.classList.add("hidden");
-    }
+    });
   }
 
-  if (tabNotesBtn) {
-    tabNotesBtn.addEventListener("click", () => switchTab("notes"));
-  }
-  if (tabAssignmentsBtn) {
-    tabAssignmentsBtn.addEventListener("click", () => switchTab("assignments"));
-  }
+  tabDefs.forEach((t) => {
+    t.btn.addEventListener("click", () => switchTab(t.id));
+  });
 
   // Keyboard navigation between tabs
   const tablist = document.querySelector('[role="tablist"]');
-  if (tablist) {
+  if (tablist && tabDefs.length > 0) {
     tablist.addEventListener("keydown", (e) => {
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
         e.preventDefault();
-        const activeTab = document.querySelector('.tab-btn[aria-selected="true"]');
-        if (activeTab === tabNotesBtn && tabAssignmentsBtn) {
-          tabAssignmentsBtn.focus();
-          switchTab("assignments");
-        } else if (activeTab === tabAssignmentsBtn && tabNotesBtn) {
-          tabNotesBtn.focus();
-          switchTab("notes");
+        const activeIdx = tabDefs.findIndex((t) => t.btn.getAttribute("aria-selected") === "true");
+        let nextIdx = activeIdx;
+        if (e.key === "ArrowRight") {
+          nextIdx = (activeIdx + 1) % tabDefs.length;
+        } else if (e.key === "ArrowLeft") {
+          nextIdx = (activeIdx - 1 + tabDefs.length) % tabDefs.length;
         }
+        tabDefs[nextIdx].btn.focus();
+        switchTab(tabDefs[nextIdx].id);
       }
     });
   }

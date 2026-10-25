@@ -1,0 +1,111 @@
+{% extends "dashboard/teacher_base.html" %}
+
+{% block title %}Audit Download History: {{ item.title }} — {{ site_settings.site_name }}{% endblock title %}
+
+{% block dashboard_content %}
+<div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="mb-6 flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">
+    <a href="{% url 'dashboard:teacher' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      Teacher Portal
+    </a>
+    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
+    <a href="{% url 'dashboard:teacher_permissions' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      Permissions Queue
+    </a>
+    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
+    <span class="font-medium text-slate-900 dark:text-white" aria-current="page">
+      Audit Download History
+    </span>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-200 dark:border-slate-800">
+    <div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display">
+          Download History
+        </h1>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+          {{ logs|length }} Total Downloads
+        </span>
+      </div>
+      <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+        {{ course.title }} &bull; <strong class="text-slate-900 dark:text-white">{{ item.title }}</strong>
+      </p>
+    </div>
+    <div>
+      <a href="{% url 'dashboard:teacher_permissions' %}"
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 transition focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>Back to Queue</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Download Logs Table -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    {% if logs %}
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-left text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-semibold">
+            <tr>
+              <th scope="col" class="py-3.5 pl-6 pr-3">Student</th>
+              <th scope="col" class="py-3.5 px-3">Downloaded At (NPT)</th>
+              <th scope="col" class="py-3.5 pr-6 pl-3">Client IP</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+            {% for log in logs %}
+              <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                <td class="py-4 pl-6 pr-3">
+                  <div class="flex items-center gap-2.5">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs select-none">
+                      {{ log.student.first_name|default:log.student.email|slice:":1"|upper }}
+                    </span>
+                    <div>
+                      <p class="font-semibold text-slate-900 dark:text-white">
+                        {{ log.student.get_full_name|default:log.student.email }}
+                      </p>
+                      <p class="text-xs text-slate-500 dark:text-slate-400">
+                        {{ log.student.email }}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-4 px-3 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                  {{ log.downloaded_at|date:"Y-m-d H:i:s" }}
+                </td>
+                <td class="py-4 pr-6 pl-3 text-xs font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                  {{ log.ip_address|default:"Unknown" }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="p-12 text-center">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 mb-4">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">
+          No download records yet
+        </h3>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+          No students have downloaded this file yet. Each approved download creates an immutable audit record in this log.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock dashboard_content %}
+

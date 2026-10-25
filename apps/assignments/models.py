@@ -46,12 +46,19 @@ class Assignment(TimeStampedModel):
             "If checked, submissions after the deadline will be accepted but flagged as late."
         ),
     )
+    is_published = models.BooleanField(
+        _("is published"),
+        default=True,
+        db_index=True,
+        help_text=_("Draft assignments are hidden from students until published."),
+    )
 
     class Meta:
         verbose_name = _("assignment")
         verbose_name_plural = _("assignments")
         ordering = ["-due_at"]
         indexes = [
+            models.Index(fields=["course", "is_published", "due_at"]),
             models.Index(fields=["course", "due_at"]),
             models.Index(fields=["due_at"]),
         ]

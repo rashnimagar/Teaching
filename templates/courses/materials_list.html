@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Course Materials — {{ course.title }} — {{ site_settings.site_name }}{% endblock title %}
+
+{% block meta %}
+<meta name="robots" content="noindex, nofollow">
+{% endblock meta %}
+
+{% block content %}
+<div class="py-8 sm:py-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+  <!-- Top Navigation Breadcrumbs / Return Link -->
+  <div class="mb-6 flex items-center justify-between">
+    <a
+      href="{% url 'learn:course' course_slug=course.slug %}"
+      class="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      <span>Back to Course Lessons</span>
+    </a>
+  </div>
+
+  <!-- Header -->
+  <div class="mb-8 pb-6 border-b border-gray-200 dark:border-gray-800">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+          {{ course.title }}
+        </h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Course materials, downloadable files, references, and supplementary media.
+        </p>
+      </div>
+      <div class="flex items-center gap-2 self-start sm:self-auto">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+          Enrolled Student
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Materials List -->
+  {% if has_materials %}
+    <div class="space-y-8">
+      {% for material in materials %}
+        <section class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 sm:p-8 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                  Section {{ forloop.counter }}
+                </span>
+                {% if material.lesson %}
+                  <span class="text-xs text-gray-400 dark:text-gray-500">&bull;</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    Lesson: {{ material.lesson.title }}
+                  </span>
+                {% endif %}
+              </div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+                {{ material.title }}
+              </h2>
+              {% if material.description %}
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  {{ material.description|linebreaksbr }}
+                </p>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Items Inside Material Post -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for item in material.items.all %}
+              <div class="p-5 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-3">
+                    <!-- Item Type Badge -->
+                    {% if item.item_type == "file" %}
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>{{ item.file_extension|upper|default:"FILE" }}</span>
+                      </span>
+                    {% elif item.item_type == "link" %}
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        <span>External Link</span>
+                      </span>
+                    {% elif item.item_type == "video" %}
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <span>Video ({{ item.get_video_provider_display }})</span>
+                      </span>
+                    {% endif %}
+
+                    <!-- Download Policy / Access Status Badge -->
+                    {% if item.item_type == "file" %}
+                      {% if item.download_policy == "open_to_enrolled" %}
+                        <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Open to Enrolled</span>
+                      {% elif item.download_policy == "view_only" %}
+                        <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">View Only</span>
+                      {% elif item.download_policy == "request_required" %}
+                        {% if item.state == "pending" %}
+                          <span class="text-xs font-bold text-amber-600 dark:text-amber-400">Request Pending</span>
+                        {% elif item.state == "approved" %}
+                          <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Approved</span>
+                        {% elif item.state == "denied_cooldown" %}
+                          <span class="text-xs font-bold text-rose-600 dark:text-rose-400">Denied</span>
+                        {% elif item.state == "expired" %}
+                          <span class="text-xs font-semibold text-gray-500">Expired</span>
+                        {% elif item.state == "revoked" %}
+                          <span class="text-xs font-semibold text-gray-500">Revoked</span>
+                        {% else %}
+                          <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Permission Required</span>
+                        {% endif %}
+                      {% endif %}
+                    {% endif %}
+                  </div>
+
+                  <h3 class="text-base font-bold text-gray-900 dark:text-white mb-1">
+                    {{ item.title }}
+                  </h3>
+
+                  {% if item.item_type == "file" and item.file_size_bytes %}
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                      Size: {{ item.file_size_bytes|filesizeformat }}
+                    </p>
+                  {% endif %}
+
+                  <!-- Feedback & Note from Instructor (if denied) -->
+                  {% if item.state == "denied_cooldown" and item.teacher_note %}
+                    <div class="mb-3 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 text-xs text-rose-800 dark:text-rose-300">
+                      <strong>Instructor Note:</strong> {{ item.teacher_note }}
+                    </div>
+                  {% endif %}
+
+                  <!-- Video Embed Preview (Rendered safely without leaking URL/ID if unauthorized) -->
+                  {% if item.item_type == "video" and item.embed_url %}
+                    <div class="my-3 aspect-video rounded-lg overflow-hidden bg-black shadow-inner">
+                      <iframe
+                        src="{{ item.embed_url }}"
+                        title="{{ item.title }}"
+                        class="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                        loading="lazy"
+                        sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox"
+                      ></iframe>
+                    </div>
+                  {% endif %}
+                </div>
+
+                <!-- Action Controls Bar -->
+                <div class="mt-4 pt-3 border-t border-gray-200/60 dark:border-gray-700/60 flex flex-wrap items-center gap-2">
+                  {% if item.item_type == "link" and item.external_url %}
+                    <a
+                      href="{{ item.external_url }}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    >
+                      <span>Open Link</span>
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+
+                  {% elif item.item_type == "file" %}
+                    <!-- Download Button -->
+                    {% if item.can_download %}
+                      <a
+                        href="{% url 'learn:material_download' course_slug=course.slug item_id=item.id %}"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 min-h-[36px]"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        <span>Download</span>
+                      </a>
+                    {% endif %}
+
+                    <!-- Preview Button (view-only or staff, strictly PDF and images) -->
+                    {% if item.can_preview %}
+                      <a
+                        href="{% url 'learn:material_preview' course_slug=course.slug item_id=item.id %}"
+                        target="_blank"
+                        rel="noopener"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 min-h-[36px]"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        <span>Preview Inline</span>
+                      </a>
+                    {% endif %}
+
+                    <!-- Request Download POST Form -->
+                    {% if item.can_request %}
+                      <form method="post" action="{% url 'learn:material_request' course_slug=course.slug item_id=item.id %}">
+                        {% csrf_token %}
+                        <button
+                          type="submit"
+                          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 min-h-[36px]"
+                        >
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                          <span>{% if item.state == "expired" or item.state == "revoked" %}Request Access Again{% else %}Request Download{% endif %}</span>
+                        </button>
+                      </form>
+                    {% endif %}
+
+                    <!-- Pending Request State with Cancel Button -->
+                    {% if item.is_pending %}
+                      <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                          <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                          <span>Pending Approval</span>
+                        </span>
+                        <form method="post" action="{% url 'learn:material_cancel' course_slug=course.slug item_id=item.id %}">
+                          {% csrf_token %}
+                          <button
+                            type="submit"
+                            class="text-xs font-medium px-2.5 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                            title="Cancel pending request"
+                          >
+                            Cancel
+                          </button>
+                        </form>
+                      </div>
+                    {% endif %}
+
+                    <!-- Cooldown Warning -->
+                    {% if item.is_cooldown %}
+                      <p class="text-xs text-rose-600 dark:text-rose-400 font-medium">
+                        Request cooldown active until {{ item.cooldown_until|date:"g:i A, M j" }} NPT.
+                      </p>
+                    {% endif %}
+
+                    <!-- View Only Notice -->
+                    {% if item.download_policy == "view_only" %}
+                      <span class="text-xs text-gray-400 dark:text-gray-500 italic">
+                        Downloads are disabled for this item.
+                      </span>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </div>
+            {% empty %}
+              <div class="col-span-2 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                No items posted in this material section yet.
+              </div>
+            {% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+  {% else %}
+    <!-- Empty State -->
+    <div class="p-12 text-center bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+      </div>
+      <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+        No course materials published yet
+      </h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+        Your instructor has not published any supplemental files or links for this course yet.
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock content %}

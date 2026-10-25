@@ -154,6 +154,18 @@ All student assignment submissions uploaded to the platform are validated throug
 
 ---
 
+## Course Materials & Download Security
+
+The platform supports course materials with three configurable download policies:
+- `request_required`: Students must request access. Teachers review, approve (with optional expiry), or deny requests in the Permissions queue. No inline browser viewing is offered.
+- `open_to_enrolled`: Any actively enrolled student can download the file directly.
+- `view_only`: Restricted exclusively to PDF documents and image files. Files can be viewed inline in the browser, but direct download endpoints strictly reject requests with HTTP 403.
+
+> [!NOTE]
+> **Deterrent Notice:** `view_only` is an architectural deterrent against casual sharing and bulk saving, not cryptographically unbreakable protection. A determined user with local browser developer tools can inspect DOM network buffers.
+
+---
+
 ## Common Developer Commands (PowerShell)
 
 ### Migrations

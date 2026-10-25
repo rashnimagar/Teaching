@@ -3,7 +3,16 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-from apps.courses.models import Course, Enrollment, Lesson, LessonProgress
+from apps.courses.models import (
+    Course,
+    CourseMaterial,
+    DownloadLog,
+    DownloadRequest,
+    Enrollment,
+    Lesson,
+    LessonProgress,
+    MaterialItem,
+)
 from apps.courses.services.video import build_safe_video_embed_url, extract_video_info
 
 
@@ -176,3 +185,146 @@ class LessonProgressAdmin(admin.ModelAdmin):
     list_select_related = ["student", "lesson", "lesson__course"]
     autocomplete_fields = ["student", "lesson"]
     readonly_fields = ["created_at", "updated_at"]
+
+
+class MaterialItemInline(admin.StackedInline):
+    model = MaterialItem
+    extra = 1
+    fields = [
+        "order",
+        "title",
+        "item_type",
+        "download_policy",
+        "file",
+        "original_filename",
+        "external_url",
+        "video_provider",
+        "video_id",
+        "video_hash",
+    ]
+
+
+@admin.register(CourseMaterial)
+class CourseMaterialAdmin(admin.ModelAdmin):
+    list_display = ["title", "course", "lesson", "order", "is_published", "is_archived", "created_at"]
+    list_filter = ["is_published", "is_archived", "course"]
+    search_fields = ["title", "description", "course__title"]
+    list_select_related = ["course", "lesson"]
+    autocomplete_fields = ["course", "lesson"]
+    inlines = [MaterialItemInline]
+    readonly_fields = ["created_at", "updated_at"]
+
+
+@admin.register(MaterialItem)
+class MaterialItemAdmin(admin.ModelAdmin):
+    list_display = ["title", "material", "item_type", "download_policy", "order", "created_at"]
+    list_filter = ["item_type", "download_policy", "material__course"]
+    search_fields = ["title", "material__title", "material__course__title"]
+    list_select_related = ["material", "material__course"]
+    readonly_fields = ["created_at", "updated_at"]
+
+
+@admin.register(DownloadRequest)
+class DownloadRequestAdmin(admin.ModelAdmin):
+    list_display = [
+        "student",
+        "material_item",
+        "status",
+        "requested_at",
+        "decided_at",
+        "decided_by",
+        "expires_at",
+    ]
+    list_filter = ["status", "requested_at", "material_item__material__course"]
+    search_fields = ["student__email", "material_item__title", "teacher_note"]
+    list_select_related = ["student", "material_item", "material_item__material", "decided_by"]
+    readonly_fields = [
+        "student",
+        "material_item",
+        "status",
+        "requested_at",
+        "decided_at",
+        "decided_by",
+        "created_at",
+        "updated_at",
+    ]
+    actions = ["admin_approve_requests", "admin_deny_requests", "admin_revoke_requests"]
+
+    @admin.action(description=_("Approve selected download requests"))
+    def admin_approve_requests(self, request, queryset):
+        from apps.courses.services.download_requests import transition_download_request
+
+        success_count = 0
+        skip_count = 0
+        for req in queryset:
+            _, ok, _ = transition_download_request(
+                request_obj=req,
+                new_status=DownloadRequest.Status.APPROVED,
+                decided_by=request.user,
+            )
+            if ok:
+                success_count += 1
+            else:
+                skip_count += 1
+        self.message_user(
+            request,
+            f"Approved {success_count} request(s). {skip_count} skipped.",
+        )
+
+    @admin.action(description=_("Deny selected download requests"))
+    def admin_deny_requests(self, request, queryset):
+        from apps.courses.services.download_requests import transition_download_request
+
+        success_count = 0
+        skip_count = 0
+        for req in queryset:
+            _, ok, _ = transition_download_request(
+                request_obj=req,
+                new_status=DownloadRequest.Status.DENIED,
+                decided_by=request.user,
+                teacher_note="Denied via administrative action.",
+            )
+            if ok:
+                success_count += 1
+            else:
+                skip_count += 1
+        self.message_user(
+            request,
+            f"Denied {success_count} request(s). {skip_count} skipped.",
+        )
+
+    @admin.action(description=_("Revoke selected download requests"))
+    def admin_revoke_requests(self, request, queryset):
+        from apps.courses.services.download_requests import transition_download_request
+
+        success_count = 0
+        skip_count = 0
+        for req in queryset:
+            _, ok, _ = transition_download_request(
+                request_obj=req,
+                new_status=DownloadRequest.Status.REVOKED,
+                decided_by=request.user,
+            )
+            if ok:
+                success_count += 1
+            else:
+                skip_count += 1
+        self.message_user(
+            request,
+            f"Revoked {success_count} request(s). {skip_count} skipped.",
+        )
+
+
+@admin.register(DownloadLog)
+class DownloadLogAdmin(admin.ModelAdmin):
+    list_display = ["student", "material_item", "downloaded_at", "ip_address"]
+    list_filter = ["downloaded_at", "material_item__material__course"]
+    search_fields = ["student__email", "material_item__title", "ip_address"]
+    list_select_related = ["student", "material_item"]
+    readonly_fields = ["student", "material_item", "downloaded_at", "ip_address"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
