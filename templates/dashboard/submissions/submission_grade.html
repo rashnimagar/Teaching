@@ -1,0 +1,333 @@
+{% extends "dashboard/teacher_base.html" %}
+{% load i18n %}
+
+{% block teacher_title %}{% trans "Grade Submission" %} - {{ submission.student.get_full_name|default:submission.student.email }}{% endblock %}
+
+{% block dashboard_content %}
+<div class="space-y-6 max-w-6xl mx-auto">
+  <!-- Top Navigation & Breadcrumbs -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
+        <a href="{% url 'dashboard:teacher_course_assignments' slug=course.slug %}" class="hover:underline">
+          {{ course.title }}
+        </a>
+        <span>/</span>
+        <a href="{% url 'dashboard:teacher_course_assignment_submissions' slug=course.slug assignment_id=assignment.id %}" class="hover:underline">
+          {{ assignment.title }}
+        </a>
+        <span>/</span>
+        <span>{% trans "Grade Submission" %}</span>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+        {{ submission.student.get_full_name|default:submission.student.email }}
+      </h1>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+        {{ submission.student.email }} &bull; {% trans "Submitted:" %} <span class="font-semibold text-slate-700 dark:text-slate-300">{{ submitted_at_npt|date:"M j, Y, H:i" }} NPT</span>
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      {% if next_ungraded %}
+        <a
+          href="{% url 'dashboard:teacher_submission_grade' submission_id=next_ungraded.id %}"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+        >
+          <span>{% trans "Skip to Next Ungraded" %}</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+      {% endif %}
+      <a
+        href="{% url 'dashboard:teacher_course_assignment_submissions' slug=course.slug assignment_id=assignment.id %}"
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>{% trans "Back" %}</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Status & Submission Meta Banner -->
+  <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      {% if submission.is_late %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+          {% trans "Submitted Late" %}
+        </span>
+      {% else %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+          {% trans "Turned in On Time" %}
+        </span>
+      {% endif %}
+
+      {% if submission.is_unlocked %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+          {% trans "Unlocked for Student Resubmission" %}
+        </span>
+      {% endif %}
+
+      <span class="text-xs text-slate-500">
+        {% trans "Deadline was:" %} {{ assignment.due_at|date:"M j, Y, H:i" }}
+      </span>
+    </div>
+
+    <!-- Unlock Action Button (Confirmation Modal) -->
+    <div>
+      <button
+        type="button"
+        onclick="openUnlockModal()"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 transition"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+        </svg>
+        <span>{% trans "Unlock for Resubmission" %}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Two-Column Grading Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <!-- Left Column: Student Work (7 cols) -->
+    <div class="lg:col-span-7 space-y-6">
+      <!-- Text Submission Content -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+          {% trans "Submitted Response" %}
+        </h2>
+        {% if submission.text_content %}
+          <div class="prose dark:prose-invert max-w-none text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+            {{ submission.text_content }}
+          </div>
+        {% else %}
+          <p class="text-sm italic text-slate-400">
+            {% trans "No text response provided." %}
+          </p>
+        {% endif %}
+      </div>
+
+      <!-- Attached File Download (Requirement 3: Reuses existing permission-checked download) -->
+      {% if submission.file %}
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+            {% trans "Attached Submission File" %}
+          </h2>
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="p-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                  {{ submission.original_filename|default:submission.file.name }}
+                </p>
+                <p class="text-xs text-slate-400">
+                  {% trans "Private storage file" %}
+                </p>
+              </div>
+            </div>
+            <a
+              href="{{ download_url }}"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-black dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-bold shadow-xs transition shrink-0"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>{% trans "Download File" %}</span>
+            </a>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Audit History / Events (Requirement 6) -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+          {% trans "Submission Audit Trail" %}
+        </h2>
+        {% if events %}
+          <div class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+            {% for evt in events %}
+              <div class="py-2.5 flex items-start justify-between gap-3">
+                <div>
+                  <span class="font-bold text-slate-900 dark:text-white uppercase">{{ evt.action }}</span>
+                  {% if evt.note %}
+                    <p class="text-slate-600 dark:text-slate-300 mt-0.5">{{ evt.note }}</p>
+                  {% endif %}
+                  {% if evt.metadata %}
+                    <p class="text-[11px] text-slate-400 font-mono mt-0.5">{{ evt.metadata }}</p>
+                  {% endif %}
+                </div>
+                <div class="text-right text-[11px] text-slate-400 shrink-0">
+                  <p class="font-medium text-slate-600 dark:text-slate-300">{{ evt.actor.get_full_name|default:evt.actor.email|default:"System" }}</p>
+                  <p>{{ evt.created_at|date:"M j, H:i" }}</p>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-xs italic text-slate-400">
+            {% trans "No audit events recorded yet." %}
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right Column: Grading Form (5 cols) -->
+    <div class="lg:col-span-5 space-y-6">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs sticky top-6">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center justify-between">
+          <span>{% trans "Grading & Feedback" %}</span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+            {% trans "Max:" %} {{ assignment.max_score }}
+          </span>
+        </h2>
+
+        {% if submission.grade is not None %}
+          <div class="mb-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
+            <p>
+              {% trans "Currently graded:" %} <span class="font-bold text-slate-900 dark:text-white">{{ submission.grade }} / {{ assignment.max_score }}</span>
+            </p>
+            {% if graded_at_npt %}
+              <p class="mt-0.5">
+                {% trans "Graded by" %} <span class="font-semibold">{{ submission.graded_by.get_full_name|default:submission.graded_by.email }}</span>
+                {% trans "on" %} {{ graded_at_npt|date:"M j, Y, H:i" }} NPT
+              </p>
+            {% endif %}
+            <p class="text-[11px] text-slate-500 mt-1 italic">
+              {% trans "Regrade note: Timestamp and grader update only when the numerical grade changes. Notifications are sent only on grade change." %}
+            </p>
+          </div>
+        {% endif %}
+
+        <form method="post" class="space-y-4">
+          {% csrf_token %}
+
+          <!-- Numeric Grade Input -->
+          <div>
+            <label for="id_grade" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+              {% trans "Numerical Grade" %} (0 - {{ assignment.max_score }}) *
+            </label>
+            <input
+              type="number"
+              name="grade"
+              id="id_grade"
+              step="0.01"
+              min="0"
+              max="{{ assignment.max_score }}"
+              value="{{ submission.grade|default:'' }}"
+              required
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              placeholder="e.g. 85.5"
+            >
+          </div>
+
+          <!-- Feedback Input -->
+          <div>
+            <label for="id_feedback" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+              {% trans "Instructor Feedback" %}
+            </label>
+            <textarea
+              name="feedback"
+              id="id_feedback"
+              rows="6"
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition placeholder-slate-400"
+              placeholder="{% trans 'Provide detailed constructive feedback for the student...' %}"
+            >{{ submission.feedback }}</textarea>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="space-y-2 pt-2">
+            <!-- Save & Next Ungraded (Requirement 6) -->
+            <button
+              type="submit"
+              name="save_and_next"
+              value="1"
+              class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs hover:shadow-sm transition flex items-center justify-center gap-2"
+            >
+              <span>{% trans "Save & Next Ungraded" %}</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </button>
+
+            <!-- Save Only -->
+            <button
+              type="submit"
+              class="w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition text-center"
+            >
+              {% trans "Save Grade" %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Unlock Modal (Requirement 6) -->
+<div id="unlock-modal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-xs p-4 flex items-center justify-center">
+  <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-xl transition-all">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+      <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+        {% trans "Unlock Submission" %}
+      </h3>
+      <button type="button" onclick="closeUnlockModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <form method="post" action="{% url 'dashboard:teacher_submission_unlock' submission_id=submission.id %}" class="space-y-4 mt-4">
+      {% csrf_token %}
+      <p class="text-sm text-slate-600 dark:text-slate-400">
+        {% trans "Unlocking this submission allows the student to re-open the submission portal and upload revised work. An audit entry will be recorded." %}
+      </p>
+
+      <div>
+        <label for="unlock-note" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+          {% trans "Reason / Note" %}
+        </label>
+        <textarea
+          name="note"
+          id="unlock-note"
+          rows="3"
+          placeholder="{% trans 'e.g. Allowed revision following draft review.' %}"
+          class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+        ></textarea>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <button
+          type="button"
+          onclick="closeUnlockModal()"
+          class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+        >
+          {% trans "Cancel" %}
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition"
+        >
+          {% trans "Confirm Unlock" %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openUnlockModal() {
+    document.getElementById('unlock-modal').classList.remove('hidden');
+  }
+  function closeUnlockModal() {
+    document.getElementById('unlock-modal').classList.add('hidden');
+  }
+</script>
+{% endblock %}

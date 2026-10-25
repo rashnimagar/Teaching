@@ -9,6 +9,7 @@ from apps.courses.models import (
     DownloadLog,
     DownloadRequest,
     Enrollment,
+    EnrollmentEvent,
     Lesson,
     LessonProgress,
     MaterialItem,
@@ -175,6 +176,30 @@ class EnrollmentAdmin(admin.ModelAdmin):
     list_select_related = ["student", "course"]
     autocomplete_fields = ["student", "course"]
     readonly_fields = ["created_at", "updated_at"]
+
+    def save_model(self, request, obj, form, change):
+        if change and "status" in form.changed_data:
+            from apps.courses.services.enrollments import transition_enrollment_status
+
+            enr, ok, msg = transition_enrollment_status(
+                enrollment_id=obj.id,
+                new_status=form.cleaned_data["status"],
+                actor=request.user,
+                note="Status updated via Django admin",
+            )
+            if not ok:
+                raise forms.ValidationError(msg)
+            obj.refresh_from_db()
+            return
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(EnrollmentEvent)
+class EnrollmentEventAdmin(admin.ModelAdmin):
+    list_display = ["enrollment", "actor", "from_status", "to_status", "created_at"]
+    list_filter = ["from_status", "to_status", "created_at"]
+    search_fields = ["enrollment__student__email", "enrollment__course__title", "actor__email", "note"]
+    readonly_fields = ["enrollment", "actor", "from_status", "to_status", "note", "created_at", "updated_at"]
 
 
 @admin.register(LessonProgress)

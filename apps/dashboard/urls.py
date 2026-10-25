@@ -4,8 +4,12 @@ from apps.dashboard import (
     views,
     views_assignments,
     views_courses,
+    views_enrollments,
     views_lessons,
     views_permissions,
+    views_reports,
+    views_students,
+    views_submissions,
 )
 
 app_name = "dashboard"
@@ -48,4 +52,22 @@ urlpatterns = [
     path("teacher/courses/<slug:slug>/assignments/<int:assignment_id>/toggle-publish/", views_assignments.teacher_assignment_toggle_publish_view, name="teacher_course_assignment_toggle_publish"),
     path("teacher/courses/<slug:slug>/assignments/<int:assignment_id>/delete/", views_assignments.teacher_assignment_delete_view, name="teacher_assignment_delete"),
     path("teacher/courses/<slug:slug>/assignments/<int:assignment_id>/delete/", views_assignments.teacher_assignment_delete_view, name="teacher_course_assignment_delete"),
+    # Enrollments (Phase 7B)
+    path("teacher/enrollments/", views_enrollments.teacher_enrollments_list_view, name="teacher_enrollments"),
+    path("teacher/enrollments/action/<int:enrollment_id>/", views_enrollments.teacher_enrollment_action_view, name="teacher_enrollment_action"),
+    path("teacher/enrollments/bulk/", views_enrollments.teacher_enrollments_bulk_action_view, name="teacher_enrollments_bulk_action"),
+    path("teacher/enrollments/manual/", views_enrollments.teacher_enrollment_manual_view, name="teacher_enrollment_manual"),
+    # Submissions & Grading (Phase 7B)
+    path("teacher/submissions/", views_submissions.teacher_submissions_list_view, name="teacher_submissions"),
+    path("teacher/courses/<slug:slug>/assignments/<int:assignment_id>/submissions/", views_submissions.teacher_course_assignment_submissions_view, name="teacher_course_assignment_submissions"),
+    path("teacher/courses/<slug:slug>/assignments/<int:assignment_id>/missed/", views_submissions.teacher_missed_deadlines_view, name="teacher_missed_deadlines"),
+    path("teacher/submissions/<int:submission_id>/grade/", views_submissions.teacher_submission_grade_view, name="teacher_submission_grade"),
+    path("teacher/submissions/<int:submission_id>/unlock/", views_submissions.teacher_submission_unlock_view, name="teacher_submission_unlock"),
+    # Students Directory (Phase 7B)
+    path("teacher/students/", views_students.teacher_students_list_view, name="teacher_students"),
+    path("teacher/students/<int:student_id>/", views_students.teacher_student_detail_view, name="teacher_student_detail"),
+    path("teacher/students/<int:student_id>/toggle-active/", views_students.teacher_student_toggle_active_view, name="teacher_student_toggle_active"),
+    # Exports & Reports (Phase 7B)
+    path("teacher/courses/<slug:slug>/exports/grades/", views_reports.teacher_course_grades_export_view, name="teacher_course_grades_export"),
+    path("teacher/courses/<slug:slug>/exports/progress/", views_reports.teacher_course_progress_export_view, name="teacher_course_progress_export"),
 ]

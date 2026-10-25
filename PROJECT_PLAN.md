@@ -92,9 +92,9 @@ A Django-based learning platform where a teacher uploads course videos, students
 ## Phase 7 — Teacher dashboard (custom)
 - [x] Overview stats: students, submissions, upcoming deadlines (7A)
 - [x] Course, lesson, and assignment management with draft protections, slug fallback, reordering, and safeguards (7A)
-- [ ] Enrollment management (approve, remove, add manually) (7B)
-- [ ] Submissions: filter, review, grade, see who missed the deadline (7B)
-- [ ] Student list with progress and CSV export (7B)
+- [x] Enrollment management (approve, remove, add manually) (7B)
+- [x] Submissions: filter, review, grade, see who missed the deadline (7B)
+- [x] Student list with progress and CSV export (7B)
 
 ## Phase 8 — Security and rate limiting
 - [ ] Rate limits on login, submissions, uploads, and any API endpoints (django-ratelimit or DRF throttling)

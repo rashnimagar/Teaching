@@ -42,6 +42,9 @@ class Notification(TimeStampedModel):
         DOWNLOAD_APPROVED = "download_approved", _("Download Approved")
         DOWNLOAD_DENIED = "download_denied", _("Download Denied")
         DOWNLOAD_REVOKED = "download_revoked", _("Download Revoked")
+        ENROLLMENT_APPROVED = "enrollment_approved", _("Enrollment Approved")
+        ENROLLMENT_REVOKED = "enrollment_revoked", _("Enrollment Revoked")
+        SUBMISSION_GRADED = "submission_graded", _("Submission Graded")
 
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,

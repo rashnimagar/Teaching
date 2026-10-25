@@ -1,0 +1,364 @@
+{% extends "dashboard/teacher_base.html" %}
+{% load i18n %}
+
+{% block teacher_title %}{{ student.get_full_name|default:student.email }} - {% trans "Student Profile" %}{% endblock %}
+
+{% block dashboard_content %}
+<div class="space-y-6 max-w-6xl mx-auto">
+  <!-- Top Navigation & Breadcrumbs -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
+        <a href="{% url 'dashboard:teacher_students' %}" class="hover:underline">
+          {% trans "Student Directory" %}
+        </a>
+        <span>/</span>
+        <span>{{ student.email }}</span>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+        {{ student.get_full_name|default:student.email }}
+      </h1>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+        {% trans "Member since" %} {{ student.date_joined|date:"M j, Y" }} &bull;
+        {% if student.last_login %}
+          {% trans "Last login:" %} {{ student.last_login|date:"M j, Y, H:i" }}
+        {% else %}
+          {% trans "Never logged in" %}
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- Actions (Deactivate/Reactivate with guards) -->
+    <div class="flex items-center gap-3">
+      {% if can_toggle_active %}
+        <button
+          type="button"
+          onclick="openToggleActiveModal()"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-xs {% if student.is_active %}border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 hover:bg-rose-100{% else %}bg-emerald-600 hover:bg-emerald-700 text-white{% endif %}"
+        >
+          {% if student.is_active %}
+            <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            <span>{% trans "Deactivate Account" %}</span>
+          {% else %}
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{% trans "Reactivate Account" %}</span>
+          {% endif %}
+        </button>
+      {% endif %}
+
+      <a
+        href="{% url 'dashboard:teacher_students' %}"
+        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>{% trans "Back" %}</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Student Overview Card -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold text-xl">
+          {{ student.first_name|default:student.email|slice:":1"|upper }}
+        </span>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white">
+              {{ student.get_full_name|default:student.email }}
+            </h2>
+            {% if student.is_active %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                {% trans "Active" %}
+              </span>
+            {% else %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                {% trans "Deactivated" %}
+              </span>
+            {% endif %}
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">{{ student.email }}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-6 text-xs text-slate-500">
+        <div>
+          <span class="block font-semibold text-slate-400">{% trans "Account Role" %}</span>
+          <span class="font-bold text-slate-900 dark:text-white uppercase">{{ student.role }}</span>
+        </div>
+        <div>
+          <span class="block font-semibold text-slate-400">{% trans "Total Courses" %}</span>
+          <span class="font-bold text-slate-900 dark:text-white">{{ course_data|length }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enrolled Courses & Syllabus Progress -->
+  <div class="space-y-4">
+    <h3 class="text-base font-bold text-slate-900 dark:text-white">
+      {% trans "Course Enrollments & Progress" %}
+    </h3>
+
+    {% if course_data %}
+      <div class="grid grid-cols-1 gap-4">
+        {% for cd in course_data %}
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <a href="{% url 'courses:detail' slug=cd.course.slug %}" target="_blank" class="text-base font-bold text-slate-900 dark:text-white hover:text-indigo-600 transition">
+                  {{ cd.course.title }}
+                </a>
+                <p class="text-xs text-slate-400 mt-0.5">
+                  {% trans "Enrolled:" %} {{ cd.enrollment.created_at|date:"M j, Y" }} &bull;
+                  <span class="uppercase font-semibold">{{ cd.enrollment.get_source_display }}</span>
+                </p>
+              </div>
+              <div class="flex items-center gap-2">
+                {% if cd.enrollment.status == 'pending' %}
+                  <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                    {% trans "Pending Approval" %}
+                  </span>
+                {% elif cd.enrollment.status == 'active' %}
+                  <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    {% trans "Active Enrollment" %}
+                  </span>
+                {% elif cd.enrollment.status == 'revoked' %}
+                  <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                    {% trans "Access Revoked" %}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Published Lessons Progress Bar -->
+            <div>
+              <div class="flex items-center justify-between text-xs font-semibold mb-1">
+                <span class="text-slate-600 dark:text-slate-400">
+                  {% trans "Syllabus Progress (Published Lessons)" %}
+                </span>
+                <span class="text-slate-900 dark:text-white font-bold">
+                  {{ cd.completed_lessons }} / {{ cd.total_lessons }} ({{ cd.progress_pct }}%)
+                </span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                <div class="h-full bg-indigo-600 rounded-full transition-all duration-300" style="width: {{ cd.progress_pct }}%"></div>
+              </div>
+            </div>
+
+            <!-- Course Submissions -->
+            {% if cd.submissions %}
+              <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  {% trans "Assignment Submissions" %}
+                </p>
+                <div class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                  {% for sub in cd.submissions %}
+                    <div class="py-2 flex items-center justify-between gap-3">
+                      <div>
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">{{ sub.assignment.title }}</span>
+                        {% if sub.is_late %}
+                          <span class="ml-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950 px-1.5 py-0.5 rounded">{% trans "Late" %}</span>
+                        {% endif %}
+                        <p class="text-[11px] text-slate-400">{{ sub.submitted_at|date:"M j, Y, H:i" }}</p>
+                      </div>
+                      <div class="flex items-center gap-3">
+                        {% if sub.grade is not None %}
+                          <span class="font-bold text-slate-900 dark:text-white">{{ sub.grade }} / {{ sub.assignment.max_score }}</span>
+                        {% else %}
+                          <span class="text-rose-500 font-bold">{% trans "Ungraded" %}</span>
+                        {% endif %}
+                        <a
+                          href="{% url 'dashboard:teacher_submission_grade' submission_id=sub.id %}"
+                          class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                        >
+                          {% trans "Review" %}
+                        </a>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-sm text-slate-400">
+        {% trans "Student is not enrolled in any courses yet." %}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Download Requests History -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
+    <h3 class="text-base font-bold text-slate-900 dark:text-white">
+      {% trans "Offline Material Download Requests" %}
+    </h3>
+
+    {% if download_requests %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
+              <th class="py-2.5 px-3">{% trans "Material" %}</th>
+              <th class="py-2.5 px-3">{% trans "Course" %}</th>
+              <th class="py-2.5 px-3">{% trans "Status" %}</th>
+              <th class="py-2.5 px-3">{% trans "Requested At" %}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-600 dark:text-slate-300">
+            {% for req in download_requests %}
+              <tr>
+                <td class="py-2.5 px-3 font-semibold text-slate-900 dark:text-white">
+                  {{ req.material_item.title }}
+                </td>
+                <td class="py-2.5 px-3">
+                  {{ req.material_item.material.course.title }}
+                </td>
+                <td class="py-2.5 px-3">
+                  {% if req.status == 'approved' %}
+                    <span class="font-bold text-emerald-600">{% trans "Approved" %}</span>
+                  {% elif req.status == 'pending' %}
+                    <span class="font-bold text-amber-600">{% trans "Pending" %}</span>
+                  {% elif req.status == 'rejected' %}
+                    <span class="font-bold text-rose-600">{% trans "Rejected" %}</span>
+                  {% else %}
+                    <span class="text-slate-400">{{ req.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="py-2.5 px-3 text-slate-400">
+                  {{ req.created_at|date:"M j, Y, H:i" }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-xs italic text-slate-400">
+        {% trans "No material download requests submitted by this student." %}
+      </p>
+    {% endif %}
+  </div>
+
+  <!-- EnrollmentEvent Audit Table (Requirement 8) -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-bold text-slate-900 dark:text-white">
+        {% trans "Enrollment Audit Trail" %}
+      </h3>
+      <span class="text-xs text-slate-400">{% trans "Recorded transitions" %}</span>
+    </div>
+
+    {% if enrollment_events %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
+              <th class="py-2.5 px-3">{% trans "Timestamp" %}</th>
+              <th class="py-2.5 px-3">{% trans "Course" %}</th>
+              <th class="py-2.5 px-3">{% trans "Transition" %}</th>
+              <th class="py-2.5 px-3">{% trans "Actor" %}</th>
+              <th class="py-2.5 px-3">{% trans "Note" %}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-600 dark:text-slate-300">
+            {% for evt in enrollment_events %}
+              <tr>
+                <td class="py-2.5 px-3 text-slate-400 whitespace-nowrap">
+                  {{ evt.created_at|date:"M j, Y, H:i" }}
+                </td>
+                <td class="py-2.5 px-3 font-semibold text-slate-900 dark:text-white">
+                  {{ evt.enrollment.course.title|truncatechars:24 }}
+                </td>
+                <td class="py-2.5 px-3 font-mono text-[11px]">
+                  <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">{{ evt.from_status }}</span>
+                  &rarr;
+                  <span class="px-1.5 py-0.5 rounded font-bold {% if evt.to_status == 'active' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300{% elif evt.to_status == 'revoked' %}bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">
+                    {{ evt.to_status }}
+                  </span>
+                </td>
+                <td class="py-2.5 px-3">
+                  {{ evt.actor.get_full_name|default:evt.actor.email|default:"System" }}
+                </td>
+                <td class="py-2.5 px-3 text-slate-500 italic">
+                  {{ evt.note|default:"—" }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-xs italic text-slate-400">
+        {% trans "No enrollment audit events recorded yet." %}
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Deactivate / Reactivate Confirmation Modal (Requirement 7) -->
+{% if can_toggle_active %}
+  <div id="toggle-active-modal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/60 backdrop-blur-xs p-4 flex items-center justify-center">
+    <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-xl transition-all">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+          {% if student.is_active %}{% trans "Deactivate Student Account" %}{% else %}{% trans "Reactivate Student Account" %}{% endif %}
+        </h3>
+        <button type="button" onclick="closeToggleActiveModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form method="post" action="{% url 'dashboard:teacher_student_toggle_active' student_id=student.id %}" class="space-y-4 mt-4">
+        {% csrf_token %}
+        <p class="text-sm text-slate-600 dark:text-slate-400">
+          {% if student.is_active %}
+            {% blocktrans with email=student.email %}
+              Are you sure you want to deactivate <strong>{{ email }}</strong>? The student will be immediately prevented from logging into the platform until reactivated. Existing enrollments and submission records will not be deleted.
+            {% endblocktrans %}
+          {% else %}
+            {% blocktrans with email=student.email %}
+              Are you sure you want to reactivate <strong>{{ email }}</strong>? The student will regain the ability to log into their account.
+            {% endblocktrans %}
+          {% endif %}
+        </p>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <button
+            type="button"
+            onclick="closeToggleActiveModal()"
+            class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            {% trans "Cancel" %}
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 rounded-xl text-xs font-bold shadow-xs transition {% if student.is_active %}bg-rose-600 hover:bg-rose-700 text-white{% else %}bg-emerald-600 hover:bg-emerald-700 text-white{% endif %}"
+          >
+            {% if student.is_active %}{% trans "Yes, Deactivate" %}{% else %}{% trans "Yes, Reactivate" %}{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openToggleActiveModal() {
+      document.getElementById('toggle-active-modal').classList.remove('hidden');
+    }
+    function closeToggleActiveModal() {
+      document.getElementById('toggle-active-modal').classList.add('hidden');
+    }
+  </script>
+{% endif %}
+{% endblock %}

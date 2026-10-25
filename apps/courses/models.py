@@ -285,6 +285,39 @@ class Enrollment(TimeStampedModel):
         return f"{self.student.email} - {self.course.title} ({self.get_status_display()})"
 
 
+class EnrollmentEvent(TimeStampedModel):
+    """
+    Audit record for enrollment status transitions, capturing actor,
+    status change, and optional notes.
+    """
+
+    enrollment = models.ForeignKey(
+        Enrollment,
+        on_delete=models.CASCADE,
+        related_name="events",
+        verbose_name=_("enrollment"),
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="enrollment_events",
+        verbose_name=_("actor"),
+    )
+    from_status = models.CharField(_("from status"), max_length=20)
+    to_status = models.CharField(_("to status"), max_length=20)
+    note = models.TextField(_("note"), blank=True)
+
+    class Meta:
+        verbose_name = _("enrollment event")
+        verbose_name_plural = _("enrollment events")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Enrollment {self.enrollment_id}: {self.from_status} -> {self.to_status} by {self.actor}"
+
+
 class LessonProgress(TimeStampedModel):
     """
     Tracks a student's completion and playback position within a specific lesson.

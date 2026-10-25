@@ -12,7 +12,8 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_http_methods
 from django_ratelimit.decorators import ratelimit
 
-from apps.assignments.models import Assignment, Submission
+from apps.accounts.permissions import is_teacher_user
+from apps.assignments.models import Assignment, Submission, SubmissionEvent
 from apps.assignments.permissions import check_assignment_access
 from apps.assignments.status import get_assignment_status
 from apps.assignments.validators import (
@@ -180,8 +181,8 @@ def assignment_detail_view(request, slug, assignment_id):
         if not request.user.is_authenticated:
             raise PermissionDenied(_("You must be logged in to submit an assignment."))
 
-        # Requirement 1: Lock editing once a submission is graded
-        if submission and submission.grade is not None:
+        # Requirement 1: Lock editing once a submission is graded unless explicitly unlocked by teacher
+        if submission and submission.grade is not None and not submission.is_unlocked:
             messages.error(
                 request, _("This submission has already been graded and can no longer be edited.")
             )
@@ -264,7 +265,11 @@ def assignment_detail_view(request, slug, assignment_id):
                     .filter(assignment=locked_assignment, student=request.user)
                     .first()
                 )
-                if locked_submission and locked_submission.grade is not None:
+                is_unlocked_resubmission = bool(
+                    locked_submission and locked_submission.is_unlocked
+                )
+
+                if locked_submission and locked_submission.grade is not None and not is_unlocked_resubmission:
                     messages.error(
                         request,
                         _("This submission has already been graded and cannot be modified."),
@@ -292,8 +297,12 @@ def assignment_detail_view(request, slug, assignment_id):
                         status_code=400,
                     )
 
-                # Deadline boundary check
-                if current_now > locked_assignment.due_at and not locked_assignment.allow_late:
+                # Deadline boundary check (overridden if unlocked by teacher)
+                if (
+                    current_now > locked_assignment.due_at
+                    and not locked_assignment.allow_late
+                    and not is_unlocked_resubmission
+                ):
                     form_error = _("The deadline has passed and late submissions are not accepted.")
                     return _render_detail(
                         request,
@@ -321,6 +330,14 @@ def assignment_detail_view(request, slug, assignment_id):
                 target_sub.submitted_at = current_now
                 target_sub.is_late = is_late
 
+                # When resubmitting an unlocked submission, reset grade so it appears in the teacher's grading queue
+                old_grade = target_sub.grade
+                if is_unlocked_resubmission:
+                    target_sub.grade = None
+                    target_sub.graded_by = None
+                    target_sub.graded_at = None
+                    target_sub.is_unlocked = False
+
                 old_file_name = None
                 old_storage = None
 
@@ -336,6 +353,16 @@ def assignment_detail_view(request, slug, assignment_id):
 
                 # Persist submission to DB
                 target_sub.save()
+
+                if is_unlocked_resubmission:
+                    SubmissionEvent.objects.create(
+                        submission=target_sub,
+                        actor=request.user,
+                        action="resubmitted",
+                        old_grade=old_grade,
+                        new_grade=None,
+                        note=_("Student resubmitted updated work after submission was unlocked."),
+                    )
 
                 if uploaded_file and old_file_name:
                     if old_file_name != target_sub.file.name:
@@ -393,7 +420,7 @@ def _render_detail(
     )
     can_submit = (
         not is_not_open
-        and (not submission or submission.grade is None)
+        and (not submission or submission.grade is None or submission.is_unlocked)
         and (timezone.now() <= assignment.due_at or assignment.allow_late)
     ) or bool(form_error)
 
@@ -433,13 +460,13 @@ def submission_download_view(request, slug, submission_id):
         assignment__course=course,
     )
 
-    # Permission check: submitting student or staff only
-    if not (request.user.is_staff or submission.student == request.user):
+    # Permission check: submitting student or teacher/staff
+    if not (is_teacher_user(request.user) or submission.student == request.user):
         return HttpResponseForbidden(
             _("You do not have permission to download this submission file.")
         )
 
-    if not request.user.is_staff and not submission.assignment.is_published:
+    if not is_teacher_user(request.user) and not submission.assignment.is_published:
         raise Http404(_("Assignment not found."))
 
     if not submission.file:

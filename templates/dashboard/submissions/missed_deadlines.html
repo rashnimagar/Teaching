@@ -1,0 +1,225 @@
+{% extends "dashboard/teacher_base.html" %}
+{% load i18n %}
+
+{% block teacher_title %}{% trans "Missed Deadlines" %} - {{ assignment.title }}{% endblock %}
+
+{% block dashboard_content %}
+<div class="space-y-6">
+  <!-- Breadcrumbs & Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
+        <a href="{% url 'dashboard:teacher_course_assignments' slug=course.slug %}" class="hover:underline">
+          {{ course.title }}
+        </a>
+        <span>/</span>
+        <a href="{% url 'dashboard:teacher_course_assignment_submissions' slug=course.slug assignment_id=assignment.id %}" class="hover:underline">
+          {{ assignment.title }}
+        </a>
+        <span>/</span>
+        <span>{% trans "Missed Deadlines" %}</span>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+        {% trans "Missed Deadlines" %}
+      </h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        {% trans "Active enrolled students who have not turned in this assignment." %}
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <a
+        href="{% url 'dashboard:teacher_course_assignment_submissions' slug=course.slug assignment_id=assignment.id %}"
+        class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>{% trans "Back to Submissions" %}</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Assignment Status Banner (Requirement 11) -->
+  <div class="p-4 rounded-2xl border {% if is_past_deadline %}bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60{% else %}bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60{% endif %} flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="p-2 rounded-xl {% if is_past_deadline %}bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300{% else %}bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300{% endif %}">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div>
+        <p class="font-bold text-sm {% if is_past_deadline %}text-rose-950 dark:text-rose-200{% else %}text-amber-950 dark:text-amber-200{% endif %}">
+          {% if is_past_deadline %}
+            {% trans "Official Due Date Passed" %} ({{ assignment.due_at|date:"M j, Y, H:i" }})
+          {% else %}
+            {% trans "Deadline Pending" %} ({{ assignment.due_at|date:"M j, Y, H:i" }})
+          {% endif %}
+        </p>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+          {% if still_open_late %}
+            <span class="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              {% trans "Still open for late submissions (penalty applies)." %}
+            </span>
+          {% elif is_past_deadline %}
+            <span class="font-semibold text-rose-600 dark:text-rose-400">
+              {% trans "Submission portal is closed (late submissions disallowed)." %}
+            </span>
+          {% else %}
+            {% trans "Students still have time to turn in their work on time." %}
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    <div class="text-right">
+      <span class="text-xs font-bold uppercase tracking-wider text-slate-500">{% trans "Unsubmitted Count" %}</span>
+      <p class="text-xl font-black text-rose-600 dark:text-rose-400">{{ total_missed_count }}</p>
+    </div>
+  </div>
+
+  <!-- Missed Students Table -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+    {% if missed_enrollments %}
+      <!-- Desktop View -->
+      <div class="hidden md:block overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <th class="py-3 px-4">{% trans "Student" %}</th>
+              <th class="py-3 px-4">{% trans "Email" %}</th>
+              <th class="py-3 px-4">{% trans "Enrollment Date" %}</th>
+              <th class="py-3 px-4">{% trans "Status" %}</th>
+              <th class="py-3 px-4 text-right">{% trans "Actions" %}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+            {% for enr in missed_enrollments %}
+              <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                <td class="py-3.5 px-4 font-semibold text-slate-900 dark:text-white">
+                  <a href="{% url 'dashboard:teacher_student_detail' student_id=enr.student.id %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                    {{ enr.student.get_full_name|default:enr.student.email }}
+                  </a>
+                </td>
+                <td class="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">
+                  {{ enr.student.email }}
+                </td>
+                <td class="py-3.5 px-4 text-xs text-slate-500">
+                  {{ enr.created_at|date:"M j, Y" }}
+                </td>
+                <td class="py-3.5 px-4">
+                  {% if is_past_deadline %}
+                    {% if still_open_late %}
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                        {% trans "Missing (Late Allowed)" %}
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                        {% trans "Missed Deadline" %}
+                      </span>
+                    {% endif %}
+                  {% else %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      {% trans "Pending Submission" %}
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <a
+                    href="{% url 'dashboard:teacher_student_detail' student_id=enr.student.id %}"
+                    class="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition"
+                  >
+                    <span>{% trans "View Student" %}</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile View -->
+      <div class="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+        {% for enr in missed_enrollments %}
+          <div class="p-4 space-y-2">
+            <div class="flex items-start justify-between">
+              <div>
+                <a href="{% url 'dashboard:teacher_student_detail' student_id=enr.student.id %}" class="font-bold text-sm text-slate-900 dark:text-white">
+                  {{ enr.student.get_full_name|default:enr.student.email }}
+                </a>
+                <p class="text-xs text-slate-500">{{ enr.student.email }}</p>
+              </div>
+              <div>
+                {% if is_past_deadline %}
+                  <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                    {% trans "Missing" %}
+                  </span>
+                {% else %}
+                  <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    {% trans "Pending" %}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
+              <span>{% trans "Enrolled:" %} {{ enr.created_at|date:"M j, Y" }}</span>
+              <a href="{% url 'dashboard:teacher_student_detail' student_id=enr.student.id %}" class="text-indigo-600 font-bold">
+                {% trans "Details" %} &rarr;
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="p-12 text-center">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 mb-3">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">
+          {% trans "All active students have submitted!" %}
+        </h3>
+        <p class="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1">
+          {% trans "There are currently zero active students with missed submissions for this assignment." %}
+        </p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+    <div class="flex items-center justify-between pt-4">
+      <div class="text-xs text-slate-500">
+        {% blocktrans with start=page_obj.start_index end=page_obj.end_index total=page_obj.paginator.count %}
+          Showing {{ start }} to {{ end }} of {{ total }} students
+        {% endblocktrans %}
+      </div>
+      <div class="flex items-center gap-2">
+        {% if page_obj.has_previous %}
+          <a
+            href="?page={{ page_obj.previous_page_number }}"
+            class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            {% trans "Previous" %}
+          </a>
+        {% endif %}
+        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 px-2">
+          {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+        </span>
+        {% if page_obj.has_next %}
+          <a
+            href="?page={{ page_obj.next_page_number }}"
+            class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            {% trans "Next" %}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

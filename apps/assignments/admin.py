@@ -6,7 +6,8 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-from apps.assignments.models import Assignment, Submission
+from apps.assignments.models import Assignment, Submission, SubmissionEvent
+from apps.assignments.services.grading import grade_submission
 
 
 class SubmissionAdminForm(forms.ModelForm):
@@ -167,16 +168,41 @@ class SubmissionAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         """
-        Requirement 16:
-        Set graded_by/graded_at only when the grade changes,
-        and clear them if the grade is cleared.
+        Uses the central grade_submission service so Django admin and teacher
+        dashboard execute identical validation, audit logging, and notification rules.
         """
-        if "grade" in form.changed_data:
-            if obj.grade is not None:
-                obj.graded_by = request.user
-                obj.graded_at = timezone.now()
-            else:
-                obj.graded_by = None
-                obj.graded_at = None
+        if change and form and hasattr(form, "changed_data") and ("grade" in form.changed_data or "feedback" in form.changed_data):
+            grade_val = form.cleaned_data.get("grade")
+            feedback_val = form.cleaned_data.get("feedback") or ""
+            if grade_val is not None:
+                sub, ok, msg = grade_submission(
+                    submission_id=obj.id,
+                    grade=grade_val,
+                    feedback=feedback_val,
+                    teacher_user=request.user,
+                )
+                if not ok:
+                    raise ValidationError(msg)
+                obj.refresh_from_db()
+                return
+        elif change and obj.grade is not None:
+            sub, ok, msg = grade_submission(
+                submission_id=obj.id,
+                grade=obj.grade,
+                feedback=obj.feedback or "",
+                teacher_user=request.user,
+            )
+            if not ok:
+                raise ValidationError(msg)
+            obj.refresh_from_db()
+            return
 
         super().save_model(request, obj, form, change)
+
+
+@admin.register(SubmissionEvent)
+class SubmissionEventAdmin(admin.ModelAdmin):
+    list_display = ["submission", "actor", "action", "old_grade", "new_grade", "created_at"]
+    list_filter = ["action", "created_at"]
+    search_fields = ["submission__student__email", "submission__assignment__title", "actor__email", "note"]
+    readonly_fields = ["submission", "actor", "action", "old_grade", "new_grade", "note", "created_at", "updated_at"]

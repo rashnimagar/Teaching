@@ -4,6 +4,7 @@ from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import redirect, resolve_url
 from django.utils.translation import gettext_lazy as _
 
+from apps.accounts.permissions import is_teacher_user
 from apps.courses.models import Course, Enrollment
 
 
@@ -27,7 +28,7 @@ def check_assignment_access(request, course: Course, is_api: bool = False):
     """
     # 1. Unpublished course check
     if not course.is_published:
-        if not (request.user.is_authenticated and request.user.is_staff):
+        if not (request.user.is_authenticated and is_teacher_user(request.user)):
             raise Http404(_("Course not found."))
 
     # 2. Archived course check: only active enrollments or staff retain access
@@ -36,13 +37,13 @@ def check_assignment_access(request, course: Course, is_api: bool = False):
             is_active_student = Enrollment.objects.filter(
                 student=request.user, course=course, status=Enrollment.Status.ACTIVE
             ).exists()
-            if not (request.user.is_staff or is_active_student):
+            if not (is_teacher_user(request.user) or is_active_student):
                 raise Http404(_("Course not found."))
         else:
             raise Http404(_("Course not found."))
 
     # 3. Teacher / Staff bypass
-    if request.user.is_authenticated and request.user.is_staff:
+    if request.user.is_authenticated and is_teacher_user(request.user):
         return True, None
 
     # 4. Anonymous user

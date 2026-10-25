@@ -143,6 +143,7 @@ class Submission(TimeStampedModel):
         verbose_name=_("graded by"),
     )
     graded_at = models.DateTimeField(_("graded at"), null=True, blank=True)
+    is_unlocked = models.BooleanField(_("is unlocked"), default=False)
 
     class Meta:
         verbose_name = _("submission")
@@ -199,14 +200,17 @@ class Submission(TimeStampedModel):
                     }
                 )
 
-        # Requirement 1: Lock editing once a submission is graded
+        # Requirement 1: Lock editing once a submission is graded unless unlocked
         if self.pk and self.assignment_id:
             orig = (
                 Submission.objects.filter(pk=self.pk)
-                .values("grade", "content_text", "file")
+                .values("grade", "content_text", "file", "is_unlocked")
                 .first()
             )
-            if orig and orig["grade"] is not None:
+            was_unlocked = bool(orig and orig.get("is_unlocked"))
+            is_unlocked_now = bool(self.is_unlocked)
+
+            if orig and orig["grade"] is not None and not (was_unlocked or is_unlocked_now):
                 if orig["content_text"] != self.content_text or orig["file"] != (
                     self.file.name if self.file else ""
                 ):
@@ -215,7 +219,7 @@ class Submission(TimeStampedModel):
                     )
 
             now = timezone.now()
-            if now > self.assignment.due_at and not self.assignment.allow_late:
+            if now > self.assignment.due_at and not self.assignment.allow_late and not (was_unlocked or is_unlocked_now):
                 raise ValidationError(
                     _(
                         "Submissions cannot be edited after the deadline because late submissions are disabled."
@@ -239,6 +243,39 @@ class Submission(TimeStampedModel):
             self.graded_at = now
 
         super().save(*args, **kwargs)
+
+
+class SubmissionEvent(TimeStampedModel):
+    """
+    Audit record for submission grading and unlocking lifecycle events.
+    """
+
+    submission = models.ForeignKey(
+        Submission,
+        on_delete=models.CASCADE,
+        related_name="events",
+        verbose_name=_("submission"),
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="submission_events",
+        verbose_name=_("actor"),
+    )
+    action = models.CharField(_("action"), max_length=32)  # "graded", "regraded", "unlocked"
+    old_grade = models.DecimalField(_("previous grade"), max_digits=5, decimal_places=2, null=True, blank=True)
+    new_grade = models.DecimalField(_("new grade"), max_digits=5, decimal_places=2, null=True, blank=True)
+    note = models.TextField(_("note"), blank=True)
+
+    class Meta:
+        verbose_name = _("submission event")
+        verbose_name_plural = _("submission events")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Submission {self.submission_id} [{self.action}] by {self.actor}"
 
 
 from django.db.models.signals import post_delete  # noqa: E402
