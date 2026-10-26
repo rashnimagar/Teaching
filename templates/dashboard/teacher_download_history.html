@@ -57,8 +57,8 @@
           <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-semibold">
             <tr>
               <th scope="col" class="py-3.5 pl-6 pr-3">Student</th>
-              <th scope="col" class="py-3.5 px-3">Downloaded At (NPT)</th>
-              <th scope="col" class="py-3.5 pr-6 pl-3">Client IP</th>
+              <th scope="col" class="py-3.5 px-3">File</th>
+              <th scope="col" class="py-3.5 pr-6 pl-3">Downloaded At (NPT)</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
@@ -79,11 +79,14 @@
                     </div>
                   </div>
                 </td>
-                <td class="py-4 px-3 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                  {{ log.downloaded_at|date:"Y-m-d H:i:s" }}
+                <td class="py-4 px-3 text-xs text-slate-700 dark:text-slate-300">
+                  <div class="font-medium text-slate-900 dark:text-white">{{ item.title }}</div>
+                  {% if item.file %}
+                    <span class="text-[11px] text-slate-500 font-mono">{{ item.file.name|slice:"15:" }}</span>
+                  {% endif %}
                 </td>
-                <td class="py-4 pr-6 pl-3 text-xs font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                  {{ log.ip_address|default:"Unknown" }}
+                <td class="py-4 pr-6 pl-3 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                  {{ log.downloaded_at|date:"Y-m-d H:i:s" }}
                 </td>
               </tr>
             {% endfor %}

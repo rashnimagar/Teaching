@@ -1,7 +1,8 @@
 from django.core.cache import cache
-from django.db import OperationalError, ProgrammingError, models
+from django.db import OperationalError, ProgrammingError, models, transaction
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.constants import FAQ_CACHE_KEY, SITE_SETTINGS_CACHE_KEY
 from apps.core.image_utils import generate_webp_variant
 from apps.core.validators import validate_image_file
 
@@ -25,7 +26,7 @@ class SiteSettings(TimeStampedModel):
     Editable in the Django admin by the teacher without code changes.
     """
 
-    CACHE_KEY = "site_settings_singleton"
+    CACHE_KEY = SITE_SETTINGS_CACHE_KEY
 
     site_name = models.CharField(
         _("site name"),
@@ -93,7 +94,32 @@ class SiteSettings(TimeStampedModel):
     def __str__(self):
         return f"{self.site_name} Settings"
 
+    def clean(self):
+        super().clean()
+        from apps.core.validators import validate_safe_url
+        errors = {}
+        for field_name in ("github_url", "twitter_url", "linkedin_url", "youtube_url"):
+            val = getattr(self, field_name, "")
+            if val:
+                try:
+                    validate_safe_url(val)
+                except ValidationError as err:
+                    errors[field_name] = err.message if hasattr(err, "message") else str(err)
+        if errors:
+            raise ValidationError(errors)
+
     def save(self, *args, **kwargs):
+        old_photo = None
+        old_webp = None
+        if self.pk and SiteSettings.objects.filter(pk=self.pk).exists():
+            orig = SiteSettings.objects.get(pk=self.pk)
+            if orig.teacher_photo and orig.teacher_photo != self.teacher_photo:
+                old_photo = orig.teacher_photo.name
+                old_webp = orig.teacher_photo_webp.name if orig.teacher_photo_webp else None
+            elif not self.teacher_photo and orig.teacher_photo:
+                old_photo = orig.teacher_photo.name
+                old_webp = orig.teacher_photo_webp.name if orig.teacher_photo_webp else None
+
         # Enforce singleton pattern (always primary key 1)
         self.pk = 1
         if not self.created_at and SiteSettings.objects.filter(pk=1).exists():
@@ -108,9 +134,28 @@ class SiteSettings(TimeStampedModel):
             )
             if webp_file:
                 self.teacher_photo_webp.save(filename, webp_file, save=False)
+        elif not self.teacher_photo:
+            self.teacher_photo_webp = None
 
         super().save(*args, **kwargs)
-        cache.delete(self.CACHE_KEY)
+        cache.delete(SITE_SETTINGS_CACHE_KEY)
+
+        if old_photo or old_webp:
+            from django.core.files.storage import default_storage
+
+            def _cleanup():
+                if old_photo:
+                    try:
+                        default_storage.delete(old_photo)
+                    except (FileNotFoundError, OSError):
+                        pass
+                if old_webp:
+                    try:
+                        default_storage.delete(old_webp)
+                    except (FileNotFoundError, OSError):
+                        pass
+
+            transaction.on_commit(_cleanup)
 
     def delete(self, *args, **kwargs):
         # Prevent deleting the singleton configuration
@@ -121,7 +166,7 @@ class SiteSettings(TimeStampedModel):
         """
         Retrieve the singleton instance, loading from shared cache if present.
         """
-        cached = cache.get(cls.CACHE_KEY)
+        cached = cache.get(SITE_SETTINGS_CACHE_KEY)
         if cached is not None:
             return cached
 
@@ -134,7 +179,7 @@ class SiteSettings(TimeStampedModel):
                     "hero_subheadline": "Focused, distraction-free educational courses designed to build real-world competency.",
                 },
             )
-            cache.set(cls.CACHE_KEY, obj, timeout=3600)
+            cache.set(SITE_SETTINGS_CACHE_KEY, obj, timeout=3600)
             return obj
         except (OperationalError, ProgrammingError) as exc:
             import logging
@@ -167,3 +212,12 @@ class FAQItem(TimeStampedModel):
 
     def __str__(self):
         return self.question
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        cache.delete(FAQ_CACHE_KEY)
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        cache.delete(FAQ_CACHE_KEY)
+

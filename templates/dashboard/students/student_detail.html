@@ -227,8 +227,10 @@
                     <span class="font-bold text-emerald-600">{% trans "Approved" %}</span>
                   {% elif req.status == 'pending' %}
                     <span class="font-bold text-amber-600">{% trans "Pending" %}</span>
-                  {% elif req.status == 'rejected' %}
-                    <span class="font-bold text-rose-600">{% trans "Rejected" %}</span>
+                  {% elif req.status == 'denied' %}
+                    <span class="font-bold text-rose-600">{% trans "Denied" %}</span>
+                  {% elif req.status == 'revoked' %}
+                    <span class="font-bold text-slate-500">{% trans "Revoked" %}</span>
                   {% else %}
                     <span class="text-slate-400">{{ req.get_status_display }}</span>
                   {% endif %}

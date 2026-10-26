@@ -28,11 +28,16 @@ The following items are postponed to the final hardening and production deployme
 - **Automated Backups:** Implement automated daily PostgreSQL database backups and media storage snapshot procedures.
 
 ## 6. File Uploads & Assignment Infrastructure
-- **Web-Server Upload Limits & Worker Timeouts:** Configure reverse proxy (Nginx `client_max_body_size 12M`, Gunicorn `--timeout 60`) so slow client uploads or oversized payloads are rejected early before consuming Django application workers.
+- **Web-Server Upload Limits & Worker Timeouts:** Configure reverse proxy (Nginx `client_max_body_size 30M` to match `MATERIAL_MAX_FILE_SIZE_BYTES` default of 25 MB, and Gunicorn `--timeout 90`) so slow client uploads or oversized payloads are rejected early while allowing legitimate 25 MB material uploads.
 - **Optional Antivirus / ClamAV Scanning:** Deploy an asynchronous background file scan hook (ClamAV daemon or containerized scanner) for uploaded student submissions in production environments with high upload volumes.
 - **PostgreSQL Deadline Boundary Test:** Execute the deadline concurrency and `select_for_update` row-locking test suite against a live PostgreSQL instance prior to production launch to verify transactional isolation under high concurrent write loads.
 
 ## 7. Audit & Log Retention Policies
 - **DownloadLog Retention:** Implement an automated scheduled retention task to archive or purge `DownloadLog` audit records older than 90 days in accordance with data minimization standards.
 - **Notification Pruning:** Automate periodic execution of `python manage.py cleanup_old_notifications --days 90` to prune historical read notifications and keep database indexes compact.
+
+## 8. Possible Future Features (Not Requested)
+- **Unified Audit Log:** A consolidated timeline feed combining `EnrollmentEvent`, `SubmissionEvent`, and `DownloadLog` into a single administrative activity feed in the dashboard.
+- **Course Announcements & Broadcasts:** Instructor-to-students broadcast messaging and course-wide announcements dispatching mass notifications.
+
 

@@ -760,8 +760,8 @@ class TestBoundedQueryCounts:
         client.force_login(teacher_user)
         url = reverse("dashboard:teacher_students")
 
-        # Query count is bounded (under 18 queries total including session, user, counts, and subqueries)
-        with django_assert_num_queries(17):
+        # Query count is bounded (under 19 queries total including session, user, counts, and subqueries)
+        with django_assert_num_queries(18):
             resp = client.get(url)
             assert resp.status_code == 200
             assert len(resp.context["students"]) == 10

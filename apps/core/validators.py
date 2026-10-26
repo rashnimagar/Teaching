@@ -52,3 +52,56 @@ def validate_image_file(file) -> None:
         if isinstance(exc, ValidationError):
             raise
         raise ValidationError(_("Uploaded file is not a valid or supported image.")) from exc
+
+
+import re
+from urllib.parse import urlsplit
+from django.core.validators import URLValidator
+
+
+def validate_safe_url(value: str, max_length: int = 1000) -> str:
+    """
+    Validates that a URL:
+    - Is within max_length
+    - Contains no whitespace or control characters
+    - Contains no embedded credentials (e.g., http://user:pass@host)
+    - Conforms to URLValidator with allowed schemes 'http' and 'https'
+    """
+    if not value or not isinstance(value, str):
+        raise ValidationError(_("A valid URL is required."))
+
+    # Check for whitespace or ASCII control characters
+    if re.search(r"[\s\x00-\x1f\x7f]", value):
+        raise ValidationError(_("URL must not contain whitespace or control characters."))
+
+    if len(value) > max_length:
+        raise ValidationError(
+            _("URL exceeds the maximum length of %(max_len)s characters."),
+            params={"max_len": max_length},
+        )
+
+    # Parse and inspect components
+    try:
+        parsed = urlsplit(value)
+    except Exception as exc:
+        raise ValidationError(_("Malformed URL.")) from exc
+
+    if parsed.scheme.lower() not in ("http", "https"):
+        raise ValidationError(_("URL must start with http:// or https://."))
+
+    if not parsed.netloc:
+        raise ValidationError(_("URL must have a valid domain or host."))
+
+    # Disallow embedded credentials (user:pass@host)
+    if parsed.username or parsed.password:
+        raise ValidationError(_("URLs with embedded credentials are not permitted."))
+
+    # Validate using Django's URLValidator
+    url_validator = URLValidator(schemes=["http", "https"])
+    try:
+        url_validator(value)
+    except ValidationError:
+        raise ValidationError(_("Enter a valid URL (http:// or https://)."))
+
+    return value
+

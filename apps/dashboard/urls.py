@@ -6,8 +6,10 @@ from apps.dashboard import (
     views_courses,
     views_enrollments,
     views_lessons,
+    views_materials,
     views_permissions,
     views_reports,
+    views_settings,
     views_students,
     views_submissions,
 )
@@ -70,4 +72,27 @@ urlpatterns = [
     # Exports & Reports (Phase 7B)
     path("teacher/courses/<slug:slug>/exports/grades/", views_reports.teacher_course_grades_export_view, name="teacher_course_grades_export"),
     path("teacher/courses/<slug:slug>/exports/progress/", views_reports.teacher_course_progress_export_view, name="teacher_course_progress_export"),
+    # Materials Management (Phase 7C)
+    path("teacher/materials/", views_materials.teacher_materials_course_picker_view, name="teacher_materials"),
+    path("teacher/courses/<slug:slug>/materials/", views_materials.teacher_materials_list_view, name="teacher_course_materials"),
+    path("teacher/courses/<slug:slug>/materials/create/", views_materials.teacher_material_create_view, name="teacher_material_create"),
+    path("teacher/courses/<slug:slug>/materials/<int:material_id>/edit/", views_materials.teacher_material_edit_view, name="teacher_material_edit"),
+    path("teacher/courses/<slug:slug>/materials/<int:material_id>/toggle-publish/", views_materials.teacher_material_toggle_publish_view, name="teacher_material_toggle_publish"),
+    path("teacher/courses/<slug:slug>/materials/<int:material_id>/archive/", views_materials.teacher_material_archive_view, name="teacher_material_archive"),
+    path("teacher/courses/<slug:slug>/materials/<int:material_id>/delete/", views_materials.teacher_material_delete_view, name="teacher_material_delete"),
+    path("teacher/courses/<slug:slug>/materials/<int:material_id>/items/create/", views_materials.teacher_material_item_create_view, name="teacher_material_item_create"),
+    path("teacher/courses/<slug:slug>/materials/<int:material_id>/items/<int:item_id>/edit/", views_materials.teacher_material_item_edit_view, name="teacher_material_item_edit"),
+    path("teacher/courses/<slug:slug>/materials/<int:material_id>/items/<int:item_id>/toggle-publish/", views_materials.teacher_material_item_toggle_publish_view, name="teacher_material_item_toggle_publish"),
+    path("teacher/courses/<slug:slug>/materials/<int:material_id>/items/<int:item_id>/delete/", views_materials.teacher_material_item_delete_view, name="teacher_material_item_delete"),
+    path("teacher/courses/<slug:slug>/materials/<int:material_id>/items/<int:item_id>/reorder/", views_materials.teacher_material_item_reorder_view, name="teacher_material_item_reorder"),
+    path("teacher/courses/<slug:slug>/materials/<int:material_id>/items/<int:item_id>/policy/", views_materials.teacher_material_item_policy_view, name="teacher_material_item_policy"),
+    path("teacher/courses/<slug:slug>/materials/<int:material_id>/items/<int:item_id>/history/", views_materials.teacher_material_item_history_view, name="teacher_material_item_history"),
+    # Site Settings & FAQ (Phase 7C)
+    path("teacher/settings/", views_settings.teacher_settings_view, name="teacher_settings"),
+    path("teacher/faqs/", views_settings.teacher_faqs_list_view, name="teacher_faqs"),
+    path("teacher/faqs/create/", views_settings.teacher_faq_create_view, name="teacher_faq_create"),
+    path("teacher/faqs/<int:faq_id>/edit/", views_settings.teacher_faq_edit_view, name="teacher_faq_edit"),
+    path("teacher/faqs/<int:faq_id>/toggle-publish/", views_settings.teacher_faq_toggle_publish_view, name="teacher_faq_toggle_publish"),
+    path("teacher/faqs/<int:faq_id>/reorder/", views_settings.teacher_faq_reorder_view, name="teacher_faq_reorder"),
+    path("teacher/faqs/<int:faq_id>/delete/", views_settings.teacher_faq_delete_view, name="teacher_faq_delete"),
 ]

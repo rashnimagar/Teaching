@@ -26,9 +26,15 @@ def get_decorated_course_materials(course, user, lesson=None):
     """
     is_staff = user.is_authenticated and (user.is_staff or getattr(user, "is_teacher", False))
 
+    from django.db.models import Prefetch
+
+    items_qs = MaterialItem.objects.all().order_by("order", "id")
+    if not is_staff:
+        items_qs = items_qs.filter(is_published=True)
+
     materials_qs = (
         CourseMaterial.objects.filter(course=course)
-        .prefetch_related("items")
+        .prefetch_related(Prefetch("items", queryset=items_qs))
         .order_by("order", "id")
     )
     if lesson is not None:
@@ -170,6 +176,9 @@ def material_request_download_view(request, course_slug: str, item_id: int):
         item_type=MaterialItem.ItemType.FILE,
     )
 
+    if not (request.user.is_staff or getattr(request.user, "is_teacher", False)) and not item.is_published:
+        raise Http404(_("Material item not found."))
+
     if item.download_policy != MaterialItem.DownloadPolicy.REQUEST_REQUIRED:
         messages.info(request, "This file does not require an access request.")
         return redirect("learn:materials", course_slug=course.slug)
@@ -274,6 +283,9 @@ def material_download_view(request, course_slug: str, item_id: int):
 
     # 1. Staff bypass grants immediate download
     if not is_staff:
+        if not item.is_published:
+            raise Http404(_("Material item not found."))
+
         # 2. View-only policy strictly forbids downloads
         if item.download_policy == MaterialItem.DownloadPolicy.VIEW_ONLY:
             raise PermissionDenied(_("This file is marked as view-only and cannot be downloaded."))
@@ -337,6 +349,9 @@ def material_preview_view(request, course_slug: str, item_id: int):
         return response
 
     is_staff = request.user.is_staff or getattr(request.user, "is_teacher", False)
+
+    if not is_staff and not item.is_published:
+        raise Http404(_("Material item not found."))
 
     # request_required files have NO inline view (Requirement 13)
     if not is_staff and item.download_policy == MaterialItem.DownloadPolicy.REQUEST_REQUIRED:

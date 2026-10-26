@@ -79,15 +79,15 @@ A Django-based learning platform where a teacher uploads course videos, students
 - [x] Server-side deadline enforcement (reject after `due_at`; handle edge case of deadline passing mid-submission)
 - [x] Student view of grade and feedback
 
-## Materials, Download Permissions & Notifications (Client Milestone — Built Now)
-- [ ] Course Materials & Items: posts per course, file/link/video items with validation, embed preview, reorder, and download policies (`request_required`, `open_to_enrolled`)
-- [ ] Student Download Requests & State Machine: request download, 24h denial cooldown, active enrollment access check, download logging
-- [ ] Teacher Permissions Queue (`/dashboard/teacher/permissions/`): filterable queue (status, course, student, file), search, pagination, pending count badge
-- [ ] Teacher Actions: race-safe approve (with optional expiry), deny (with note), revoke, reconsider, and "approve for all enrolled students"
-- [ ] Bulk Actions: bulk approve/deny with count confirmation modal
-- [ ] Download History: audit trail per file from `DownloadLog` (who, when, IP)
-- [ ] Student Notification System: `Notification` model, unread bell in navbar, `/notifications/` page, mark read, strict student isolation
-- [ ] Email Channel: notification delivery behind `NOTIFY_BY_EMAIL` flag via `transaction.on_commit`, safe against SMTP failures
+## Materials, Download Permissions & Notifications (Client Milestone — Completed)
+- [x] Course Materials & Items: posts per course, file/link/video items with validation, embed preview, reorder, and download policies (`request_required`, `open_to_enrolled`, `view_only`)
+- [x] Student Download Requests & State Machine: request download, 24h denial cooldown, active enrollment access check, download logging
+- [x] Teacher Permissions Queue (`/dashboard/teacher/permissions/`): filterable queue (status, course, student, file), search, pagination, pending count badge
+- [x] Teacher Actions: race-safe approve (with optional expiry), deny (with note), revoke, reconsider, and "approve for all enrolled students"
+- [x] Bulk Actions: bulk approve/deny with count confirmation modal
+- [x] Download History: audit trail per file from `DownloadLog` (student, file, time in NPT; privacy-protected)
+- [x] Student Notification System: `Notification` model, unread bell in navbar, `/notifications/` page, mark read, strict student isolation
+- [x] Email Channel: notification delivery behind `NOTIFY_BY_EMAIL` flag via `transaction.on_commit`, safe against SMTP failures
 
 ## Phase 7 — Teacher dashboard (custom)
 - [x] Overview stats: students, submissions, upcoming deadlines (7A)
@@ -95,6 +95,10 @@ A Django-based learning platform where a teacher uploads course videos, students
 - [x] Enrollment management (approve, remove, add manually) (7B)
 - [x] Submissions: filter, review, grade, see who missed the deadline (7B)
 - [x] Student list with progress and CSV export (7B)
+- [x] Materials & Items management: create, edit, toggle publish, archive, delete guardrails (7C)
+- [x] Policy transitions: view_only (PDF/image check, deny pending, revoke approved), away from open_to_enrolled with access preservation (7C)
+- [x] Global Site Settings & FAQ CRUD with atomic reordering and instant cache invalidation (7C)
+- [x] Comprehensive Teacher Operational Guide (`TEACHER_GUIDE.md`) (7C)
 
 ## Phase 8 — Security and rate limiting
 - [ ] Rate limits on login, submissions, uploads, and any API endpoints (django-ratelimit or DRF throttling)

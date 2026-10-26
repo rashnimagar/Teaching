@@ -464,6 +464,7 @@ class MaterialItem(TimeStampedModel):
     video_hash = models.CharField(_("video privacy hash"), max_length=64, blank=True)
 
     order = models.PositiveIntegerField(_("order"), default=1)
+    is_published = models.BooleanField(_("is published"), default=True, db_index=True)
 
     class Meta:
         verbose_name = _("material item")
@@ -471,6 +472,7 @@ class MaterialItem(TimeStampedModel):
         ordering = ["order", "id"]
         indexes = [
             models.Index(fields=["material", "order"]),
+            models.Index(fields=["material", "is_published", "order"]),
             models.Index(fields=["item_type"]),
         ]
 
@@ -506,8 +508,12 @@ class MaterialItem(TimeStampedModel):
         elif self.item_type == self.ItemType.LINK:
             if not self.external_url:
                 raise ValidationError({"external_url": _("External URL is required for link items.")})
-            if not (self.external_url.startswith("http://") or self.external_url.startswith("https://")):
-                raise ValidationError({"external_url": _("URL must start with http:// or https://.")})
+            from apps.core.validators import validate_safe_url
+            try:
+                validate_safe_url(self.external_url)
+            except ValidationError as err:
+                msg = err.message if hasattr(err, "message") else str(err)
+                raise ValidationError({"external_url": msg}) from err
         elif self.item_type == self.ItemType.VIDEO:
             if not self.video_id:
                 raise ValidationError({"video_id": _("Video identifier is required for video items.")})

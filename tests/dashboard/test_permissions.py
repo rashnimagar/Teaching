@@ -237,4 +237,5 @@ class TestTeacherPermissionsQueue:
 
         assert "Download History" in html
         assert self.student.email in html
-        assert "192.168.1.100" in html
+        assert "192.168.1.100" not in html
+        assert self.item.title in html

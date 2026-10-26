@@ -9,9 +9,11 @@ from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 
 from apps.assignments.models import Assignment
-from apps.core.validators import validate_image_file
-from apps.courses.models import Course, Lesson
+from apps.core.models import FAQItem, SiteSettings
+from apps.core.validators import validate_image_file, validate_safe_url
+from apps.courses.models import Course, CourseMaterial, Lesson, MaterialItem
 from apps.courses.services.video import extract_video_info
+from apps.courses.validators_materials import VIEW_ONLY_ALLOWED_EXTENSIONS, validate_material_file
 from apps.dashboard.slug_utils import generate_course_slug, validate_ascii_slug
 
 KATHMANDU_TZ = zoneinfo.ZoneInfo("Asia/Kathmandu")
@@ -391,3 +393,288 @@ class TeacherAssignmentForm(forms.ModelForm):
         if commit:
             assignment.save()
         return assignment
+
+
+class TeacherMaterialForm(forms.ModelForm):
+    """
+    Form for creating and editing CourseMaterial posts.
+    Scoped to course, validates linked lesson, plain text escaping.
+    """
+
+    class Meta:
+        model = CourseMaterial
+        fields = [
+            "title",
+            "lesson",
+            "is_published",
+            "is_archived",
+        ]
+        widgets = {
+            "title": forms.TextInput(attrs={"placeholder": "e.g. Week 1 Lecture Slides & Cheatsheets"}),
+        }
+
+    def __init__(self, *args, course=None, **kwargs):
+        self.course = course
+        super().__init__(*args, **kwargs)
+
+        if self.course:
+            self.fields["lesson"].queryset = Lesson.objects.filter(course=self.course).order_by("order", "id")
+            self.fields["lesson"].empty_label = _("None (Course-wide Resource)")
+        else:
+            self.fields["lesson"].empty_label = _("None (Course-wide Resource)")
+
+    def clean_title(self):
+        title = self.cleaned_data.get("title", "").strip()
+        if not title:
+            raise ValidationError(_("Material title is required."))
+        return escape(title)
+
+    def clean_lesson(self):
+        lesson = self.cleaned_data.get("lesson")
+        if lesson and self.course and lesson.course_id != self.course.id:
+            raise ValidationError(_("Selected lesson does not belong to this course."))
+        return lesson
+
+    def save(self, commit=True):
+        mat = super().save(commit=False)
+        if self.course and not mat.course_id:
+            mat.course = self.course
+        if not mat.pk:
+            max_order = CourseMaterial.objects.filter(course=self.course).aggregate(m=Max("order"))["m"] or 0
+            mat.order = max_order + 1
+        if commit:
+            mat.save()
+        return mat
+
+
+class TeacherMaterialItemForm(forms.ModelForm):
+    """
+    Form for creating and editing MaterialItems (file, link, video).
+    Enforces safe URLs, video IDs, view-only file types, and detects file replacements.
+    """
+
+    file = forms.FileField(
+        required=False,
+        validators=[validate_material_file],
+        label=_("File Upload"),
+        help_text=_("PDF, Office documents, plain text, or images up to 25 MB."),
+    )
+
+    class Meta:
+        model = MaterialItem
+        fields = [
+            "title",
+            "item_type",
+            "file",
+            "external_url",
+            "video_provider",
+            "video_id",
+            "video_hash",
+            "download_policy",
+            "is_published",
+        ]
+        widgets = {
+            "title": forms.TextInput(attrs={"placeholder": "e.g. Architecture Reference Diagram"}),
+            "external_url": forms.URLInput(attrs={"placeholder": "https://example.com/docs"}),
+            "video_id": forms.TextInput(attrs={"placeholder": "Video ID or full URL"}),
+            "video_hash": forms.TextInput(attrs={"placeholder": "Optional privacy hash (Bunny/Vimeo)"}),
+        }
+
+    def __init__(self, *args, material=None, **kwargs):
+        self.material = material
+        self.is_replacing_file = False
+        super().__init__(*args, **kwargs)
+        self.fields["download_policy"].required = False
+        self.fields["download_policy"].initial = MaterialItem.DownloadPolicy.REQUEST_REQUIRED
+        self.fields["external_url"].required = False
+        self.fields["video_id"].required = False
+
+    def clean_title(self):
+        return escape(self.cleaned_data.get("title", "").strip())
+
+    def clean_external_url(self):
+        val = self.cleaned_data.get("external_url", "").strip()
+        if val:
+            validate_safe_url(val)
+        return val
+
+    def clean(self):
+        cleaned_data = super().clean()
+        item_type = cleaned_data.get("item_type")
+        file = cleaned_data.get("file")
+        policy = cleaned_data.get("download_policy")
+        if not policy:
+            policy = MaterialItem.DownloadPolicy.REQUEST_REQUIRED
+            cleaned_data["download_policy"] = policy
+        ext_url = cleaned_data.get("external_url")
+        vid_id = cleaned_data.get("video_id")
+
+        if item_type == MaterialItem.ItemType.FILE:
+            # Must have a file if creating or if existing has none
+            if not file and not (self.instance.pk and self.instance.file):
+                self.add_error("file", _("A file is required for file items."))
+
+            # Detect replacement
+            if self.instance.pk and self.instance.file and file:
+                self.is_replacing_file = True
+
+            # If policy is view_only, check extension
+            if policy == MaterialItem.DownloadPolicy.VIEW_ONLY:
+                check_name = file.name if file else (self.instance.original_filename or (self.instance.file.name if self.instance.file else ""))
+                import os
+                ext = os.path.splitext(check_name)[1].lower().lstrip(".")
+                if ext not in VIEW_ONLY_ALLOWED_EXTENSIONS:
+                    self.add_error(
+                        "download_policy",
+                        _("View-only policy is strictly restricted to PDF documents and image files (PNG, JPG).")
+                    )
+
+        elif item_type == MaterialItem.ItemType.LINK:
+            if not ext_url:
+                self.add_error("external_url", _("External URL is required for link items."))
+
+        elif item_type == MaterialItem.ItemType.VIDEO:
+            if not vid_id:
+                self.add_error("video_id", _("Video identifier or URL is required for video items."))
+            else:
+                provider = cleaned_data.get("video_provider") or Lesson.VideoProvider.BUNNY
+                extracted = extract_video_info(vid_id, provider)
+                cleaned_data["video_id"] = extracted["video_id"]
+                if extracted.get("provider"):
+                    cleaned_data["video_provider"] = extracted["provider"]
+                if extracted.get("video_hash") and not cleaned_data.get("video_hash"):
+                    cleaned_data["video_hash"] = extracted["video_hash"]
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        item = super().save(commit=False)
+        if self.material and not item.material_id:
+            item.material = self.material
+        if not item.pk:
+            max_order = MaterialItem.objects.filter(material=self.material).aggregate(m=Max("order"))["m"] or 0
+            item.order = max_order + 1
+        if commit:
+            item.save()
+        return item
+
+
+class TeacherSiteSettingsForm(forms.ModelForm):
+    """
+    Form for editing global SiteSettings in the teacher portal.
+    Sanitizes plain text, validates images and social URLs.
+    """
+
+    teacher_photo = forms.FileField(
+        required=False,
+        validators=[validate_image_file],
+        label=_("Teacher Photo"),
+        help_text=_("Recommended: 800x800 square portrait (PNG/JPG, max 5 MB). WebP is auto-generated."),
+    )
+
+    class Meta:
+        model = SiteSettings
+        fields = [
+            "site_name",
+            "hero_headline",
+            "hero_subheadline",
+            "teacher_name",
+            "teacher_title",
+            "teacher_bio",
+            "teacher_photo",
+            "contact_email",
+            "github_url",
+            "twitter_url",
+            "linkedin_url",
+            "youtube_url",
+        ]
+        widgets = {
+            "site_name": forms.TextInput(attrs={"placeholder": "Teaching Platform"}),
+            "hero_headline": forms.TextInput(attrs={"placeholder": "Master Skills with Structured Lessons..."}),
+            "hero_subheadline": forms.Textarea(attrs={"rows": 3}),
+            "teacher_name": forms.TextInput(attrs={"placeholder": "e.g. Rashni Magar"}),
+            "teacher_title": forms.TextInput(attrs={"placeholder": "e.g. Senior Software Engineer"}),
+            "teacher_bio": forms.Textarea(attrs={"rows": 4}),
+            "contact_email": forms.EmailInput(attrs={"placeholder": "teacher@example.com"}),
+            "github_url": forms.URLInput(attrs={"placeholder": "https://github.com/..."}),
+            "twitter_url": forms.URLInput(attrs={"placeholder": "https://x.com/..."}),
+            "linkedin_url": forms.URLInput(attrs={"placeholder": "https://linkedin.com/in/..."}),
+            "youtube_url": forms.URLInput(attrs={"placeholder": "https://youtube.com/@..."}),
+        }
+
+    def clean_site_name(self):
+        return escape(self.cleaned_data.get("site_name", "").strip())
+
+    def clean_hero_headline(self):
+        return escape(self.cleaned_data.get("hero_headline", "").strip())
+
+    def clean_hero_subheadline(self):
+        return escape(self.cleaned_data.get("hero_subheadline", "").strip())
+
+    def clean_teacher_name(self):
+        return escape(self.cleaned_data.get("teacher_name", "").strip())
+
+    def clean_teacher_title(self):
+        return escape(self.cleaned_data.get("teacher_title", "").strip())
+
+    def clean_teacher_bio(self):
+        return escape(self.cleaned_data.get("teacher_bio", "").strip())
+
+    def clean_github_url(self):
+        val = self.cleaned_data.get("github_url", "").strip()
+        if val:
+            validate_safe_url(val)
+        return val
+
+    def clean_twitter_url(self):
+        val = self.cleaned_data.get("twitter_url", "").strip()
+        if val:
+            validate_safe_url(val)
+        return val
+
+    def clean_linkedin_url(self):
+        val = self.cleaned_data.get("linkedin_url", "").strip()
+        if val:
+            validate_safe_url(val)
+        return val
+
+    def clean_youtube_url(self):
+        val = self.cleaned_data.get("youtube_url", "").strip()
+        if val:
+            validate_safe_url(val)
+        return val
+
+
+class TeacherFAQForm(forms.ModelForm):
+    """
+    Form for creating and editing FAQ items.
+    Escapes text, handles order assignment.
+    """
+
+    class Meta:
+        model = FAQItem
+        fields = [
+            "question",
+            "answer",
+            "is_published",
+        ]
+        widgets = {
+            "question": forms.TextInput(attrs={"placeholder": "e.g. Can I download lesson materials for offline study?"}),
+            "answer": forms.Textarea(attrs={"rows": 4, "placeholder": "Detailed answer explaining the policy..."}),
+        }
+
+    def clean_question(self):
+        return escape(self.cleaned_data.get("question", "").strip())
+
+    def clean_answer(self):
+        return escape(self.cleaned_data.get("answer", "").strip())
+
+    def save(self, commit=True):
+        faq = super().save(commit=False)
+        if not faq.pk:
+            max_order = FAQItem.objects.aggregate(m=Max("order"))["m"] or 0
+            faq.order = max_order + 1
+        if commit:
+            faq.save()
+        return faq
+

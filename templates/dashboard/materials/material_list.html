@@ -1,0 +1,356 @@
+{% extends "dashboard/teacher_base.html" %}
+
+{% block title %}Materials: {{ course.title }} — Teacher Portal — {{ site_settings.site_name }}{% endblock title %}
+
+{% block dashboard_content %}
+<div>
+  <!-- Breadcrumb -->
+  <nav class="mb-6 flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400" aria-label="Breadcrumb">
+    <a href="{% url 'dashboard:teacher' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      Teacher Portal
+    </a>
+    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
+    <a href="{% url 'dashboard:teacher_courses' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+      Courses
+    </a>
+    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
+    <span class="font-medium text-slate-900 dark:text-white truncate max-w-xs" aria-current="page">
+      {{ course.title }} Materials
+    </span>
+  </nav>
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pb-6 border-b border-slate-200 dark:border-slate-800">
+    <div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display">
+          Course Materials
+        </h1>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+          {{ total_count }} Post{{ total_count|pluralize }} &bull; {{ total_items }} Item{{ total_items|pluralize }}
+        </span>
+      </div>
+      <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+        Course: <strong class="text-slate-900 dark:text-white">{{ course.title }}</strong> (/{{ course.slug }})
+      </p>
+    </div>
+    <div class="flex items-center flex-wrap gap-3">
+      <a
+        href="{% url 'dashboard:teacher_course_lessons' course.slug %}"
+        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+      >
+        <span>View Lessons</span>
+      </a>
+      <a
+        href="{% url 'dashboard:teacher_material_create' course.slug %}"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 min-h-[44px]"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>Add Resource Post</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+    <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+      <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Posts</p>
+      <p class="text-2xl font-bold text-slate-900 dark:text-white mt-1">{{ total_count }}</p>
+    </div>
+    <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+      <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Published Posts</p>
+      <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{{ published_count }}</p>
+    </div>
+    <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+      <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Items</p>
+      <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{{ total_items }}</p>
+    </div>
+    <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+      <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Archived</p>
+      <p class="text-2xl font-bold text-slate-500 dark:text-slate-400 mt-1">{{ archived_count }}</p>
+    </div>
+  </div>
+
+  <!-- Materials Posts -->
+  {% if materials %}
+    <div class="space-y-6">
+      {% for material in materials %}
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+          <!-- Material Post Header -->
+          <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/30">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold text-xs">
+                  #{{ material.order }}
+                </span>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">
+                  {{ material.title }}
+                </h2>
+                {% if material.is_archived %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    Archived
+                  </span>
+                {% elif material.is_published %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    Published
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                    Draft
+                  </span>
+                {% endif %}
+                {% if material.lesson %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900">
+                    Lesson: {{ material.lesson.title }}
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                    Course-wide
+                  </span>
+                {% endif %}
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {{ material.items.count }} item{{ material.items.count|pluralize }} &bull;
+                {{ material.total_downloads_count|default:0 }} total download{{ material.total_downloads_count|default:0|pluralize }}
+                {% if material.pending_requests_count %}
+                  &bull; <strong class="text-amber-600 dark:text-amber-400">{{ material.pending_requests_count }} pending request{{ material.pending_requests_count|pluralize }}</strong>
+                {% endif %}
+              </p>
+            </div>
+
+            <!-- Material Actions -->
+            <div class="flex items-center flex-wrap gap-2">
+              <a
+                href="{% url 'dashboard:teacher_material_item_create' slug=course.slug material_id=material.id %}"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Add Item</span>
+              </a>
+              <a
+                href="{% url 'dashboard:teacher_material_edit' slug=course.slug material_id=material.id %}"
+                class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+              >
+                Edit Post
+              </a>
+              <!-- Toggle Publish Form -->
+              <form method="post" action="{% url 'dashboard:teacher_material_toggle_publish' slug=course.slug material_id=material.id %}" class="inline">
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                >
+                  {% if material.is_published %}Unpublish{% else %}Publish{% endif %}
+                </button>
+              </form>
+              <!-- Archive Form -->
+              <form method="post" action="{% url 'dashboard:teacher_material_archive' slug=course.slug material_id=material.id %}" class="inline">
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                >
+                  {% if material.is_archived %}Restore{% else %}Archive{% endif %}
+                </button>
+              </form>
+              <!-- Delete Form (with confirmation) -->
+              <form method="post" action="{% url 'dashboard:teacher_material_delete' slug=course.slug material_id=material.id %}" class="inline" onsubmit="return confirm('Delete this resource post? If it has student download history, deletion will be blocked and you can unpublish instead.');">
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  class="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/50 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                >
+                  Delete
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Items Inside Container -->
+          <div class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for item in material.items.all %}
+              <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                <div class="flex items-center gap-3 min-w-0">
+                  <!-- Type Icon -->
+                  <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 {% if item.item_type == 'file' %}bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300{% elif item.item_type == 'video' %}bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300{% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300{% endif %}">
+                    {% if item.item_type == 'file' %}
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    {% elif item.item_type == 'video' %}
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    {% else %}
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                    {% endif %}
+                  </div>
+
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="font-bold text-sm text-slate-900 dark:text-white truncate">
+                        {{ item.title }}
+                      </span>
+                      <!-- Type Badge -->
+                      <span class="inline-flex items-center px-2 py-0.2 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        {{ item.get_item_type_display }}
+                      </span>
+                      <!-- Policy Badge (for files) -->
+                      {% if item.item_type == 'file' %}
+                        {% if item.download_policy == 'view_only' %}
+                          <span class="inline-flex items-center px-2 py-0.2 rounded text-[11px] font-semibold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                            View Only
+                          </span>
+                        {% elif item.download_policy == 'open_to_enrolled' %}
+                          <span class="inline-flex items-center px-2 py-0.2 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                            Open to All
+                          </span>
+                        {% else %}
+                          <span class="inline-flex items-center px-2 py-0.2 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                            Request Required
+                          </span>
+                        {% endif %}
+                      {% endif %}
+                      <!-- Published Badge -->
+                      {% if item.is_published %}
+                        <span class="inline-flex items-center px-2 py-0.2 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                          Live
+                        </span>
+                      {% else %}
+                        <span class="inline-flex items-center px-2 py-0.2 rounded text-[11px] font-semibold bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                          Draft
+                        </span>
+                      {% endif %}
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {% if item.item_type == 'file' %}
+                        {{ item.original_filename|default:item.file.name|slice:"15:" }} &bull;
+                        {{ item.file_size_bytes|filesizeformat }}
+                      {% elif item.item_type == 'link' %}
+                        <a href="{{ item.external_url }}" target="_blank" rel="noopener noreferrer" class="hover:underline text-indigo-600 dark:text-indigo-400">{{ item.external_url|truncatechars:45 }}</a>
+                      {% elif item.item_type == 'video' %}
+                        {{ item.get_video_provider_display }}: {{ item.video_id }}
+                      {% endif %}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Item Actions -->
+                <div class="flex items-center flex-wrap gap-1.5 shrink-0 pl-12 sm:pl-0">
+                  <!-- Reorder Up/Down -->
+                  <form method="post" action="{% url 'dashboard:teacher_material_item_reorder' slug=course.slug material_id=material.id item_id=item.id %}" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="direction" value="up">
+                    <button type="submit" class="p-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300" title="Move Up">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                    </button>
+                  </form>
+                  <form method="post" action="{% url 'dashboard:teacher_material_item_reorder' slug=course.slug material_id=material.id item_id=item.id %}" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="direction" value="down">
+                    <button type="submit" class="p-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300" title="Move Down">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                  </form>
+
+                  <!-- For files: Policy & History -->
+                  {% if item.item_type == 'file' %}
+                    <a
+                      href="{% url 'dashboard:teacher_material_item_policy' slug=course.slug material_id=material.id item_id=item.id %}"
+                      class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      title="Manage download permissions and policy"
+                    >
+                      Policy
+                    </a>
+                    <a
+                      href="{% url 'dashboard:teacher_material_item_history' slug=course.slug material_id=material.id item_id=item.id %}"
+                      class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      title="View audit download history"
+                    >
+                      History
+                    </a>
+                  {% endif %}
+
+                  <!-- Edit Item -->
+                  <a
+                    href="{% url 'dashboard:teacher_material_item_edit' slug=course.slug material_id=material.id item_id=item.id %}"
+                    class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    Edit
+                  </a>
+
+                  <!-- Toggle Publish Item -->
+                  <form method="post" action="{% url 'dashboard:teacher_material_item_toggle_publish' slug=course.slug material_id=material.id item_id=item.id %}" class="inline">
+                    {% csrf_token %}
+                    <button
+                      type="submit"
+                      class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    >
+                      {% if item.is_published %}Hide{% else %}Publish{% endif %}
+                    </button>
+                  </form>
+
+                  <!-- Delete Item -->
+                  <form method="post" action="{% url 'dashboard:teacher_material_item_delete' slug=course.slug material_id=material.id item_id=item.id %}" class="inline" onsubmit="return confirm('Delete this item? Note: Items with download request or access history cannot be deleted and should be unpublished instead.');">
+                    {% csrf_token %}
+                    <button
+                      type="submit"
+                      class="px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900/40 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                    >
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {% empty %}
+              <div class="p-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                No items in this post yet.
+                <a href="{% url 'dashboard:teacher_material_item_create' slug=course.slug material_id=material.id %}" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline ml-1">
+                  Add the first item &rarr;
+                </a>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <!-- Empty State -->
+    <div class="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 mb-4">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      </div>
+      <h3 class="text-base font-bold text-slate-900 dark:text-white">
+        No Resource Posts Yet
+      </h3>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+        Create a resource container to organize slides, worksheets, documents, and external links for this course.
+      </p>
+      <div class="mt-6">
+        <a
+          href="{% url 'dashboard:teacher_material_create' course.slug %}"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Create Resource Post</span>
+        </a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock dashboard_content %}

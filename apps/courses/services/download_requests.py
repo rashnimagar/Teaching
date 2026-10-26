@@ -89,10 +89,13 @@ def transition_download_request(
             )
 
         elif new_status == DownloadRequest.Status.REVOKED:
+            if teacher_note:
+                locked_req.teacher_note = teacher_note.strip()
             notif_kind = Notification.Kind.DOWNLOAD_REVOKED
             notif_title = f"Download Access Revoked: {item.title}"
+            note_part = f"\nNote: {locked_req.teacher_note}" if locked_req.teacher_note else ""
             notif_body = (
-                f"Download access for '{item.title}' in the course '{course.title}' has been revoked by the instructor."
+                f"Download access for '{item.title}' in the course '{course.title}' has been revoked by the instructor.{note_part}"
             )
 
         else:
@@ -146,3 +149,133 @@ def approve_for_all_enrolled(material_item: MaterialItem, decided_by) -> tuple[i
                 skipped_count += 1
 
         return resolved_count, skipped_count
+
+
+def switch_policy_to_view_only(material_item: MaterialItem, decided_by) -> tuple[int, int]:
+    """
+    Switches a material item's download policy to 'view_only'.
+    - Validates that the item is a PDF or image file.
+    - Closes all pending requests as DENIED with note 'This file is now view-only'.
+    - Revokes all approved requests as REVOKED with note 'This file is now view-only'.
+    - Notifies each affected student through transition_download_request.
+    - Returns (denied_count, revoked_count).
+    """
+    if not (material_item.is_pdf or material_item.is_image):
+        from django.core.exceptions import ValidationError
+        raise ValidationError("View-only policy is strictly restricted to PDF documents and image files (PNG, JPG).")
+
+    with transaction.atomic():
+        locked_item = MaterialItem.objects.select_for_update().get(pk=material_item.pk)
+        locked_item.download_policy = MaterialItem.DownloadPolicy.VIEW_ONLY
+        locked_item.save(update_fields=["download_policy", "updated_at"])
+
+        pending_reqs = list(
+            DownloadRequest.objects.filter(
+                material_item=locked_item,
+                status=DownloadRequest.Status.PENDING,
+            ).select_for_update()
+        )
+        approved_reqs = list(
+            DownloadRequest.objects.filter(
+                material_item=locked_item,
+                status=DownloadRequest.Status.APPROVED,
+            ).select_for_update()
+        )
+
+        denied_count = 0
+        for req in pending_reqs:
+            _, success, _ = transition_download_request(
+                request_obj=req,
+                new_status=DownloadRequest.Status.DENIED,
+                decided_by=decided_by,
+                teacher_note="This file is now view-only",
+            )
+            if success:
+                denied_count += 1
+
+        revoked_count = 0
+        for req in approved_reqs:
+            _, success, _ = transition_download_request(
+                request_obj=req,
+                new_status=DownloadRequest.Status.REVOKED,
+                decided_by=decided_by,
+                teacher_note="This file is now view-only",
+            )
+            if success:
+                revoked_count += 1
+
+        return denied_count, revoked_count
+
+
+def switch_policy_away_from_open_to_enrolled(
+    material_item: MaterialItem,
+    new_policy: str,
+    keep_access_for_existing: bool,
+    decided_by,
+) -> tuple[int, int]:
+    """
+    Switches a material item's policy away from 'open_to_enrolled'.
+    If keep_access_for_existing is True, finds all students who downloaded the file
+    from DownloadLog and ensures they have an active APPROVED DownloadRequest.
+    Returns (downloaded_student_count, access_preserved_count).
+    """
+    from apps.courses.models import DownloadLog
+
+    with transaction.atomic():
+        locked_item = MaterialItem.objects.select_for_update().get(pk=material_item.pk)
+        locked_item.download_policy = new_policy
+        locked_item.save(update_fields=["download_policy", "updated_at"])
+
+        downloaded_student_ids = list(
+            DownloadLog.objects.filter(material_item=locked_item)
+            .values_list("student_id", flat=True)
+            .distinct()
+        )
+        downloaded_count = len(downloaded_student_ids)
+        preserved_count = 0
+
+        if keep_access_for_existing and downloaded_student_ids:
+            now = timezone.now()
+            for student_id in downloaded_student_ids:
+                existing_req = (
+                    DownloadRequest.objects.filter(
+                        student_id=student_id,
+                        material_item=locked_item,
+                    )
+                    .order_by("-requested_at")
+                    .first()
+                )
+                if existing_req:
+                    if existing_req.status == DownloadRequest.Status.APPROVED:
+                        preserved_count += 1
+                    elif existing_req.status == DownloadRequest.Status.PENDING:
+                        _, success, _ = transition_download_request(
+                            request_obj=existing_req,
+                            new_status=DownloadRequest.Status.APPROVED,
+                            decided_by=decided_by,
+                            teacher_note="Access preserved after policy change.",
+                        )
+                        if success:
+                            preserved_count += 1
+                    elif existing_req.status in (DownloadRequest.Status.DENIED, DownloadRequest.Status.REVOKED):
+                        _, success, _ = transition_download_request(
+                            request_obj=existing_req,
+                            new_status=DownloadRequest.Status.APPROVED,
+                            decided_by=decided_by,
+                            teacher_note="Access restored after policy change.",
+                        )
+                        if success:
+                            preserved_count += 1
+                else:
+                    DownloadRequest.objects.create(
+                        student_id=student_id,
+                        material_item=locked_item,
+                        status=DownloadRequest.Status.APPROVED,
+                        decided_by=decided_by,
+                        decided_at=now,
+                        teacher_note="Access granted based on prior downloads.",
+                    )
+                    preserved_count += 1
+
+        return downloaded_count, preserved_count
+

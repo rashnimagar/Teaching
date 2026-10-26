@@ -162,6 +162,13 @@
                   {% if evt.metadata %}
                     <p class="text-[11px] text-slate-400 font-mono mt-0.5">{{ evt.metadata }}</p>
                   {% endif %}
+                  {% if evt.old_grade is not None or evt.new_grade is not None %}
+                    <p class="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5">
+                      {% if evt.old_grade is not None %}{% trans "Prior Grade:" %} {{ evt.old_grade }}{% endif %}
+                      {% if evt.old_grade is not None and evt.new_grade is not None %} &rarr; {% endif %}
+                      {% if evt.new_grade is not None %}{% trans "New Grade:" %} {{ evt.new_grade }}{% endif %}
+                    </p>
+                  {% endif %}
                 </div>
                 <div class="text-right text-[11px] text-slate-400 shrink-0">
                   <p class="font-medium text-slate-600 dark:text-slate-300">{{ evt.actor.get_full_name|default:evt.actor.email|default:"System" }}</p>
@@ -187,6 +194,23 @@
             {% trans "Max:" %} {{ assignment.max_score }}
           </span>
         </h2>
+
+        {% for evt in events %}
+          {% if evt.action == 'resubmitted' and forloop.first %}
+            <div class="mb-4 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-900 dark:text-amber-200">
+              <p class="font-bold flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span>{% trans "Resubmitted Work Needs Review" %}</span>
+              </p>
+              <p class="mt-1 text-slate-600 dark:text-slate-300">
+                {% trans "Student revised and resubmitted their work after unlock." %}
+                {% if evt.old_grade is not None %}
+                  {% trans "Previous score was" %}: <strong class="text-slate-900 dark:text-white">{{ evt.old_grade }} / {{ assignment.max_score }}</strong>.
+                {% endif %}
+              </p>
+            </div>
+          {% endif %}
+        {% endfor %}
 
         {% if submission.grade is not None %}
           <div class="mb-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">

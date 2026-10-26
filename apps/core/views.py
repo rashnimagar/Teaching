@@ -1,12 +1,14 @@
 import logging
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db import connection
 from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 
+from apps.core.constants import FAQ_CACHE_KEY
 from apps.core.models import FAQItem, SiteSettings
 from apps.core.utils import serialize_json_ld
 from apps.courses.models import Course
@@ -29,7 +31,10 @@ def home_view(request):
         .order_by("-is_featured", "-created_at")[:6]
     )
 
-    faqs = FAQItem.objects.filter(is_published=True).order_by("order", "id")
+    faqs = cache.get(FAQ_CACHE_KEY)
+    if faqs is None:
+        faqs = list(FAQItem.objects.filter(is_published=True).order_by("order", "id"))
+        cache.set(FAQ_CACHE_KEY, faqs, timeout=3600)
 
     # Generate EducationalOrganization Schema.org JSON-LD
     org_schema = {

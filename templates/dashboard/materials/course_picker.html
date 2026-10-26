@@ -1,0 +1,100 @@
+{% extends "dashboard/teacher_base.html" %}
+{% load i18n %}
+
+{% block teacher_title %}{% trans "Course Materials Hub" %}{% endblock %}
+
+{% block dashboard_content %}
+<div class="space-y-6 max-w-6xl mx-auto">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
+        <a href="{% url 'dashboard:teacher' %}" class="hover:underline">{% trans "Teacher Portal" %}</a>
+        <span>/</span>
+        <span>{% trans "Materials Hub" %}</span>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+        {% trans "Course Materials & Resources" %}
+      </h1>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+        {% trans "Select a course to manage downloadable assets, starter files, and access policies." %}
+      </p>
+    </div>
+
+    <div>
+      <a
+        href="{% url 'dashboard:teacher_courses' %}"
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        <span>{% trans "Course Directory" %}</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Course Picker Grid -->
+  {% if courses %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for course in courses %}
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold {% if course.is_published %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300{% else %}bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400{% endif %}">
+                {% if course.is_published %}{% trans "Published" %}{% else %}{% trans "Draft" %}{% endif %}
+              </span>
+              <span class="text-xs text-slate-400 font-mono">{{ course.slug }}</span>
+            </div>
+
+            <h2 class="text-base font-bold text-slate-900 dark:text-white line-clamp-1">
+              {{ course.title }}
+            </h2>
+
+            <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+              {{ course.short_description|default:course.title }}
+            </p>
+
+            <div class="pt-2 flex items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                {{ course.materials_count }} {% trans "Posts" %}
+              </span>
+              <span class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {{ course.items_count }} {% trans "Items" %}
+              </span>
+            </div>
+          </div>
+
+          <div class="pt-4 mt-4">
+            <a
+              href="{% url 'dashboard:teacher_course_materials' slug=course.slug %}"
+              class="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition"
+            >
+              <span>{% trans "Manage Materials" %}</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-12 text-center">
+      <div class="w-12 h-12 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      </div>
+      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">{% trans "No courses found" %}</h3>
+      <p class="text-xs text-slate-400 mt-1">{% trans "Create a course before organizing educational materials." %}</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

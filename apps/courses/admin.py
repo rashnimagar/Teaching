@@ -219,6 +219,7 @@ class MaterialItemInline(admin.StackedInline):
         "order",
         "title",
         "item_type",
+        "is_published",
         "download_policy",
         "file",
         "original_filename",
@@ -242,8 +243,8 @@ class CourseMaterialAdmin(admin.ModelAdmin):
 
 @admin.register(MaterialItem)
 class MaterialItemAdmin(admin.ModelAdmin):
-    list_display = ["title", "material", "item_type", "download_policy", "order", "created_at"]
-    list_filter = ["item_type", "download_policy", "material__course"]
+    list_display = ["title", "material", "item_type", "is_published", "download_policy", "order", "created_at"]
+    list_filter = ["is_published", "item_type", "download_policy", "material__course"]
     search_fields = ["title", "material__title", "material__course__title"]
     list_select_related = ["material", "material__course"]
     readonly_fields = ["created_at", "updated_at"]

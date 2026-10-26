@@ -226,6 +226,11 @@ ASSIGNMENT_ZIP_MAX_UNCOMPRESSED_BYTES = env.int(
     "ASSIGNMENT_ZIP_MAX_UNCOMPRESSED_BYTES", default=50 * 1024 * 1024
 )
 
+# Material Files Configuration
+MATERIAL_MAX_FILE_SIZE_BYTES = env.int(
+    "MATERIAL_MAX_FILE_SIZE_BYTES", default=25 * 1024 * 1024
+)  # 25 MB
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
