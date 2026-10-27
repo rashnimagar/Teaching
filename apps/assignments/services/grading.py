@@ -3,13 +3,13 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from apps.assignments.models import Submission, SubmissionEvent
 from apps.notifications.models import Notification
 from apps.notifications.services import create_notification
-from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +53,12 @@ def grade_submission(
             )
 
         old_grade = submission.grade
-        grade_changed = (old_grade != grade)
-        is_first_grade = (old_grade is None)
+        grade_changed = old_grade != grade
+        is_first_grade = old_grade is None
 
-        action_name = "graded" if is_first_grade else ("regraded" if grade_changed else "feedback_updated")
+        action_name = (
+            "graded" if is_first_grade else ("regraded" if grade_changed else "feedback_updated")
+        )
 
         submission.feedback = feedback.strip()
 
@@ -106,10 +108,14 @@ def grade_submission(
                         recipient=student,
                         kind=Notification.Kind.SUBMISSION_GRADED,
                         title=str(_("Assignment Graded: %(title)s") % {"title": assign_title}),
-                        body=str(_(
-                            "Your submission for '%(title)s' has been graded: %(grade)s/%(max)s."
-                        ) % {"title": assign_title, "grade": grade_val, "max": max_val}),
-                        url=reverse("assignments:detail", kwargs={"slug": course_slug, "assignment_id": assign_id}),
+                        body=str(
+                            _("Your submission for '%(title)s' has been graded: %(grade)s/%(max)s.")
+                            % {"title": assign_title, "grade": grade_val, "max": max_val}
+                        ),
+                        url=reverse(
+                            "assignments:detail",
+                            kwargs={"slug": course_slug, "assignment_id": assign_id},
+                        ),
                     )
                 except Exception as exc:  # noqa: BLE001
                     logger.error(

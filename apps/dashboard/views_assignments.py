@@ -123,7 +123,8 @@ def teacher_assignment_edit_view(request, slug, assignment_id):
 
             messages.success(
                 request,
-                _("Assignment '%(title)s' updated successfully.") % {"title": updated_assignment.title},
+                _("Assignment '%(title)s' updated successfully.")
+                % {"title": updated_assignment.title},
             )
             return redirect("dashboard:teacher_course_assignments", slug=course.slug)
     else:
@@ -153,12 +154,21 @@ def teacher_assignment_toggle_publish_view(request, slug, assignment_id):
     assignment.save(update_fields=["is_published", "updated_at"])
 
     status_str = "published" if assignment.is_published else "hidden as draft"
-    logger.info("Teacher %s toggled assignment %s (ID %s) to %s", request.user.id, assignment.title, assignment.id, status_str)
+    logger.info(
+        "Teacher %s toggled assignment %s (ID %s) to %s",
+        request.user.id,
+        assignment.title,
+        assignment.id,
+        status_str,
+    )
 
     messages.success(
         request,
         _("Assignment '%(title)s' is now %(status)s.")
-        % {"title": assignment.title, "status": _("published") if assignment.is_published else _("hidden as draft")},
+        % {
+            "title": assignment.title,
+            "status": _("published") if assignment.is_published else _("hidden as draft"),
+        },
     )
     return redirect("dashboard:teacher_course_assignments", slug=course.slug)
 
@@ -185,13 +195,23 @@ def teacher_assignment_delete_view(request, slug, assignment_id):
         )
         messages.error(
             request,
-            _("Cannot delete assignment '%(title)s' because %(count)s student submission(s) exist. You can unpublish it to hide it from students.")
+            _(
+                "Cannot delete assignment '%(title)s' because %(count)s student submission(s) exist. You can unpublish it to hide it from students."
+            )
             % {"title": assignment.title, "count": submissions_count},
         )
         return redirect("dashboard:teacher_course_assignments", slug=course.slug)
 
     assign_title = assignment.title
     assignment.delete()
-    logger.info("Teacher %s deleted assignment '%s' (ID %s) from course %s", request.user.id, assign_title, assignment_id, course.slug)
-    messages.success(request, _("Assignment '%(title)s' deleted successfully.") % {"title": assign_title})
+    logger.info(
+        "Teacher %s deleted assignment '%s' (ID %s) from course %s",
+        request.user.id,
+        assign_title,
+        assignment_id,
+        course.slug,
+    )
+    messages.success(
+        request, _("Assignment '%(title)s' deleted successfully.") % {"title": assign_title}
+    )
     return redirect("dashboard:teacher_course_assignments", slug=course.slug)

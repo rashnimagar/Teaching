@@ -95,9 +95,7 @@ def check_lesson_access(
     return False, redirect("courses:detail", slug=course.slug)
 
 
-def check_material_access(
-    request, course: Course, material=None, is_api: bool = False
-):
+def check_material_access(request, course: Course, material=None, is_api: bool = False):
     """
     Enforces server-side access control for course materials.
 
@@ -112,7 +110,10 @@ def check_material_access(
     """
     # 1. Unpublished course check
     if not course.is_published:
-        if not (request.user.is_authenticated and (request.user.is_staff or getattr(request.user, "is_teacher", False))):
+        if not (
+            request.user.is_authenticated
+            and (request.user.is_staff or getattr(request.user, "is_teacher", False))
+        ):
             raise Http404(_("Course not found."))
 
     # 2. Archived course check
@@ -121,7 +122,11 @@ def check_material_access(
             is_active_student = Enrollment.objects.filter(
                 student=request.user, course=course, status=Enrollment.Status.ACTIVE
             ).exists()
-            if not (request.user.is_staff or getattr(request.user, "is_teacher", False) or is_active_student):
+            if not (
+                request.user.is_staff
+                or getattr(request.user, "is_teacher", False)
+                or is_active_student
+            ):
                 raise Http404(_("Course not found."))
         else:
             raise Http404(_("Course not found."))
@@ -129,11 +134,16 @@ def check_material_access(
     # 3. Material visibility
     if material is not None:
         if not material.is_published or material.is_archived:
-            if not (request.user.is_authenticated and (request.user.is_staff or getattr(request.user, "is_teacher", False))):
+            if not (
+                request.user.is_authenticated
+                and (request.user.is_staff or getattr(request.user, "is_teacher", False))
+            ):
                 raise Http404(_("Material not found."))
 
     # 4. Teacher / Staff bypass
-    if request.user.is_authenticated and (request.user.is_staff or getattr(request.user, "is_teacher", False)):
+    if request.user.is_authenticated and (
+        request.user.is_staff or getattr(request.user, "is_teacher", False)
+    ):
         return True, None
 
     # 5. Anonymous user
@@ -147,7 +157,9 @@ def check_material_access(
     enrollment = Enrollment.objects.filter(student=request.user, course=course).first()
     if not enrollment or enrollment.status != Enrollment.Status.ACTIVE:
         if is_api:
-            return False, HttpResponseForbidden(_("Active enrollment required to access materials."))
+            return False, HttpResponseForbidden(
+                _("Active enrollment required to access materials.")
+            )
         messages.info(request, _("Active course enrollment required to access materials."))
         return False, redirect("courses:detail", slug=course.slug)
 

@@ -243,7 +243,9 @@ class TestMaterialsStudentAccessControl:
         assert resp.status_code == 302
         assert reverse("courses:detail", args=[self.course.slug]) in resp.url
 
-    def test_enrolled_student_sees_materials_and_request_required_has_no_inline_preview(self, client):
+    def test_enrolled_student_sees_materials_and_request_required_has_no_inline_preview(
+        self, client
+    ):
         client.force_login(self.student)
         resp = client.get(reverse("learn:materials", args=[self.course.slug]))
         assert resp.status_code == 200
@@ -265,14 +267,18 @@ class TestMaterialsStudentAccessControl:
         client.force_login(self.student)
 
         # Preview endpoint returns 200 with PDF inline disposition
-        preview_url = reverse("learn:material_preview", args=[self.course.slug, self.view_only_pdf.id])
+        preview_url = reverse(
+            "learn:material_preview", args=[self.course.slug, self.view_only_pdf.id]
+        )
         resp_prev = client.get(preview_url)
         assert resp_prev.status_code == 200
         assert resp_prev["Content-Type"] == "application/pdf"
         assert "inline" in resp_prev["Content-Disposition"]
 
         # Download endpoint strictly refuses (403 Forbidden)
-        download_url = reverse("learn:material_download", args=[self.course.slug, self.view_only_pdf.id])
+        download_url = reverse(
+            "learn:material_download", args=[self.course.slug, self.view_only_pdf.id]
+        )
         resp_dl = client.get(download_url)
         assert resp_dl.status_code == 403
 
@@ -352,7 +358,9 @@ class TestMaterialsStudentAccessControl:
             resp2 = client.post(req_url)
             assert resp2.status_code == 302
             assert DownloadRequest.objects.filter(
-                student=self.student, material_item=self.req_file, status=DownloadRequest.Status.PENDING
+                student=self.student,
+                material_item=self.req_file,
+                status=DownloadRequest.Status.PENDING,
             ).exists()
 
     def test_unenrolled_or_deactivated_student_with_approved_request_cannot_download(self, client):
@@ -408,7 +416,9 @@ class TestMaterialsStudentAccessControl:
 
     def test_approve_for_all_enrolled_resolves_pending_and_notifies(self, user_factory):
         student_b = user_factory(email="student_b_mat@example.com")
-        Enrollment.objects.create(student=student_b, course=self.course, status=Enrollment.Status.ACTIVE)
+        Enrollment.objects.create(
+            student=student_b, course=self.course, status=Enrollment.Status.ACTIVE
+        )
 
         req_a = DownloadRequest.objects.create(
             student=self.student, material_item=self.req_file, status=DownloadRequest.Status.PENDING

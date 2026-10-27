@@ -37,7 +37,7 @@ ignore = [
 "config/settings/*" = ["F403", "F405"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["config", "apps"]
+known-first-party = ["apps", "config"]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -52,7 +52,12 @@ def teacher_permissions_view(request):
     revoked_count = DownloadRequest.objects.filter(status=DownloadRequest.Status.REVOKED).count()
 
     # Apply filters
-    if status_filter in [DownloadRequest.Status.PENDING, DownloadRequest.Status.APPROVED, DownloadRequest.Status.DENIED, DownloadRequest.Status.REVOKED]:
+    if status_filter in [
+        DownloadRequest.Status.PENDING,
+        DownloadRequest.Status.APPROVED,
+        DownloadRequest.Status.DENIED,
+        DownloadRequest.Status.REVOKED,
+    ]:
         queryset = queryset.filter(status=status_filter)
 
     if course_filter.isdigit():
@@ -104,11 +109,17 @@ def teacher_permission_action_view(request, request_id):
     Guarantees row locking, idempotency, and notifications via transition_download_request.
     """
     req_obj = get_object_or_404(
-        DownloadRequest.objects.select_related("student", "material_item", "material_item__material__course"),
+        DownloadRequest.objects.select_related(
+            "student", "material_item", "material_item__material__course"
+        ),
         pk=request_id,
     )
     action = request.POST.get("action", "").strip().lower()
-    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "/dashboard/teacher/permissions/"
+    next_url = (
+        request.POST.get("next")
+        or request.META.get("HTTP_REFERER")
+        or "/dashboard/teacher/permissions/"
+    )
 
     if action == "approve":
         # Check for expiry date or days preset
@@ -132,7 +143,10 @@ def teacher_permission_action_view(request, request_id):
             expires_at=expires_at,
         )
         if success:
-            messages.success(request, f"Approved request for {req_obj.student.email} ({req_obj.material_item.title}).")
+            messages.success(
+                request,
+                f"Approved request for {req_obj.student.email} ({req_obj.material_item.title}).",
+            )
         else:
             messages.warning(request, message)
 
@@ -145,7 +159,9 @@ def teacher_permission_action_view(request, request_id):
             teacher_note=teacher_note,
         )
         if success:
-            messages.success(request, f"Denied request for {req_obj.student.email} with note recorded.")
+            messages.success(
+                request, f"Denied request for {req_obj.student.email} with note recorded."
+            )
         else:
             messages.warning(request, message)
 
@@ -188,7 +204,11 @@ def teacher_permissions_bulk_action_view(request):
     """
     action = request.POST.get("bulk_action", "").strip().lower()
     selected_ids = request.POST.getlist("selected_ids")
-    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "/dashboard/teacher/permissions/"
+    next_url = (
+        request.POST.get("next")
+        or request.META.get("HTTP_REFERER")
+        or "/dashboard/teacher/permissions/"
+    )
 
     if not selected_ids:
         messages.warning(request, "No requests were selected for bulk action.")
@@ -276,7 +296,11 @@ def teacher_approve_for_all_view(request, item_id):
         MaterialItem.objects.select_related("material", "material__course"),
         pk=item_id,
     )
-    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "/dashboard/teacher/permissions/"
+    next_url = (
+        request.POST.get("next")
+        or request.META.get("HTTP_REFERER")
+        or "/dashboard/teacher/permissions/"
+    )
 
     resolved, skipped = approve_for_all_enrolled(item, decided_by=request.user)
 

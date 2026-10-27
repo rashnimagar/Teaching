@@ -1,18 +1,9 @@
-import os
-import tempfile
-from decimal import Decimal
-from unittest.mock import patch
-
 import pytest
-from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import transaction
 from django.test import Client
 from django.urls import reverse
-from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.core.constants import FAQ_CACHE_KEY, SITE_SETTINGS_CACHE_KEY
@@ -23,10 +14,7 @@ from apps.courses.models import (
     CourseMaterial,
     DownloadLog,
     DownloadRequest,
-    Enrollment,
-    Lesson,
     MaterialItem,
-    get_private_storage,
 )
 from apps.courses.validators_materials import validate_material_file
 from apps.notifications.models import Notification
@@ -114,7 +102,10 @@ def create_dummy_txt(filename="notes.txt"):
 class TestSafeUrlValidator:
     def test_valid_http_and_https_urls(self):
         assert validate_safe_url("https://example.com") == "https://example.com"
-        assert validate_safe_url("http://example.com/path?foo=bar#section") == "http://example.com/path?foo=bar#section"
+        assert (
+            validate_safe_url("http://example.com/path?foo=bar#section")
+            == "http://example.com/path?foo=bar#section"
+        )
 
     def test_embedded_credentials_rejected(self):
         with pytest.raises(ValidationError, match="embedded credentials"):
@@ -443,7 +434,9 @@ class TestPolicyTransitions:
 
         pdf_item.refresh_from_db()
         assert pdf_item.download_policy == MaterialItem.DownloadPolicy.REQUEST_REQUIRED
-        assert not DownloadRequest.objects.filter(student=student_user, material_item=pdf_item).exists()
+        assert not DownloadRequest.objects.filter(
+            student=student_user, material_item=pdf_item
+        ).exists()
 
     def test_replacing_file_keeps_approved_requests(
         self, client, teacher_user, student_user, course, material
@@ -537,7 +530,7 @@ class TestCacheInvalidation:
     def test_site_settings_cache_invalidated_immediately(self, client, teacher_user):
         client.force_login(teacher_user)
         # Prime cache
-        s1 = SiteSettings.get_solo()
+        SiteSettings.get_solo()
         assert cache.get(SITE_SETTINGS_CACHE_KEY) is not None
 
         url = reverse("dashboard:teacher_settings")
@@ -555,9 +548,40 @@ class TestCacheInvalidation:
         s2 = SiteSettings.get_solo()
         assert s2.site_name == "Updated Academy"
 
-    def test_faq_cache_invalidated_immediately_on_cud_and_reorder(
-        self, client, teacher_user
-    ):
+    def test_site_settings_form_rejects_invalid_social_links(self, client, teacher_user):
+        """
+        Invalid social links (user:pass@host, javascript:, URL with spaces)
+        must return a 200 response with a form error and not save any changes.
+        """
+        client.force_login(teacher_user)
+        url = reverse("dashboard:teacher_settings")
+        settings_before = SiteSettings.get_solo()
+        original_github = settings_before.github_url
+
+        invalid_urls = [
+            "https://user:pass@github.com/myrepo",
+            "javascript:alert(1)",
+            "https://github.com/my repo",
+        ]
+
+        for invalid in invalid_urls:
+            resp = client.post(
+                url,
+                {
+                    "site_name": settings_before.site_name,
+                    "hero_headline": settings_before.hero_headline,
+                    "hero_subheadline": settings_before.hero_subheadline,
+                    "github_url": invalid,
+                },
+            )
+            assert resp.status_code == 200
+            assert "form" in resp.context
+            assert "github_url" in resp.context["form"].errors
+            # Confirm no change saved
+            reloaded = SiteSettings.objects.get(pk=1)
+            assert reloaded.github_url == original_github
+
+    def test_faq_cache_invalidated_immediately_on_cud_and_reorder(self, client, teacher_user):
         client.force_login(teacher_user)
         # 1. Create FAQ
         url = reverse("dashboard:teacher_faq_create")
@@ -570,7 +594,7 @@ class TestCacheInvalidation:
             },
         )
         # Prime home FAQ cache
-        home_resp = client.get(reverse("core:home"))
+        client.get(reverse("core:home"))
         assert cache.get(FAQ_CACHE_KEY) is not None
 
         # 2. Edit FAQ
@@ -613,23 +637,32 @@ class TestCacheInvalidation:
 @pytest.mark.django_db
 class TestReorderingAndMaxOrder:
     def test_new_material_and_faq_gets_max_plus_one(self, course):
-        mat1 = CourseMaterial.objects.create(course=course, title="M1", order=1)
-        mat2 = CourseMaterial.objects.create(course=course, title="M2", order=2)
+        CourseMaterial.objects.create(course=course, title="M1", order=1)
+        CourseMaterial.objects.create(course=course, title="M2", order=2)
         # Forms assign max + 1
-        from apps.dashboard.forms_teacher import TeacherFAQForm, TeacherMaterialForm, TeacherMaterialItemForm
+        from apps.dashboard.forms_teacher import (
+            TeacherFAQForm,
+            TeacherMaterialForm,
+            TeacherMaterialItemForm,
+        )
 
         mform = TeacherMaterialForm(data={"title": "M3"}, course=course)
         assert mform.is_valid()
         m3 = mform.save()
         assert m3.order == 3
 
-        item1 = MaterialItem.objects.create(material=m3, title="I1", item_type="link", external_url="https://example.com/1", order=1)
-        iform = TeacherMaterialItemForm(data={"title": "I2", "item_type": "link", "external_url": "https://example.com/2"}, material=m3)
+        MaterialItem.objects.create(
+            material=m3, title="I1", item_type="link", external_url="https://example.com/1", order=1
+        )
+        iform = TeacherMaterialItemForm(
+            data={"title": "I2", "item_type": "link", "external_url": "https://example.com/2"},
+            material=m3,
+        )
         assert iform.is_valid()
         item2 = iform.save()
         assert item2.order == 2
 
-        f1 = FAQItem.objects.create(question="Q1", answer="A1", order=1)
+        FAQItem.objects.create(question="Q1", answer="A1", order=1)
         fform = TeacherFAQForm(data={"question": "Q2", "answer": "A2"})
         assert fform.is_valid()
         f2 = fform.save()
@@ -710,47 +743,82 @@ class TestDashboardSecurity:
 
         # Toggle publish post
         resp1 = client.get(
-            reverse("dashboard:teacher_material_toggle_publish", kwargs={"slug": course.slug, "material_id": material.id})
+            reverse(
+                "dashboard:teacher_material_toggle_publish",
+                kwargs={"slug": course.slug, "material_id": material.id},
+            )
         )
         assert resp1.status_code == 405
 
         # Archive post
         resp2 = client.get(
-            reverse("dashboard:teacher_material_archive", kwargs={"slug": course.slug, "material_id": material.id})
+            reverse(
+                "dashboard:teacher_material_archive",
+                kwargs={"slug": course.slug, "material_id": material.id},
+            )
         )
         assert resp2.status_code == 405
 
         # Delete post
         resp3 = client.get(
-            reverse("dashboard:teacher_material_delete", kwargs={"slug": course.slug, "material_id": material.id})
+            reverse(
+                "dashboard:teacher_material_delete",
+                kwargs={"slug": course.slug, "material_id": material.id},
+            )
         )
         assert resp3.status_code == 405
 
         # Toggle publish item
         resp4 = client.get(
-            reverse("dashboard:teacher_material_item_toggle_publish", kwargs={"slug": course.slug, "material_id": material.id, "item_id": item.id})
+            reverse(
+                "dashboard:teacher_material_item_toggle_publish",
+                kwargs={"slug": course.slug, "material_id": material.id, "item_id": item.id},
+            )
         )
         assert resp4.status_code == 405
 
         # Delete item
         resp5 = client.get(
-            reverse("dashboard:teacher_material_item_delete", kwargs={"slug": course.slug, "material_id": material.id, "item_id": item.id})
+            reverse(
+                "dashboard:teacher_material_item_delete",
+                kwargs={"slug": course.slug, "material_id": material.id, "item_id": item.id},
+            )
         )
         assert resp5.status_code == 405
 
         # Reorder item
         resp6 = client.get(
-            reverse("dashboard:teacher_material_item_reorder", kwargs={"slug": course.slug, "material_id": material.id, "item_id": item.id})
+            reverse(
+                "dashboard:teacher_material_item_reorder",
+                kwargs={"slug": course.slug, "material_id": material.id, "item_id": item.id},
+            )
         )
         assert resp6.status_code == 405
 
         # FAQ toggle publish, reorder, delete
         faq = FAQItem.objects.create(question="Q?", answer="A")
-        assert client.get(reverse("dashboard:teacher_faq_toggle_publish", kwargs={"faq_id": faq.id})).status_code == 405
-        assert client.get(reverse("dashboard:teacher_faq_reorder", kwargs={"faq_id": faq.id})).status_code == 405
-        assert client.get(reverse("dashboard:teacher_faq_delete", kwargs={"faq_id": faq.id})).status_code == 405
+        assert (
+            client.get(
+                reverse("dashboard:teacher_faq_toggle_publish", kwargs={"faq_id": faq.id})
+            ).status_code
+            == 405
+        )
+        assert (
+            client.get(
+                reverse("dashboard:teacher_faq_reorder", kwargs={"faq_id": faq.id})
+            ).status_code
+            == 405
+        )
+        assert (
+            client.get(
+                reverse("dashboard:teacher_faq_delete", kwargs={"faq_id": faq.id})
+            ).status_code
+            == 405
+        )
 
-    def test_materials_list_bounded_queries(self, client, teacher_user, course, django_assert_num_queries):
+    def test_materials_list_bounded_queries(
+        self, client, teacher_user, course, django_assert_num_queries
+    ):
         client.force_login(teacher_user)
         SiteSettings.get_solo()  # prime singleton in DB and cache
 

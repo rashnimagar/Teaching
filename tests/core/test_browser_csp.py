@@ -7,11 +7,11 @@ from urllib.parse import urlparse
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 import pytest
+from allauth.account.models import EmailAddress
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
 
-from allauth.account.models import EmailAddress
 from apps.accounts.models import User
 from apps.assignments.models import Assignment, Submission
 from apps.courses.models import Course, CourseMaterial, Enrollment, Lesson, MaterialItem
@@ -117,7 +117,9 @@ class TestBrowserCSPViolations:
             title="Course Documentation",
             is_published=True,
         )
-        pdf_file = SimpleUploadedFile("handout.pdf", b"%PDF-1.4 sample content", content_type="application/pdf")
+        pdf_file = SimpleUploadedFile(
+            "handout.pdf", b"%PDF-1.4 sample content", content_type="application/pdf"
+        )
         pdf_item = MaterialItem.objects.create(
             material=material,
             title="Security Architecture Handout",
@@ -187,16 +189,34 @@ class TestBrowserCSPViolations:
             browser = p.chromium.launch(**launch_kwargs)
             context = browser.new_context()
 
-            # Fulfill external video provider embeds with clean HTML so tests don't depend on external CDN uptime
-            # or trigger external CDN bot-protection scripts (which have their own third-party CSPs).
-            # The browser still evaluates our platform's frame-src before routing to these URLs.
+            # Fulfill external video provider embeds and thumbnails with clean mocks so tests don't depend
+            # on external CDN uptime, DNS, or trigger external CDN bot-protection scripts (with foreign CSPs).
+            # The browser still evaluates our platform's frame-src and img-src before routing to these URLs.
+            def _handle_external_route(route):
+                if "ytimg" in route.request.url:
+                    route.fulfill(
+                        status=200,
+                        content_type="image/jpeg",
+                        body=b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xff\xdb\x00C\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\t\t\x08\n\x0c\x14\r\x0c\x0b\x0b\x0c\x19\x12\x13\x0f\x14\x1d\x1a\x1f\x1e\x1d\x1a\x1c\x1c $.' \",#\x1c\x1c(7),01444\x1f'9=82<.342\xff\xc0\x00\x0b\x08\x00\x01\x00\x01\x01\x01\x11\x00\xff\xc4\x00\x1f\x00\x00\x01\x05\x01\x01\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\xff\xda\x00\x08\x01\x01\x00\x00?\x00\xbf\x00\xff\xd9",
+                    )
+                else:
+                    route.fulfill(
+                        status=200,
+                        content_type="text/html",
+                        body="<!DOCTYPE html><html><head><title>Video Embed</title></head><body>Video Player Mock</body></html>",
+                    )
+
             context.route(
-                lambda url: any(domain in url for domain in ["player.vimeo.com", "iframe.mediadelivery.net", "youtube-nocookie.com"]),
-                lambda route: route.fulfill(
-                    status=200,
-                    content_type="text/html",
-                    body="<!DOCTYPE html><html><head><title>Video Embed</title></head><body>Video Player Mock</body></html>",
+                lambda url: any(
+                    domain in url
+                    for domain in [
+                        "player.vimeo.com",
+                        "iframe.mediadelivery.net",
+                        "youtube-nocookie.com",
+                        "i.ytimg.com",
+                    ]
                 ),
+                _handle_external_route,
             )
 
             page = context.new_page()
@@ -221,7 +241,11 @@ class TestBrowserCSPViolations:
             def on_console(msg):
                 if msg.type == "error":
                     text = msg.text
-                    if "Content Security Policy" in text or "securitypolicyviolation" in text or "csp" in text.lower():
+                    if (
+                        "Content Security Policy" in text
+                        or "securitypolicyviolation" in text
+                        or "csp" in text.lower()
+                    ):
                         console_errors.append(text)
 
             page.on("console", on_console)
@@ -232,12 +256,14 @@ class TestBrowserCSPViolations:
                     violations.append((url, context_name, v))
 
             def visit_and_assert(url: str, expected_status: int, role: str, reverse_name: str = ""):
-                resp = page.goto(url)
+                resp = page.goto(url, wait_until="domcontentloaded")
                 status = resp.status if resp else None
                 name_info = f" ({reverse_name})" if reverse_name else ""
                 print(f"[{role}] HTTP {status} {url}{name_info}")
-                assert status == expected_status, f"Expected HTTP {expected_status} for {url}, got {status}"
-                page.wait_for_load_state("networkidle")
+                assert status == expected_status, (
+                    f"Expected HTTP {expected_status} for {url}, got {status}"
+                )
+                page.wait_for_load_state("domcontentloaded")
                 check_violations(role, url)
                 return resp
 
@@ -245,31 +271,57 @@ class TestBrowserCSPViolations:
             # 1. Guest Routes & Error Pages
             # -----------------------------------------------------------------
             visit_and_assert(f"{live_server.url}{reverse('core:home')}", 200, "Guest", "core:home")
-            visit_and_assert(f"{live_server.url}{reverse('courses:list')}", 200, "Guest", "courses:list")
+            visit_and_assert(
+                f"{live_server.url}{reverse('courses:list')}", 200, "Guest", "courses:list"
+            )
             visit_and_assert(
                 f"{live_server.url}{reverse('courses:detail', kwargs={'slug': course.slug})}",
                 200,
                 "Guest",
                 "courses:detail",
             )
-            visit_and_assert(f"{live_server.url}{reverse('account_login')}", 200, "Guest", "account_login")
-            visit_and_assert(f"{live_server.url}{reverse('account_signup')}", 200, "Guest", "account_signup")
-            visit_and_assert(f"{live_server.url}{reverse('account_reset_password')}", 200, "Guest", "account_reset_password")
-            visit_and_assert(f"{live_server.url}{reverse('account_reset_password_done')}", 200, "Guest", "account_reset_password_done")
-            visit_and_assert(f"{live_server.url}{reverse('core:privacy')}", 200, "Guest", "core:privacy")
-            visit_and_assert(f"{live_server.url}{reverse('core:terms')}", 200, "Guest", "core:terms")
+            visit_and_assert(
+                f"{live_server.url}{reverse('account_login')}", 200, "Guest", "account_login"
+            )
+            visit_and_assert(
+                f"{live_server.url}{reverse('account_signup')}", 200, "Guest", "account_signup"
+            )
+            visit_and_assert(
+                f"{live_server.url}{reverse('account_reset_password')}",
+                200,
+                "Guest",
+                "account_reset_password",
+            )
+            visit_and_assert(
+                f"{live_server.url}{reverse('account_reset_password_done')}",
+                200,
+                "Guest",
+                "account_reset_password_done",
+            )
+            visit_and_assert(
+                f"{live_server.url}{reverse('core:privacy')}", 200, "Guest", "core:privacy"
+            )
+            visit_and_assert(
+                f"{live_server.url}{reverse('core:terms')}", 200, "Guest", "core:terms"
+            )
             visit_and_assert(f"{live_server.url}/403/", 403, "Guest", "core:403")
             visit_and_assert(f"{live_server.url}/404/", 404, "Guest", "core:404")
             visit_and_assert(f"{live_server.url}/500/", 500, "Guest", "core:500")
 
             # Confirm handler500 page is rendered with custom inline <style> permitted by SHA-256 hash
             page.wait_for_selector("text=Unexpected Server Error")
-            card_border_radius = page.evaluate("() => window.getComputedStyle(document.querySelector('.card')).borderRadius")
-            assert card_border_radius in ["24px", "1.5rem"], f"Expected styled card border radius, got {card_border_radius}"
+            card_border_radius = page.evaluate(
+                "() => window.getComputedStyle(document.querySelector('.card')).borderRadius"
+            )
+            assert card_border_radius in ["24px", "1.5rem"], (
+                f"Expected styled card border radius, got {card_border_radius}"
+            )
             check_violations("500 Server Error Page", f"{live_server.url}/500/")
 
             # Custom 404 Not Found check for arbitrary nonexistent route
-            visit_and_assert(f"{live_server.url}/nonexistent-page-404-check/", 404, "Guest", "arbitrary_404")
+            visit_and_assert(
+                f"{live_server.url}/nonexistent-page-404-check/", 404, "Guest", "arbitrary_404"
+            )
 
             # -----------------------------------------------------------------
             # 2. Student Session & Interactions
@@ -282,11 +334,23 @@ class TestBrowserCSPViolations:
             check_violations("Student Login", f"{live_server.url}/accounts/login/")
 
             # 2a. Student Dashboard & Notifications
-            visit_and_assert(f"{live_server.url}{reverse('dashboard:student')}", 200, "Student", "dashboard:student")
-            visit_and_assert(f"{live_server.url}{reverse('notifications:list')}", 200, "Student", "notifications:list")
+            visit_and_assert(
+                f"{live_server.url}{reverse('dashboard:student')}",
+                200,
+                "Student",
+                "dashboard:student",
+            )
+            visit_and_assert(
+                f"{live_server.url}{reverse('notifications:list')}",
+                200,
+                "Student",
+                "notifications:list",
+            )
 
             # 2b. Lesson Page (YouTube) with Facade Click and Mark Complete AJAX under Production CSP
-            lesson_yt_path = reverse("learn:lesson", kwargs={"course_slug": course.slug, "lesson_id": lesson_yt.id})
+            lesson_yt_path = reverse(
+                "learn:lesson", kwargs={"course_slug": course.slug, "lesson_id": lesson_yt.id}
+            )
             lesson_yt_url = f"{live_server.url}{lesson_yt_path}"
             visit_and_assert(lesson_yt_url, 200, "Student", "learn:lesson (YouTube)")
 
@@ -296,53 +360,80 @@ class TestBrowserCSPViolations:
             facade_button.click()
             page.wait_for_selector("#lesson-video-iframe", timeout=5000)
             iframe_src = page.locator("#lesson-video-iframe").get_attribute("src") or ""
-            assert "youtube-nocookie.com" in iframe_src, f"Expected YouTube embed URL, got {iframe_src}"
+            assert "youtube-nocookie.com" in iframe_src, (
+                f"Expected YouTube embed URL, got {iframe_src}"
+            )
             yt_parsed = urlparse(iframe_src)
             assert yt_parsed.hostname in ["www.youtube-nocookie.com", "youtube-nocookie.com"]
-            assert f"https://{yt_parsed.hostname}" in prod_directives["frame-src"] or any(yt_parsed.hostname in s for s in prod_directives["frame-src"])
+            assert f"https://{yt_parsed.hostname}" in prod_directives["frame-src"] or any(
+                yt_parsed.hostname in s for s in prod_directives["frame-src"]
+            )
             page.wait_for_load_state("networkidle")
             check_violations("Student Lesson YouTube Iframe", lesson_yt_url)
 
             # Prove CSRF_COOKIE_HTTPONLY is on: JS document.cookie cannot read csrftoken
             has_js_cookie = page.evaluate("() => document.cookie.includes('csrftoken')")
-            assert not has_js_cookie, "csrftoken cookie must not be accessible via document.cookie when HttpOnly is on"
+            assert not has_js_cookie, (
+                "csrftoken cookie must not be accessible via document.cookie when HttpOnly is on"
+            )
 
             # Prove components.js provides the token from <meta name="csrf-token">
             meta_token = page.evaluate("() => window.getCsrfToken ? window.getCsrfToken() : null")
-            assert meta_token and len(meta_token) > 20, "window.getCsrfToken() must extract valid token from meta tag"
+            assert meta_token and len(meta_token) > 20, (
+                "window.getCsrfToken() must extract valid token from meta tag"
+            )
 
             # Click Mark Complete and assert 200 response
-            toggle_path = reverse("learn:toggle_complete", kwargs={"course_slug": course.slug, "lesson_id": lesson_yt.id})
+            toggle_path = reverse(
+                "learn:toggle_complete",
+                kwargs={"course_slug": course.slug, "lesson_id": lesson_yt.id},
+            )
             complete_url = f"{live_server.url}{toggle_path}"
-            with page.expect_response(lambda r: complete_url in r.url and r.request.method == "POST") as resp_info:
+            with page.expect_response(
+                lambda r: complete_url in r.url and r.request.method == "POST"
+            ) as resp_info:
                 page.click("#toggle-complete-btn")
             complete_resp = resp_info.value
-            print(f"[Student Action] HTTP {complete_resp.status} {complete_resp.url} (learn:toggle_complete)")
-            assert complete_resp.status == 200, f"Expected 200 from toggle-complete, got {complete_resp.status}"
+            print(
+                f"[Student Action] HTTP {complete_resp.status} {complete_resp.url} (learn:toggle_complete)"
+            )
+            assert complete_resp.status == 200, (
+                f"Expected 200 from toggle-complete, got {complete_resp.status}"
+            )
             toggle_payload = complete_resp.json()
-            assert toggle_payload.get("completed") is True, f"Expected completed=True, got {toggle_payload}"
+            assert toggle_payload.get("completed") is True, (
+                f"Expected completed=True, got {toggle_payload}"
+            )
             page.wait_for_load_state("networkidle")
             check_violations("Student Mark Complete AJAX", lesson_yt_url)
 
             # 2c. Lesson Page (Vimeo embed)
-            lesson_vimeo_path = reverse("learn:lesson", kwargs={"course_slug": course.slug, "lesson_id": lesson_vimeo.id})
+            lesson_vimeo_path = reverse(
+                "learn:lesson", kwargs={"course_slug": course.slug, "lesson_id": lesson_vimeo.id}
+            )
             lesson_vimeo_url = f"{live_server.url}{lesson_vimeo_path}"
             visit_and_assert(lesson_vimeo_url, 200, "Student", "learn:lesson (Vimeo)")
             page.wait_for_selector("#lesson-video-iframe", timeout=5000)
             vimeo_src = page.locator("#lesson-video-iframe").get_attribute("src") or ""
-            assert "player.vimeo.com" in vimeo_src, f"Expected Vimeo player embed URL, got {vimeo_src}"
+            assert "player.vimeo.com" in vimeo_src, (
+                f"Expected Vimeo player embed URL, got {vimeo_src}"
+            )
             vimeo_parsed = urlparse(vimeo_src)
             assert vimeo_parsed.hostname == "player.vimeo.com"
             assert f"https://{vimeo_parsed.hostname}" in prod_directives["frame-src"]
             check_violations("Student Lesson Vimeo Embed", lesson_vimeo_url)
 
             # 2d. Lesson Page (Bunny Stream embed)
-            lesson_bunny_path = reverse("learn:lesson", kwargs={"course_slug": course.slug, "lesson_id": lesson_bunny.id})
+            lesson_bunny_path = reverse(
+                "learn:lesson", kwargs={"course_slug": course.slug, "lesson_id": lesson_bunny.id}
+            )
             lesson_bunny_url = f"{live_server.url}{lesson_bunny_path}"
             visit_and_assert(lesson_bunny_url, 200, "Student", "learn:lesson (Bunny)")
             page.wait_for_selector("#lesson-video-iframe", timeout=5000)
             bunny_src = page.locator("#lesson-video-iframe").get_attribute("src") or ""
-            assert "iframe.mediadelivery.net" in bunny_src, f"Expected Bunny Stream embed URL, got {bunny_src}"
+            assert "iframe.mediadelivery.net" in bunny_src, (
+                f"Expected Bunny Stream embed URL, got {bunny_src}"
+            )
             bunny_parsed = urlparse(bunny_src)
             assert bunny_parsed.hostname == "iframe.mediadelivery.net"
             assert f"https://{bunny_parsed.hostname}" in prod_directives["frame-src"]
@@ -373,7 +464,9 @@ class TestBrowserCSPViolations:
 
             # Click "Preview Inline" button to trigger PDF modal preview in iframe
             preview_btn = page.locator("[data-preview-trigger]")
-            assert preview_btn.count() == 1, "Expected exactly 1 preview trigger button on materials page"
+            assert preview_btn.count() == 1, (
+                "Expected exactly 1 preview trigger button on materials page"
+            )
             preview_btn.first.click()
             page.wait_for_selector("#preview-modal:not(.hidden)", timeout=5000)
             iframe_locator = page.locator("#preview-modal-iframe")
@@ -390,7 +483,9 @@ class TestBrowserCSPViolations:
             # 2g. 403 Forbidden Check: Student accessing teacher area
             teacher_forbidden_path = reverse("dashboard:teacher")
             teacher_forbidden_url = f"{live_server.url}{teacher_forbidden_path}"
-            visit_and_assert(teacher_forbidden_url, 403, "Student", "dashboard:teacher (unauthorized)")
+            visit_and_assert(
+                teacher_forbidden_url, 403, "Student", "dashboard:teacher (unauthorized)"
+            )
 
             # -----------------------------------------------------------------
             # 3. Teacher Session & Dashboard Management
@@ -408,7 +503,12 @@ class TestBrowserCSPViolations:
             check_violations("Teacher Login", f"{live_server.url}/accounts/login/")
 
             # Teacher Dashboard & Management Pages
-            visit_and_assert(f"{live_server.url}{reverse('dashboard:teacher')}", 200, "Teacher", "dashboard:teacher")
+            visit_and_assert(
+                f"{live_server.url}{reverse('dashboard:teacher')}",
+                200,
+                "Teacher",
+                "dashboard:teacher",
+            )
             visit_and_assert(
                 f"{live_server.url}{reverse('dashboard:teacher_courses')}",
                 200,
@@ -429,7 +529,9 @@ class TestBrowserCSPViolations:
             )
 
             # Grading Page with Student Written Text Visibility
-            grading_path = reverse("dashboard:teacher_submission_grade", kwargs={"submission_id": submission.id})
+            grading_path = reverse(
+                "dashboard:teacher_submission_grade", kwargs={"submission_id": submission.id}
+            )
             grading_url = f"{live_server.url}{grading_path}"
             visit_and_assert(grading_url, 200, "Teacher", "dashboard:teacher_submission_grade")
 
@@ -446,8 +548,18 @@ class TestBrowserCSPViolations:
             check_violations("Teacher Grading Page Text Visibility", grading_url)
 
             # Settings, FAQs, Permissions
-            visit_and_assert(f"{live_server.url}{reverse('dashboard:teacher_faqs')}", 200, "Teacher", "dashboard:teacher_faqs")
-            visit_and_assert(f"{live_server.url}{reverse('dashboard:teacher_settings')}", 200, "Teacher", "dashboard:teacher_settings")
+            visit_and_assert(
+                f"{live_server.url}{reverse('dashboard:teacher_faqs')}",
+                200,
+                "Teacher",
+                "dashboard:teacher_faqs",
+            )
+            visit_and_assert(
+                f"{live_server.url}{reverse('dashboard:teacher_settings')}",
+                200,
+                "Teacher",
+                "dashboard:teacher_settings",
+            )
             visit_and_assert(
                 f"{live_server.url}{reverse('dashboard:teacher_permissions')}",
                 200,
@@ -466,6 +578,8 @@ class TestBrowserCSPViolations:
                 "player.vimeo.com",
                 "iframe.mediadelivery.net",
             }
-            for url, ctx, v in violations:
+            for _url, _ctx, v in violations:
                 blocked = v.get("blockedURI", "")
-                assert not any(h in blocked for h in allowed_hosts), f"Blocked URI on allowed provider host: {blocked}"
+                assert not any(h in blocked for h in allowed_hosts), (
+                    f"Blocked URI on allowed provider host: {blocked}"
+                )

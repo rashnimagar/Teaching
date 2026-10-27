@@ -109,8 +109,12 @@ def teacher_course_create_view(request):
         form = TeacherCourseForm(request.POST, request.FILES)
         if form.is_valid():
             course = form.save()
-            logger.info("Teacher %s created course %s (ID %s)", request.user.id, course.slug, course.id)
-            messages.success(request, _("Course '%(title)s' created successfully.") % {"title": course.title})
+            logger.info(
+                "Teacher %s created course %s (ID %s)", request.user.id, course.slug, course.id
+            )
+            messages.success(
+                request, _("Course '%(title)s' created successfully.") % {"title": course.title}
+            )
             return redirect("dashboard:teacher_courses")
     else:
         form = TeacherCourseForm()
@@ -129,7 +133,9 @@ def teacher_course_edit_view(request, slug):
     Edit course metadata, pricing, visibility, and approval requirements.
     """
     course = get_object_or_404(Course, slug=slug)
-    active_students_count = Enrollment.objects.filter(course=course, status=Enrollment.Status.ACTIVE).count()
+    active_students_count = Enrollment.objects.filter(
+        course=course, status=Enrollment.Status.ACTIVE
+    ).count()
 
     if request.method == "POST":
         form = TeacherCourseForm(request.POST, request.FILES, instance=course)
@@ -147,7 +153,9 @@ def teacher_course_edit_view(request, slug):
                     active_students_count,
                 )
 
-            messages.success(request, _("Course '%(title)s' updated successfully.") % {"title": course.title})
+            messages.success(
+                request, _("Course '%(title)s' updated successfully.") % {"title": course.title}
+            )
             return redirect("dashboard:teacher_courses")
     else:
         form = TeacherCourseForm(instance=course)
@@ -176,16 +184,24 @@ def teacher_course_archive_view(request, slug):
     if action == "archive":
         course.is_archived = True
         course.save(update_fields=["is_archived", "updated_at"])
-        logger.info("Teacher %s archived course %s (ID %s)", request.user.id, course.slug, course.id)
+        logger.info(
+            "Teacher %s archived course %s (ID %s)", request.user.id, course.slug, course.id
+        )
         messages.success(
             request,
-            _("Course '%(title)s' has been archived. Enrolled students retain access, but it is hidden from the catalog.")
+            _(
+                "Course '%(title)s' has been archived. Enrolled students retain access, but it is hidden from the catalog."
+            )
             % {"title": course.title},
         )
     elif action == "restore":
         course.is_archived = False
         course.save(update_fields=["is_archived", "updated_at"])
-        logger.info("Teacher %s restored course %s (ID %s)", request.user.id, course.slug, course.id)
-        messages.success(request, _("Course '%(title)s' has been restored.") % {"title": course.title})
+        logger.info(
+            "Teacher %s restored course %s (ID %s)", request.user.id, course.slug, course.id
+        )
+        messages.success(
+            request, _("Course '%(title)s' has been restored.") % {"title": course.title}
+        )
 
     return redirect("dashboard:teacher_courses")

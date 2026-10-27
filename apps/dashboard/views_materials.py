@@ -1,14 +1,12 @@
 import logging
-import os
+
 from django.contrib import messages
-from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Count, OuterRef, Q, Subquery
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.decorators.http import require_http_methods
 from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.permissions import teacher_required
@@ -33,8 +31,12 @@ def teacher_materials_course_picker_view(request):
     courses = (
         Course.objects.filter(is_archived=False)
         .annotate(
-            materials_count=Count("materials", filter=Q(materials__is_archived=False), distinct=True),
-            items_count=Count("materials__items", filter=Q(materials__is_archived=False), distinct=True),
+            materials_count=Count(
+                "materials", filter=Q(materials__is_archived=False), distinct=True
+            ),
+            items_count=Count(
+                "materials__items", filter=Q(materials__is_archived=False), distinct=True
+            ),
         )
         .order_by("title")
     )
@@ -65,9 +67,7 @@ def teacher_materials_list_view(request, slug):
     )
 
     download_logs_subquery = Subquery(
-        DownloadLog.objects.filter(
-            material_item__material=OuterRef("pk")
-        )
+        DownloadLog.objects.filter(material_item__material=OuterRef("pk"))
         .values("material_item__material")
         .annotate(cnt=Count("pk"))
         .values("cnt")[:1]
@@ -422,10 +422,7 @@ def teacher_material_item_policy_view(request, slug, material_id, item_id):
         return redirect("dashboard:teacher_course_materials", slug=course.slug)
 
     downloaded_count = (
-        DownloadLog.objects.filter(material_item=item)
-        .values("student")
-        .distinct()
-        .count()
+        DownloadLog.objects.filter(material_item=item).values("student").distinct().count()
     )
     pending_count = DownloadRequest.objects.filter(
         material_item=item, status=DownloadRequest.Status.PENDING

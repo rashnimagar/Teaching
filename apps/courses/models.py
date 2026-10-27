@@ -503,12 +503,19 @@ class MaterialItem(TimeStampedModel):
                     ext = os.path.splitext(self.file.name)[1].lower().lstrip(".")
                 if ext and ext not in VIEW_ONLY_ALLOWED_EXTENSIONS:
                     raise ValidationError(
-                        {"download_policy": _("View-only policy is strictly restricted to PDF documents and image files (PNG, JPG).")}
+                        {
+                            "download_policy": _(
+                                "View-only policy is strictly restricted to PDF documents and image files (PNG, JPG)."
+                            )
+                        }
                     )
         elif self.item_type == self.ItemType.LINK:
             if not self.external_url:
-                raise ValidationError({"external_url": _("External URL is required for link items.")})
+                raise ValidationError(
+                    {"external_url": _("External URL is required for link items.")}
+                )
             from apps.core.validators import validate_safe_url
+
             try:
                 validate_safe_url(self.external_url)
             except ValidationError as err:
@@ -516,7 +523,9 @@ class MaterialItem(TimeStampedModel):
                 raise ValidationError({"external_url": msg}) from err
         elif self.item_type == self.ItemType.VIDEO:
             if not self.video_id:
-                raise ValidationError({"video_id": _("Video identifier is required for video items.")})
+                raise ValidationError(
+                    {"video_id": _("Video identifier is required for video items.")}
+                )
             from apps.courses.services.video import extract_video_info
 
             extracted = extract_video_info(self.video_id, self.video_provider)
@@ -537,9 +546,7 @@ class MaterialItem(TimeStampedModel):
             elif self.video_provider == Lesson.VideoProvider.VIMEO and not re.match(
                 r"^[0-9a-zA-Z_-]{5,20}$", vid
             ):
-                raise ValidationError(
-                    {"video_id": _("Vimeo video identifier format is invalid.")}
-                )
+                raise ValidationError({"video_id": _("Vimeo video identifier format is invalid.")})
             elif self.video_provider == Lesson.VideoProvider.BUNNY and not re.match(
                 r"^[0-9a-fA-F-]{10,64}$", vid
             ):
@@ -571,12 +578,14 @@ class MaterialItem(TimeStampedModel):
 
         # Clean up replaced old file after transaction commits
         if old_file_name and old_storage:
+
             def _clean_old(storage=old_storage, name=old_file_name):
                 try:
                     if storage.exists(name):
                         storage.delete(name)
                 except Exception:
                     pass
+
             transaction.on_commit(_clean_old)
 
 

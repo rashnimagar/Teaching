@@ -7,16 +7,16 @@ from decimal import Decimal
 import pytest
 from django.contrib.admin.sites import AdminSite
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.assignments.admin import SubmissionAdmin
 from apps.assignments.models import Assignment, Submission, SubmissionEvent
-from apps.assignments.services.grading import grade_submission, unlock_submission
+from apps.assignments.services.grading import grade_submission
 from apps.courses.models import Course, Enrollment, EnrollmentEvent, Lesson, LessonProgress
 from apps.courses.services.enrollments import (
-    ALLOWED_ENROLLMENT_TRANSITIONS,
     transition_enrollment_status,
 )
 from apps.dashboard.reports import sanitize_csv_cell
@@ -114,9 +114,15 @@ class TestCSVFormulaInjectionAndExport:
             role=User.Role.STUDENT,
         )
 
-        Enrollment.objects.create(student=nepali_student, course=course, status=Enrollment.Status.ACTIVE)
-        Enrollment.objects.create(student=malicious_student, course=course, status=Enrollment.Status.ACTIVE)
-        Enrollment.objects.create(student=cmd_student, course=course, status=Enrollment.Status.ACTIVE)
+        Enrollment.objects.create(
+            student=nepali_student, course=course, status=Enrollment.Status.ACTIVE
+        )
+        Enrollment.objects.create(
+            student=malicious_student, course=course, status=Enrollment.Status.ACTIVE
+        )
+        Enrollment.objects.create(
+            student=cmd_student, course=course, status=Enrollment.Status.ACTIVE
+        )
 
         Submission.objects.create(
             assignment=assignment,
@@ -155,8 +161,10 @@ class TestCSVFormulaInjectionAndExport:
     ):
         """Progress CSV counts completed published lessons and excludes draft lessons."""
         l1 = Lesson.objects.create(course=course, title="Lesson 1", order=1, is_published=True)
-        l2 = Lesson.objects.create(course=course, title="Lesson 2", order=2, is_published=True)
-        l3_draft = Lesson.objects.create(course=course, title="Lesson 3 Draft", order=3, is_published=False)
+        Lesson.objects.create(course=course, title="Lesson 2", order=2, is_published=True)
+        l3_draft = Lesson.objects.create(
+            course=course, title="Lesson 3 Draft", order=3, is_published=False
+        )
 
         student = user_factory(email="learner@example.com", role=User.Role.STUDENT)
         Enrollment.objects.create(student=student, course=course, status=Enrollment.Status.ACTIVE)
@@ -261,7 +269,9 @@ class TestEnrollmentTransitionsAndAudit:
             student=student_user, course=course, status=Enrollment.Status.ACTIVE
         )
         lesson = Lesson.objects.create(course=course, title="L1", is_published=True)
-        LessonProgress.objects.create(student=student_user, lesson=lesson, completed_at=timezone.now())
+        LessonProgress.objects.create(
+            student=student_user, lesson=lesson, completed_at=timezone.now()
+        )
         sub = Submission.objects.create(
             assignment=assignment, student=student_user, grade=Decimal("90.00")
         )
@@ -281,7 +291,9 @@ class TestEnrollmentTransitionsAndAudit:
 # 3. Manual Enrollment
 # ---------------------------------------------------------------------------
 class TestManualEnrollment:
-    def test_manual_enrollment_requires_existing_student_account(self, client, teacher_user, course):
+    def test_manual_enrollment_requires_existing_student_account(
+        self, client, teacher_user, course
+    ):
         """Manual enrollment returns clear error if student account does not exist."""
         client.force_login(teacher_user)
         url = reverse("dashboard:teacher_enrollment_manual")
@@ -327,22 +339,31 @@ class TestGradingServiceAndRegradeRules:
         sub = Submission.objects.create(assignment=assignment, student=student_user)
 
         # Negative grade
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError) as exc_info:
             grade_submission(sub.id, Decimal("-5.00"), "Too low", teacher_user)
+        assert "Grade cannot be negative." in str(exc_info.value)
 
         # Above max score
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError) as exc_info:
             grade_submission(sub.id, Decimal("150.00"), "Too high", teacher_user)
+        assert "cannot exceed the assignment maximum score" in str(exc_info.value)
 
     def test_regrade_updates_audit_fields_only_on_grade_change(
-        self, teacher_user, student_user, assignment, user_factory, django_capture_on_commit_callbacks
+        self,
+        teacher_user,
+        student_user,
+        assignment,
+        user_factory,
+        django_capture_on_commit_callbacks,
     ):
         """graded_by and graded_at change ONLY when numeric grade changes; student notified only then."""
         sub = Submission.objects.create(assignment=assignment, student=student_user)
 
         # 1. Initial Grade
         with django_capture_on_commit_callbacks(execute=True):
-            sub, success, _ = grade_submission(sub.id, Decimal("75.00"), "Good attempt", teacher_user)
+            sub, success, _ = grade_submission(
+                sub.id, Decimal("75.00"), "Good attempt", teacher_user
+            )
         initial_graded_at = sub.graded_at
         initial_graded_by = sub.graded_by
         assert sub.grade == Decimal("75.00")
@@ -350,14 +371,19 @@ class TestGradingServiceAndRegradeRules:
         assert initial_graded_by == teacher_user
 
         # Notification created
-        assert Notification.objects.filter(
-            recipient=student_user, kind=Notification.Kind.SUBMISSION_GRADED
-        ).count() == 1
+        assert (
+            Notification.objects.filter(
+                recipient=student_user, kind=Notification.Kind.SUBMISSION_GRADED
+            ).count()
+            == 1
+        )
 
         # 2. Update Feedback ONLY (grade remains 75.00) with a different teacher
         another_teacher = user_factory(email="another_teacher@example.com", role=User.Role.TEACHER)
         with django_capture_on_commit_callbacks(execute=True):
-            sub, success, _ = grade_submission(sub.id, Decimal("75.00"), "Updated feedback only", another_teacher)
+            sub, success, _ = grade_submission(
+                sub.id, Decimal("75.00"), "Updated feedback only", another_teacher
+            )
 
         # graded_at and graded_by MUST remain unchanged!
         assert sub.graded_at == initial_graded_at
@@ -365,24 +391,38 @@ class TestGradingServiceAndRegradeRules:
         assert sub.feedback == "Updated feedback only"
 
         # No duplicate notification sent
-        assert Notification.objects.filter(
-            recipient=student_user, kind=Notification.Kind.SUBMISSION_GRADED
-        ).count() == 1
+        assert (
+            Notification.objects.filter(
+                recipient=student_user, kind=Notification.Kind.SUBMISSION_GRADED
+            ).count()
+            == 1
+        )
 
         # 3. Numeric Grade Changes to 85.00
         with django_capture_on_commit_callbacks(execute=True):
-            sub, success, _ = grade_submission(sub.id, Decimal("85.00"), "Revised score", another_teacher)
+            sub, success, _ = grade_submission(
+                sub.id, Decimal("85.00"), "Revised score", another_teacher
+            )
         assert sub.grade == Decimal("85.00")
         assert sub.graded_by == another_teacher
         assert sub.graded_at > initial_graded_at
 
         # Second notification sent on actual grade change
-        assert Notification.objects.filter(
-            recipient=student_user, kind=Notification.Kind.SUBMISSION_GRADED
-        ).count() == 2
+        assert (
+            Notification.objects.filter(
+                recipient=student_user, kind=Notification.Kind.SUBMISSION_GRADED
+            ).count()
+            == 2
+        )
 
     def test_notification_sent_on_commit_and_failure_isolated(
-        self, teacher_user, student_user, course, assignment, django_capture_on_commit_callbacks, monkeypatch
+        self,
+        teacher_user,
+        student_user,
+        course,
+        assignment,
+        django_capture_on_commit_callbacks,
+        monkeypatch,
     ):
         """Notifications are dispatched with transaction.on_commit, and failure never blocks or rolls back."""
         enrollment = Enrollment.objects.create(
@@ -396,16 +436,23 @@ class TestGradingServiceAndRegradeRules:
             )
         assert success is True
         assert enr.status == Enrollment.Status.ACTIVE
-        assert Notification.objects.filter(
-            recipient=student_user, kind=Notification.Kind.ENROLLMENT_APPROVED
-        ).count() == 1
+        assert (
+            Notification.objects.filter(
+                recipient=student_user, kind=Notification.Kind.ENROLLMENT_APPROVED
+            ).count()
+            == 1
+        )
 
         # 2. Simulate notification failure (e.g. notification service raises Exception)
         def broken_create_notification(*args, **kwargs):
             raise RuntimeError("Notification backend failure simulated")
 
-        monkeypatch.setattr("apps.courses.services.enrollments.create_notification", broken_create_notification)
-        monkeypatch.setattr("apps.assignments.services.grading.create_notification", broken_create_notification)
+        monkeypatch.setattr(
+            "apps.courses.services.enrollments.create_notification", broken_create_notification
+        )
+        monkeypatch.setattr(
+            "apps.assignments.services.grading.create_notification", broken_create_notification
+        )
 
         # Transition to revoked with broken notifications
         with django_capture_on_commit_callbacks(execute=True):
@@ -446,7 +493,9 @@ class TestGradingServiceAndRegradeRules:
             {"grade": "88.00", "feedback": "Great", "save_and_next": "1"},
         )
         assert resp.status_code == 302
-        expected_next = reverse("dashboard:teacher_submission_grade", kwargs={"submission_id": sub2.id})
+        expected_next = reverse(
+            "dashboard:teacher_submission_grade", kwargs={"submission_id": sub2.id}
+        )
         assert resp.url == expected_next
 
     def test_unlock_action_allows_resubmission_and_records_audit(
@@ -456,7 +505,9 @@ class TestGradingServiceAndRegradeRules:
         sub = Submission.objects.create(assignment=assignment, student=student_user)
 
         client.force_login(teacher_user)
-        unlock_url = reverse("dashboard:teacher_submission_unlock", kwargs={"submission_id": sub.id})
+        unlock_url = reverse(
+            "dashboard:teacher_submission_unlock", kwargs={"submission_id": sub.id}
+        )
         resp = client.post(unlock_url, {"note": "Resubmission permitted for corrections"})
         assert resp.status_code == 302
 
@@ -484,7 +535,9 @@ class TestGradingServiceAndRegradeRules:
             allow_late=False,  # Late submissions disallowed
             is_published=True,
         )
-        Enrollment.objects.create(student=student_user, course=course, status=Enrollment.Status.ACTIVE)
+        Enrollment.objects.create(
+            student=student_user, course=course, status=Enrollment.Status.ACTIVE
+        )
 
         # Existing graded submission
         sub = Submission.objects.create(
@@ -499,7 +552,10 @@ class TestGradingServiceAndRegradeRules:
 
         # 1. Student attempts to edit while locked -> rejected
         client.force_login(student_user)
-        detail_url = reverse("assignments:detail", kwargs={"slug": course.slug, "assignment_id": strict_assignment.id})
+        detail_url = reverse(
+            "assignments:detail",
+            kwargs={"slug": course.slug, "assignment_id": strict_assignment.id},
+        )
         resp_blocked = client.post(detail_url, {"content_text": "Unauthorized edit"})
         assert resp_blocked.status_code == 302
         sub.refresh_from_db()
@@ -508,7 +564,9 @@ class TestGradingServiceAndRegradeRules:
 
         # 2. Teacher unlocks the submission
         client.force_login(teacher_user)
-        unlock_url = reverse("dashboard:teacher_submission_unlock", kwargs={"submission_id": sub.id})
+        unlock_url = reverse(
+            "dashboard:teacher_submission_unlock", kwargs={"submission_id": sub.id}
+        )
         client.post(unlock_url, {"note": "Unlocked for corrections after deadline"})
         sub.refresh_from_db()
         assert sub.is_unlocked is True
@@ -548,6 +606,7 @@ class TestGradingServiceAndRegradeRules:
         admin_obj = SubmissionAdmin(Submission, site)
 
         from unittest.mock import MagicMock
+
         req = MagicMock()
         req.user = teacher_user
 
@@ -566,7 +625,9 @@ class TestAccountDeactivationGuards:
     def test_teacher_cannot_deactivate_self(self, client, teacher_user):
         """Teacher cannot deactivate their own account."""
         client.force_login(teacher_user)
-        url = reverse("dashboard:teacher_student_toggle_active", kwargs={"student_id": teacher_user.id})
+        url = reverse(
+            "dashboard:teacher_student_toggle_active", kwargs={"student_id": teacher_user.id}
+        )
         resp = client.post(url, follow=True)
         assert resp.status_code == 200
         teacher_user.refresh_from_db()
@@ -578,20 +639,26 @@ class TestAccountDeactivationGuards:
         self, client, teacher_user, user_factory
     ):
         """Teacher cannot deactivate other teachers or superusers."""
-        other_teacher = user_factory(email="other_t@example.com", role=User.Role.TEACHER, is_active=True)
+        other_teacher = user_factory(
+            email="other_t@example.com", role=User.Role.TEACHER, is_active=True
+        )
         superuser = user_factory(email="root@example.com", is_superuser=True, is_active=True)
 
         client.force_login(teacher_user)
 
         # Attempt on other teacher
-        url1 = reverse("dashboard:teacher_student_toggle_active", kwargs={"student_id": other_teacher.id})
-        resp1 = client.post(url1, follow=True)
+        url1 = reverse(
+            "dashboard:teacher_student_toggle_active", kwargs={"student_id": other_teacher.id}
+        )
+        client.post(url1, follow=True)
         other_teacher.refresh_from_db()
         assert other_teacher.is_active is True
 
         # Attempt on superuser
-        url2 = reverse("dashboard:teacher_student_toggle_active", kwargs={"student_id": superuser.id})
-        resp2 = client.post(url2, follow=True)
+        url2 = reverse(
+            "dashboard:teacher_student_toggle_active", kwargs={"student_id": superuser.id}
+        )
+        client.post(url2, follow=True)
         superuser.refresh_from_db()
         assert superuser.is_active is True
 
@@ -600,7 +667,9 @@ class TestAccountDeactivationGuards:
     ):
         """Teacher can successfully toggle a student's active status."""
         client.force_login(teacher_user)
-        url = reverse("dashboard:teacher_student_toggle_active", kwargs={"student_id": student_user.id})
+        url = reverse(
+            "dashboard:teacher_student_toggle_active", kwargs={"student_id": student_user.id}
+        )
 
         # Deactivate
         resp = client.post(url, follow=True)
@@ -636,8 +705,12 @@ class TestMissedDeadlinesAndIDOR:
         s_submitted = user_factory(email="submitted@example.com", role=User.Role.STUDENT)
         s_unsubmitted = user_factory(email="missing@example.com", role=User.Role.STUDENT)
 
-        Enrollment.objects.create(student=s_submitted, course=course, status=Enrollment.Status.ACTIVE)
-        Enrollment.objects.create(student=s_unsubmitted, course=course, status=Enrollment.Status.ACTIVE)
+        Enrollment.objects.create(
+            student=s_submitted, course=course, status=Enrollment.Status.ACTIVE
+        )
+        Enrollment.objects.create(
+            student=s_unsubmitted, course=course, status=Enrollment.Status.ACTIVE
+        )
 
         Submission.objects.create(assignment=past_assignment, student=s_submitted)
 
@@ -704,7 +777,9 @@ class TestMutatingEndpointsRequirePOST:
             reverse("dashboard:teacher_enrollments_bulk_action"),
             reverse("dashboard:teacher_enrollment_manual"),
             reverse("dashboard:teacher_submission_unlock", kwargs={"submission_id": sub.id}),
-            reverse("dashboard:teacher_student_toggle_active", kwargs={"student_id": student_user.id}),
+            reverse(
+                "dashboard:teacher_student_toggle_active", kwargs={"student_id": student_user.id}
+            ),
         ]
 
         for url in mutating_urls:

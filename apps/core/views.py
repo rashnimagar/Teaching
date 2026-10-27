@@ -165,7 +165,9 @@ def handler500(request):
             if header_name in response:
                 curr_header = response[header_name]
                 if "style-src" in curr_header and hash_src not in curr_header:
-                    response[header_name] = curr_header.replace("style-src ", f"style-src {hash_src} ")
+                    response[header_name] = curr_header.replace(
+                        "style-src ", f"style-src {hash_src} "
+                    )
     return response
 
 

@@ -38,14 +38,22 @@ def transition_download_request(
         # Lock and refresh current state
         locked_req = (
             DownloadRequest.objects.select_for_update()
-            .select_related("student", "material_item", "material_item__material", "material_item__material__course")
+            .select_related(
+                "student",
+                "material_item",
+                "material_item__material",
+                "material_item__material__course",
+            )
             .get(pk=request_obj.pk)
         )
         current_status = locked_req.status
 
         # Idempotency check: if already in target state
         if current_status == new_status:
-            if new_status == DownloadRequest.Status.APPROVED and locked_req.expires_at == expires_at:
+            if (
+                new_status == DownloadRequest.Status.APPROVED
+                and locked_req.expires_at == expires_at
+            ):
                 return locked_req, False, "Request is already approved with identical expiry."
             if new_status == DownloadRequest.Status.DENIED:
                 return locked_req, False, "Request is already denied."
@@ -72,18 +80,22 @@ def transition_download_request(
 
         if new_status == DownloadRequest.Status.APPROVED:
             locked_req.expires_at = expires_at
-            expiry_str = f" Access is valid until {expires_at.strftime('%Y-%m-%d %H:%M')} NPT." if expires_at else ""
+            expiry_str = (
+                f" Access is valid until {expires_at.strftime('%Y-%m-%d %H:%M')} NPT."
+                if expires_at
+                else ""
+            )
             notif_kind = Notification.Kind.DOWNLOAD_APPROVED
             notif_title = f"Download Approved: {item.title}"
-            notif_body = (
-                f"Your request to download '{item.title}' for the course '{course.title}' has been approved.{expiry_str}"
-            )
+            notif_body = f"Your request to download '{item.title}' for the course '{course.title}' has been approved.{expiry_str}"
 
         elif new_status == DownloadRequest.Status.DENIED:
             locked_req.teacher_note = teacher_note.strip()
             notif_kind = Notification.Kind.DOWNLOAD_DENIED
             notif_title = f"Download Request Denied: {item.title}"
-            note_part = f"\nTeacher's Note: {locked_req.teacher_note}" if locked_req.teacher_note else ""
+            note_part = (
+                f"\nTeacher's Note: {locked_req.teacher_note}" if locked_req.teacher_note else ""
+            )
             notif_body = (
                 f"Your request to download '{item.title}' for '{course.title}' was not approved.{note_part}\n"
                 "You may submit a new request after 24 hours."
@@ -95,9 +107,7 @@ def transition_download_request(
             notif_kind = Notification.Kind.DOWNLOAD_REVOKED
             notif_title = f"Download Access Revoked: {item.title}"
             note_part = f"\nNote: {locked_req.teacher_note}" if locked_req.teacher_note else ""
-            notif_body = (
-                f"Download access for '{item.title}' in the course '{course.title}' has been revoked by the instructor.{note_part}"
-            )
+            notif_body = f"Download access for '{item.title}' in the course '{course.title}' has been revoked by the instructor.{note_part}"
 
         else:
             return locked_req, False, f"Unsupported status: {new_status}"
@@ -163,7 +173,10 @@ def switch_policy_to_view_only(material_item: MaterialItem, decided_by) -> tuple
     """
     if not (material_item.is_pdf or material_item.is_image):
         from django.core.exceptions import ValidationError
-        raise ValidationError("View-only policy is strictly restricted to PDF documents and image files (PNG, JPG).")
+
+        raise ValidationError(
+            "View-only policy is strictly restricted to PDF documents and image files (PNG, JPG)."
+        )
 
     with transaction.atomic():
         locked_item = MaterialItem.objects.select_for_update().get(pk=material_item.pk)
@@ -258,7 +271,10 @@ def switch_policy_away_from_open_to_enrolled(
                         )
                         if success:
                             preserved_count += 1
-                    elif existing_req.status in (DownloadRequest.Status.DENIED, DownloadRequest.Status.REVOKED):
+                    elif existing_req.status in (
+                        DownloadRequest.Status.DENIED,
+                        DownloadRequest.Status.REVOKED,
+                    ):
                         _, success, _ = transition_download_request(
                             request_obj=existing_req,
                             new_status=DownloadRequest.Status.APPROVED,
@@ -279,4 +295,3 @@ def switch_policy_away_from_open_to_enrolled(
                     preserved_count += 1
 
         return downloaded_count, preserved_count
-

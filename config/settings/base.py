@@ -341,5 +341,3 @@ CONTENT_SECURITY_POLICY_REPORT_ONLY = None
 
 # Flag controlling registration of direct error preview routes (/403/, /404/, /500/)
 ENABLE_TEST_ERROR_ROUTES = False
-
-

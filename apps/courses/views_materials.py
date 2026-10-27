@@ -179,7 +179,10 @@ def material_request_download_view(request, course_slug: str, item_id: int):
         item_type=MaterialItem.ItemType.FILE,
     )
 
-    if not (request.user.is_staff or getattr(request.user, "is_teacher", False)) and not item.is_published:
+    if (
+        not (request.user.is_staff or getattr(request.user, "is_teacher", False))
+        and not item.is_published
+    ):
         raise Http404(_("Material item not found."))
 
     if item.download_policy != MaterialItem.DownloadPolicy.REQUEST_REQUIRED:
@@ -278,7 +281,9 @@ def material_download_view(request, course_slug: str, item_id: int):
         item_type=MaterialItem.ItemType.FILE,
     )
 
-    is_allowed, response = check_material_access(request, course, material=item.material, is_api=True)
+    is_allowed, response = check_material_access(
+        request, course, material=item.material, is_api=True
+    )
     if not is_allowed:
         return response
 
@@ -302,7 +307,9 @@ def material_download_view(request, course_slug: str, item_id: int):
             ).first()
 
             if not approved_req:
-                raise PermissionDenied(_("You do not have an approved request to download this file."))
+                raise PermissionDenied(
+                    _("You do not have an approved request to download this file.")
+                )
 
             if approved_req.is_expired:
                 raise PermissionDenied(_("Your download permission for this file has expired."))
@@ -350,7 +357,9 @@ def material_preview_view(request, course_slug: str, item_id: int):
         item_type=MaterialItem.ItemType.FILE,
     )
 
-    is_allowed, response = check_material_access(request, course, material=item.material, is_api=True)
+    is_allowed, response = check_material_access(
+        request, course, material=item.material, is_api=True
+    )
     if not is_allowed:
         return response
 

@@ -12,7 +12,6 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_http_methods
 from django_ratelimit.decorators import ratelimit
 
-from apps.accounts.models import User
 from apps.accounts.permissions import teacher_required
 from apps.assignments.models import Assignment, Submission
 from apps.assignments.services.grading import grade_submission, unlock_submission
@@ -221,7 +220,9 @@ def teacher_submission_grade_view(request, submission_id: int):
     - Unlock action with confirmation modal and audit trail
     """
     submission = get_object_or_404(
-        Submission.objects.select_related("assignment", "assignment__course", "student", "graded_by"),
+        Submission.objects.select_related(
+            "assignment", "assignment__course", "student", "graded_by"
+        ),
         pk=submission_id,
     )
     assignment = submission.assignment
@@ -274,7 +275,9 @@ def teacher_submission_grade_view(request, submission_id: int):
         # Handle Save & Next Ungraded (Requirement 6)
         if "save_and_next" in request.POST:
             if next_ungraded:
-                return redirect("dashboard:teacher_submission_grade", submission_id=next_ungraded.id)
+                return redirect(
+                    "dashboard:teacher_submission_grade", submission_id=next_ungraded.id
+                )
             messages.info(request, _("All ungraded submissions in this section have been graded!"))
             return redirect(
                 "dashboard:teacher_course_assignment_submissions",
@@ -292,7 +295,9 @@ def teacher_submission_grade_view(request, submission_id: int):
     events = submission.events.select_related("actor").order_by("-created_at")
 
     download_url = (
-        reverse("assignments:download", kwargs={"slug": course.slug, "submission_id": submission.id})
+        reverse(
+            "assignments:download", kwargs={"slug": course.slug, "submission_id": submission.id}
+        )
         if submission.file
         else None
     )

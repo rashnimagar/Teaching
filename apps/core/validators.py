@@ -1,6 +1,9 @@
+import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from PIL import Image
 
@@ -54,11 +57,6 @@ def validate_image_file(file) -> None:
         raise ValidationError(_("Uploaded file is not a valid or supported image.")) from exc
 
 
-import re
-from urllib.parse import urlsplit
-from django.core.validators import URLValidator
-
-
 def validate_safe_url(value: str, max_length: int = 1000) -> str:
     """
     Validates that a URL:
@@ -101,7 +99,6 @@ def validate_safe_url(value: str, max_length: int = 1000) -> str:
     try:
         url_validator(value)
     except ValidationError:
-        raise ValidationError(_("Enter a valid URL (http:// or https://)."))
+        raise ValidationError(_("Enter a valid URL (http:// or https://).")) from None
 
     return value
-

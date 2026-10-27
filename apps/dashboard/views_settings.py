@@ -1,14 +1,14 @@
 import logging
+
 from django.contrib import messages
 from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.decorators.http import require_http_methods
 from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.permissions import teacher_required
-from apps.core.constants import FAQ_CACHE_KEY, SITE_SETTINGS_CACHE_KEY
 from apps.core.models import FAQItem, SiteSettings
 from apps.dashboard.forms_teacher import TeacherFAQForm, TeacherSiteSettingsForm
 
@@ -25,9 +25,7 @@ def teacher_settings_view(request):
     settings_obj = SiteSettings.get_solo()
 
     if request.method == "POST":
-        form = TeacherSiteSettingsForm(
-            request.POST, request.FILES, instance=settings_obj
-        )
+        form = TeacherSiteSettingsForm(request.POST, request.FILES, instance=settings_obj)
         if form.is_valid():
             form.save()
             messages.success(request, _("Site settings updated successfully."))

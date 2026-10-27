@@ -52,8 +52,12 @@ class TeacherCourseForm(forms.ModelForm):
         widgets = {
             "title": forms.TextInput(attrs={"placeholder": "e.g. Master Django 5.1 Architecture"}),
             "slug": forms.TextInput(attrs={"placeholder": "e.g. master-django-architecture"}),
-            "short_description": forms.TextInput(attrs={"placeholder": "A concise 1-sentence course summary"}),
-            "description": forms.Textarea(attrs={"rows": 5, "placeholder": "Comprehensive syllabus and learning outcomes..."}),
+            "short_description": forms.TextInput(
+                attrs={"placeholder": "A concise 1-sentence course summary"}
+            ),
+            "description": forms.Textarea(
+                attrs={"rows": 5, "placeholder": "Comprehensive syllabus and learning outcomes..."}
+            ),
             "price": forms.NumberInput(attrs={"placeholder": "0.00", "step": "0.01", "min": "0"}),
             "currency": forms.TextInput(attrs={"placeholder": "NPR", "maxlength": 3}),
         }
@@ -111,7 +115,9 @@ class TeacherCourseForm(forms.ModelForm):
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
-            raise ValidationError(_("A course with this slug already exists. Please choose a unique slug."))
+            raise ValidationError(
+                _("A course with this slug already exists. Please choose a unique slug.")
+            )
 
         return raw_slug
 
@@ -131,7 +137,10 @@ class TeacherCourseForm(forms.ModelForm):
         is_published = cleaned_data.get("is_published", False)
         if self.instance.pk and self.instance.is_published and not is_published:
             from apps.courses.models import Enrollment
-            active_students = self.instance.enrollments.filter(status=Enrollment.Status.ACTIVE).count()
+
+            active_students = self.instance.enrollments.filter(
+                status=Enrollment.Status.ACTIVE
+            ).count()
             if active_students > 0:
                 confirm = cleaned_data.get("confirm_unpublish")
                 if confirm != "true":
@@ -157,8 +166,12 @@ class TeacherLessonForm(forms.ModelForm):
 
     video_input = forms.CharField(
         label=_("Video URL or ID"),
-        help_text=_("Paste a full YouTube, Vimeo, or Bunny Stream video URL, or the raw identifier."),
-        widget=forms.TextInput(attrs={"placeholder": "e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"}),
+        help_text=_(
+            "Paste a full YouTube, Vimeo, or Bunny Stream video URL, or the raw identifier."
+        ),
+        widget=forms.TextInput(
+            attrs={"placeholder": "e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"}
+        ),
     )
     duration_minutes = forms.IntegerField(
         min_value=0,
@@ -186,8 +199,15 @@ class TeacherLessonForm(forms.ModelForm):
             "is_published",
         ]
         widgets = {
-            "title": forms.TextInput(attrs={"placeholder": "e.g. 01 - Setting Up the Docker Environment"}),
-            "description": forms.Textarea(attrs={"rows": 4, "placeholder": "Plain-text lesson notes, prerequisites, and instructions..."}),
+            "title": forms.TextInput(
+                attrs={"placeholder": "e.g. 01 - Setting Up the Docker Environment"}
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": "Plain-text lesson notes, prerequisites, and instructions...",
+                }
+            ),
             "video_provider": forms.Select(attrs={"class": "provider-select"}),
         }
 
@@ -207,7 +227,9 @@ class TeacherLessonForm(forms.ModelForm):
         return escape(self.cleaned_data.get("title", "").strip())
 
     def clean_description(self):
-        desc = (self.cleaned_data.get("description") or self.cleaned_data.get("notes") or "").strip()
+        desc = (
+            self.cleaned_data.get("description") or self.cleaned_data.get("notes") or ""
+        ).strip()
         return escape(desc)
 
     def clean(self):
@@ -224,7 +246,10 @@ class TeacherLessonForm(forms.ModelForm):
             extracted = extract_video_info(raw_video, provider)
             video_id = extracted.get("video_id", "").strip()
             if not video_id:
-                self.add_error("video_input", _("Could not extract a valid video identifier from the provided URL."))
+                self.add_error(
+                    "video_input",
+                    _("Could not extract a valid video identifier from the provided URL."),
+                )
             else:
                 cleaned_data["video_id"] = video_id
                 cleaned_data["video_hash"] = extracted.get("video_hash", "")
@@ -278,7 +303,9 @@ class TeacherAssignmentForm(forms.ModelForm):
     confirm_past_deadline = forms.BooleanField(
         required=False,
         label=_("I confirm this deadline is intentionally set in the past."),
-        help_text=_("Check this box if you intentionally want to create or save a closed assignment."),
+        help_text=_(
+            "Check this box if you intentionally want to create or save a closed assignment."
+        ),
     )
 
     class Meta:
@@ -294,8 +321,15 @@ class TeacherAssignmentForm(forms.ModelForm):
             "is_published",
         ]
         widgets = {
-            "title": forms.TextInput(attrs={"placeholder": "e.g. Lab 2: Django REST Framework API"}),
-            "instructions": forms.Textarea(attrs={"rows": 6, "placeholder": "Detailed instructions, rubric, and deliverables..."}),
+            "title": forms.TextInput(
+                attrs={"placeholder": "e.g. Lab 2: Django REST Framework API"}
+            ),
+            "instructions": forms.Textarea(
+                attrs={
+                    "rows": 6,
+                    "placeholder": "Detailed instructions, rubric, and deliverables...",
+                }
+            ),
             "max_score": forms.NumberInput(attrs={"min": "1"}),
         }
 
@@ -305,7 +339,9 @@ class TeacherAssignmentForm(forms.ModelForm):
 
         # Restrict lesson choice strictly to this course
         if self.course:
-            self.fields["lesson"].queryset = Lesson.objects.filter(course=self.course).order_by("order", "id")
+            self.fields["lesson"].queryset = Lesson.objects.filter(course=self.course).order_by(
+                "order", "id"
+            )
             self.fields["lesson"].empty_label = _("None (Course-wide Assignment)")
 
         # Convert UTC datetimes to Asia/Kathmandu formatted for datetime-local
@@ -355,17 +391,21 @@ class TeacherAssignmentForm(forms.ModelForm):
         if due_at and due_at < now and not confirm_past:
             self.add_error(
                 "confirm_past_deadline",
-                _("The deadline is in the past. Please check the confirmation box to proceed.")
+                _("The deadline is in the past. Please check the confirmation box to proceed."),
             )
 
         # Max score lower-bound protection against existing grades
         if self.instance.pk and max_score is not None:
-            highest_grade = self.instance.submissions.filter(grade__isnull=False).aggregate(m=Max("grade"))["m"]
+            highest_grade = self.instance.submissions.filter(grade__isnull=False).aggregate(
+                m=Max("grade")
+            )["m"]
             if highest_grade is not None and max_score < highest_grade:
                 self.add_error(
                     "max_score",
-                    _("Cannot lower maximum score to %(score)s because a student has already received a grade of %(grade)s.")
-                    % {"score": max_score, "grade": highest_grade}
+                    _(
+                        "Cannot lower maximum score to %(score)s because a student has already received a grade of %(grade)s."
+                    )
+                    % {"score": max_score, "grade": highest_grade},
                 )
 
         # Requirement 3: Unpublishing assignment with submissions requires confirmation
@@ -410,7 +450,9 @@ class TeacherMaterialForm(forms.ModelForm):
             "is_archived",
         ]
         widgets = {
-            "title": forms.TextInput(attrs={"placeholder": "e.g. Week 1 Lecture Slides & Cheatsheets"}),
+            "title": forms.TextInput(
+                attrs={"placeholder": "e.g. Week 1 Lecture Slides & Cheatsheets"}
+            ),
         }
 
     def __init__(self, *args, course=None, **kwargs):
@@ -418,7 +460,9 @@ class TeacherMaterialForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if self.course:
-            self.fields["lesson"].queryset = Lesson.objects.filter(course=self.course).order_by("order", "id")
+            self.fields["lesson"].queryset = Lesson.objects.filter(course=self.course).order_by(
+                "order", "id"
+            )
             self.fields["lesson"].empty_label = _("None (Course-wide Resource)")
         else:
             self.fields["lesson"].empty_label = _("None (Course-wide Resource)")
@@ -440,7 +484,10 @@ class TeacherMaterialForm(forms.ModelForm):
         if self.course and not mat.course_id:
             mat.course = self.course
         if not mat.pk:
-            max_order = CourseMaterial.objects.filter(course=self.course).aggregate(m=Max("order"))["m"] or 0
+            max_order = (
+                CourseMaterial.objects.filter(course=self.course).aggregate(m=Max("order"))["m"]
+                or 0
+            )
             mat.order = max_order + 1
         if commit:
             mat.save()
@@ -477,7 +524,9 @@ class TeacherMaterialItemForm(forms.ModelForm):
             "title": forms.TextInput(attrs={"placeholder": "e.g. Architecture Reference Diagram"}),
             "external_url": forms.URLInput(attrs={"placeholder": "https://example.com/docs"}),
             "video_id": forms.TextInput(attrs={"placeholder": "Video ID or full URL"}),
-            "video_hash": forms.TextInput(attrs={"placeholder": "Optional privacy hash (Bunny/Vimeo)"}),
+            "video_hash": forms.TextInput(
+                attrs={"placeholder": "Optional privacy hash (Bunny/Vimeo)"}
+            ),
         }
 
     def __init__(self, *args, material=None, **kwargs):
@@ -520,13 +569,23 @@ class TeacherMaterialItemForm(forms.ModelForm):
 
             # If policy is view_only, check extension
             if policy == MaterialItem.DownloadPolicy.VIEW_ONLY:
-                check_name = file.name if file else (self.instance.original_filename or (self.instance.file.name if self.instance.file else ""))
+                check_name = (
+                    file.name
+                    if file
+                    else (
+                        self.instance.original_filename
+                        or (self.instance.file.name if self.instance.file else "")
+                    )
+                )
                 import os
+
                 ext = os.path.splitext(check_name)[1].lower().lstrip(".")
                 if ext not in VIEW_ONLY_ALLOWED_EXTENSIONS:
                     self.add_error(
                         "download_policy",
-                        _("View-only policy is strictly restricted to PDF documents and image files (PNG, JPG).")
+                        _(
+                            "View-only policy is strictly restricted to PDF documents and image files (PNG, JPG)."
+                        ),
                     )
 
         elif item_type == MaterialItem.ItemType.LINK:
@@ -535,7 +594,9 @@ class TeacherMaterialItemForm(forms.ModelForm):
 
         elif item_type == MaterialItem.ItemType.VIDEO:
             if not vid_id:
-                self.add_error("video_id", _("Video identifier or URL is required for video items."))
+                self.add_error(
+                    "video_id", _("Video identifier or URL is required for video items.")
+                )
             else:
                 provider = cleaned_data.get("video_provider") or Lesson.VideoProvider.BUNNY
                 extracted = extract_video_info(vid_id, provider)
@@ -552,7 +613,10 @@ class TeacherMaterialItemForm(forms.ModelForm):
         if self.material and not item.material_id:
             item.material = self.material
         if not item.pk:
-            max_order = MaterialItem.objects.filter(material=self.material).aggregate(m=Max("order"))["m"] or 0
+            max_order = (
+                MaterialItem.objects.filter(material=self.material).aggregate(m=Max("order"))["m"]
+                or 0
+            )
             item.order = max_order + 1
         if commit:
             item.save()
@@ -569,7 +633,9 @@ class TeacherSiteSettingsForm(forms.ModelForm):
         required=False,
         validators=[validate_image_file],
         label=_("Teacher Photo"),
-        help_text=_("Recommended: 800x800 square portrait (PNG/JPG, max 5 MB). WebP is auto-generated."),
+        help_text=_(
+            "Recommended: 800x800 square portrait (PNG/JPG, max 5 MB). WebP is auto-generated."
+        ),
     )
 
     class Meta:
@@ -590,10 +656,14 @@ class TeacherSiteSettingsForm(forms.ModelForm):
         ]
         widgets = {
             "site_name": forms.TextInput(attrs={"placeholder": "Teaching Platform"}),
-            "hero_headline": forms.TextInput(attrs={"placeholder": "Master Skills with Structured Lessons..."}),
+            "hero_headline": forms.TextInput(
+                attrs={"placeholder": "Master Skills with Structured Lessons..."}
+            ),
             "hero_subheadline": forms.Textarea(attrs={"rows": 3}),
             "teacher_name": forms.TextInput(attrs={"placeholder": "e.g. Rashni Magar"}),
-            "teacher_title": forms.TextInput(attrs={"placeholder": "e.g. Senior Software Engineer"}),
+            "teacher_title": forms.TextInput(
+                attrs={"placeholder": "e.g. Senior Software Engineer"}
+            ),
             "teacher_bio": forms.Textarea(attrs={"rows": 4}),
             "contact_email": forms.EmailInput(attrs={"placeholder": "teacher@example.com"}),
             "github_url": forms.URLInput(attrs={"placeholder": "https://github.com/..."}),
@@ -659,8 +729,12 @@ class TeacherFAQForm(forms.ModelForm):
             "is_published",
         ]
         widgets = {
-            "question": forms.TextInput(attrs={"placeholder": "e.g. Can I download lesson materials for offline study?"}),
-            "answer": forms.Textarea(attrs={"rows": 4, "placeholder": "Detailed answer explaining the policy..."}),
+            "question": forms.TextInput(
+                attrs={"placeholder": "e.g. Can I download lesson materials for offline study?"}
+            ),
+            "answer": forms.Textarea(
+                attrs={"rows": 4, "placeholder": "Detailed answer explaining the policy..."}
+            ),
         }
 
     def clean_question(self):
@@ -677,4 +751,3 @@ class TeacherFAQForm(forms.ModelForm):
         if commit:
             faq.save()
         return faq
-

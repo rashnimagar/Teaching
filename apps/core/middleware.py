@@ -1,4 +1,11 @@
-from django.shortcuts import render
+import time
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import logout
+from django.http import FileResponse
+from django.shortcuts import redirect, render
+from django.utils.translation import gettext_lazy as _
 from django_ratelimit.exceptions import Ratelimited
 
 
@@ -20,15 +27,6 @@ class RatelimitMiddleware:
         return None
 
 
-import time
-from django.conf import settings
-from django.contrib import messages
-from django.http import FileResponse
-from django.contrib.auth import logout
-from django.shortcuts import redirect
-from django.utils.translation import gettext_lazy as _
-
-
 class SecurityHeadersMiddleware:
     """
     Sets hardened security headers across all responses:
@@ -39,7 +37,7 @@ class SecurityHeadersMiddleware:
     """
 
     PERMISSIONS_POLICY = (
-        'camera=(), microphone=(), geolocation=(), payment=(), usb=(), '
+        "camera=(), microphone=(), geolocation=(), payment=(), usb=(), "
         'fullscreen=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com" "https://iframe.mediadelivery.net"), '
         'autoplay=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com" "https://iframe.mediadelivery.net"), '
         'picture-in-picture=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com" "https://iframe.mediadelivery.net")'
@@ -63,7 +61,12 @@ class SecurityHeadersMiddleware:
         # Cross-Origin-Resource-Policy on file attachments, FileResponses, or exports
         cd = response.get("Content-Disposition", "")
         ct = response.get("Content-Type", "")
-        if "attachment" in cd or ct == "text/csv" or "application/octet-stream" in ct or isinstance(response, FileResponse):
+        if (
+            "attachment" in cd
+            or ct == "text/csv"
+            or "application/octet-stream" in ct
+            or isinstance(response, FileResponse)
+        ):
             response.setdefault("Cross-Origin-Resource-Policy", "same-origin")
 
         return response

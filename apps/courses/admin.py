@@ -198,8 +198,21 @@ class EnrollmentAdmin(admin.ModelAdmin):
 class EnrollmentEventAdmin(admin.ModelAdmin):
     list_display = ["enrollment", "actor", "from_status", "to_status", "created_at"]
     list_filter = ["from_status", "to_status", "created_at"]
-    search_fields = ["enrollment__student__email", "enrollment__course__title", "actor__email", "note"]
-    readonly_fields = ["enrollment", "actor", "from_status", "to_status", "note", "created_at", "updated_at"]
+    search_fields = [
+        "enrollment__student__email",
+        "enrollment__course__title",
+        "actor__email",
+        "note",
+    ]
+    readonly_fields = [
+        "enrollment",
+        "actor",
+        "from_status",
+        "to_status",
+        "note",
+        "created_at",
+        "updated_at",
+    ]
 
 
 @admin.register(LessonProgress)
@@ -232,7 +245,15 @@ class MaterialItemInline(admin.StackedInline):
 
 @admin.register(CourseMaterial)
 class CourseMaterialAdmin(admin.ModelAdmin):
-    list_display = ["title", "course", "lesson", "order", "is_published", "is_archived", "created_at"]
+    list_display = [
+        "title",
+        "course",
+        "lesson",
+        "order",
+        "is_published",
+        "is_archived",
+        "created_at",
+    ]
     list_filter = ["is_published", "is_archived", "course"]
     search_fields = ["title", "description", "course__title"]
     list_select_related = ["course", "lesson"]
@@ -243,7 +264,15 @@ class CourseMaterialAdmin(admin.ModelAdmin):
 
 @admin.register(MaterialItem)
 class MaterialItemAdmin(admin.ModelAdmin):
-    list_display = ["title", "material", "item_type", "is_published", "download_policy", "order", "created_at"]
+    list_display = [
+        "title",
+        "material",
+        "item_type",
+        "is_published",
+        "download_policy",
+        "order",
+        "created_at",
+    ]
     list_filter = ["is_published", "item_type", "download_policy", "material__course"]
     search_fields = ["title", "material__title", "material__course__title"]
     list_select_related = ["material", "material__course"]

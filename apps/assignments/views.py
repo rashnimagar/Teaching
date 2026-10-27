@@ -265,11 +265,13 @@ def assignment_detail_view(request, slug, assignment_id):
                     .filter(assignment=locked_assignment, student=request.user)
                     .first()
                 )
-                is_unlocked_resubmission = bool(
-                    locked_submission and locked_submission.is_unlocked
-                )
+                is_unlocked_resubmission = bool(locked_submission and locked_submission.is_unlocked)
 
-                if locked_submission and locked_submission.grade is not None and not is_unlocked_resubmission:
+                if (
+                    locked_submission
+                    and locked_submission.grade is not None
+                    and not is_unlocked_resubmission
+                ):
                     messages.error(
                         request,
                         _("This submission has already been graded and cannot be modified."),

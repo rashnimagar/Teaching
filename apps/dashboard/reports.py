@@ -35,7 +35,7 @@ def build_content_disposition_header(filename: str) -> str:
     if not ascii_clean:
         ascii_clean = "export.csv"
     utf8_encoded = urllib.parse.quote(filename)
-    return f'attachment; filename="{ascii_clean}"; filename*=UTF-8\'\'{utf8_encoded}'
+    return f"attachment; filename=\"{ascii_clean}\"; filename*=UTF-8''{utf8_encoded}"
 
 
 def stream_course_grades_csv(course: Course) -> StreamingHttpResponse:
@@ -149,7 +149,7 @@ def stream_course_progress_csv(course: Course) -> StreamingHttpResponse:
         Lesson.objects.filter(course=course, is_published=True).order_by("order", "id")
     )
     total_published = len(published_lessons)
-    published_lesson_ids = {l.id for l in published_lessons}
+    published_lesson_ids = {lesson.id for lesson in published_lessons}
 
     header = [
         "Student Name",
@@ -178,9 +178,7 @@ def stream_course_progress_csv(course: Course) -> StreamingHttpResponse:
             ).count()
 
             pct = (
-                round((completed_count / total_published) * 100, 1)
-                if total_published > 0
-                else 0.0
+                round((completed_count / total_published) * 100, 1) if total_published > 0 else 0.0
             )
 
             row = [

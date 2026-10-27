@@ -1,4 +1,3 @@
-import re
 from datetime import timedelta
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -118,9 +117,7 @@ class TestSubmissionTextVisibilityEndToEnd:
         assert c_queue_resp.status_code == 200
         assert test_text[:40] in c_queue_resp.content.decode("utf-8")
 
-    def test_edit_before_deadline_updates_teacher_grading_page(
-        self, client, course_setup
-    ):
+    def test_edit_before_deadline_updates_teacher_grading_page(self, client, course_setup):
         student = course_setup["student"]
         teacher = course_setup["teacher"]
         course = course_setup["course"]
@@ -154,9 +151,7 @@ class TestSubmissionTextVisibilityEndToEnd:
         assert "Final updated draft version 2" in content
         assert "Draft version 1" not in content
 
-    def test_resubmission_after_unlock_visible_to_teacher(
-        self, client, course_setup
-    ):
+    def test_resubmission_after_unlock_visible_to_teacher(self, client, course_setup):
         student = course_setup["student"]
         teacher = course_setup["teacher"]
         course = course_setup["course"]
@@ -192,7 +187,11 @@ class TestSubmissionTextVisibilityEndToEnd:
 
         # 4. Student resubmits work
         client.force_login(student)
-        client.post(submit_url, {"content_text": "Expanded corrected solution after teacher unlock."}, follow=True)
+        client.post(
+            submit_url,
+            {"content_text": "Expanded corrected solution after teacher unlock."},
+            follow=True,
+        )
         sub.refresh_from_db()
         assert sub.content_text == "Expanded corrected solution after teacher unlock."
         assert sub.grade is None  # Reset to ungraded queue
@@ -204,9 +203,7 @@ class TestSubmissionTextVisibilityEndToEnd:
         content = grade_resp.content.decode("utf-8")
         assert "Expanded corrected solution after teacher unlock." in content
 
-    def test_text_plus_file_shows_both_sections(
-        self, client, course_setup
-    ):
+    def test_text_plus_file_shows_both_sections(self, client, course_setup):
         student = course_setup["student"]
         teacher = course_setup["teacher"]
         course = course_setup["course"]
@@ -218,7 +215,9 @@ class TestSubmissionTextVisibilityEndToEnd:
             kwargs={"slug": course.slug, "assignment_id": assignment.id},
         )
 
-        uploaded_file = SimpleUploadedFile("solution.txt", b"def solve(): return 42\n", content_type="text/plain")
+        uploaded_file = SimpleUploadedFile(
+            "solution.txt", b"def solve(): return 42\n", content_type="text/plain"
+        )
         resp = client.post(
             submit_url,
             {"content_text": "Check out the attached Python script.", "file": uploaded_file},
@@ -246,9 +245,7 @@ class TestSubmissionTextVisibilityEndToEnd:
         assert "bytes" in content.lower()
         assert "Download File" in content
 
-    def test_file_only_shows_empty_text_state(
-        self, client, course_setup
-    ):
+    def test_file_only_shows_empty_text_state(self, client, course_setup):
         student = course_setup["student"]
         teacher = course_setup["teacher"]
         course = course_setup["course"]
@@ -279,9 +276,7 @@ class TestSubmissionTextVisibilityEndToEnd:
         assert "Attached file" in content
         assert "diagram.pdf" in content
 
-    def test_nepali_unicode_text_preservation(
-        self, client, course_setup
-    ):
+    def test_nepali_unicode_text_preservation(self, client, course_setup):
         student = course_setup["student"]
         teacher = course_setup["teacher"]
         course = course_setup["course"]
@@ -309,9 +304,7 @@ class TestSubmissionTextVisibilityEndToEnd:
 
         assert nepali_text in content
 
-    def test_long_answer_preserves_linebreaks_and_autolinks_urls(
-        self, client, course_setup
-    ):
+    def test_long_answer_preserves_linebreaks_and_autolinks_urls(self, client, course_setup):
         student = course_setup["student"]
         teacher = course_setup["teacher"]
         course = course_setup["course"]
@@ -345,9 +338,7 @@ class TestSubmissionTextVisibilityEndToEnd:
         assert '<a href="https://owasp.org/www-project-top-ten/"' in content
         assert "Paragraph One: Explaining the threat vector.<br" in content
 
-    def test_script_and_special_characters_are_escaped(
-        self, client, course_setup
-    ):
+    def test_script_and_special_characters_are_escaped(self, client, course_setup):
         student = course_setup["student"]
         teacher = course_setup["teacher"]
         course = course_setup["course"]
@@ -375,16 +366,17 @@ class TestSubmissionTextVisibilityEndToEnd:
 
         # <script> must be escaped, NEVER rendered as executable tag
         assert "<script>alert('XSS-TEST')</script>" not in content
-        assert "&lt;script&gt;alert(&#x27;XSS-TEST&#x27;)&lt;/script&gt;" in content or "&lt;script&gt;alert('XSS-TEST')&lt;/script&gt;" in content
+        assert (
+            "&lt;script&gt;alert(&#x27;XSS-TEST&#x27;)&lt;/script&gt;" in content
+            or "&lt;script&gt;alert('XSS-TEST')&lt;/script&gt;" in content
+        )
         assert "&amp;" in content
         assert "&lt;b&gt;bold&lt;/b&gt;" in content
         assert "&lt;img src=x onerror=alert(1)&gt;" in content
         # Safe URL still auto-linked
         assert '<a href="https://safe.example.com"' in content
 
-    def test_20000_character_limit_boundary(
-        self, client, course_setup
-    ):
+    def test_20000_character_limit_boundary(self, client, course_setup):
         student = course_setup["student"]
         course = course_setup["course"]
         assignment = course_setup["assignment"]
@@ -406,11 +398,12 @@ class TestSubmissionTextVisibilityEndToEnd:
         text_20001 = "B" * 20001
         resp_invalid = client.post(submit_url, {"content_text": text_20001})
         assert resp_invalid.status_code == 400
-        assert "exceeds the maximum allowed length of 20000 characters" in resp_invalid.content.decode("utf-8")
+        assert (
+            "exceeds the maximum allowed length of 20000 characters"
+            in resp_invalid.content.decode("utf-8")
+        )
 
-    def test_admin_readonly_and_student_views(
-        self, client, course_setup
-    ):
+    def test_admin_readonly_and_student_views(self, client, course_setup):
         student = course_setup["student"]
         course = course_setup["course"]
         assignment = course_setup["assignment"]
@@ -432,16 +425,16 @@ class TestSubmissionTextVisibilityEndToEnd:
         assert student_text in student_content
 
         # Check Django admin has content_text in readonly_fields
-        from apps.assignments.admin import SubmissionAdmin
         from django.contrib.admin.sites import AdminSite
+
+        from apps.assignments.admin import SubmissionAdmin
+
         site = AdminSite()
         sub_admin = SubmissionAdmin(Submission, site)
         assert "content_text" in sub_admin.readonly_fields
         assert "original_filename" in sub_admin.readonly_fields
 
-    def test_grades_csv_export_with_special_characters_and_text(
-        self, client, course_setup
-    ):
+    def test_grades_csv_export_with_special_characters_and_text(self, client, course_setup):
         student = course_setup["student"]
         teacher = course_setup["teacher"]
         course = course_setup["course"]
@@ -453,7 +446,9 @@ class TestSubmissionTextVisibilityEndToEnd:
             "assignments:detail",
             kwargs={"slug": course.slug, "assignment_id": assignment.id},
         )
-        client.post(submit_url, {"content_text": "=1+1 formula injection and नेपाली text"}, follow=True)
+        client.post(
+            submit_url, {"content_text": "=1+1 formula injection and नेपाली text"}, follow=True
+        )
 
         sub = Submission.objects.get(assignment=assignment, student=student)
         sub.grade = Decimal("95.00")

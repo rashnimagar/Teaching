@@ -41,7 +41,9 @@ class Command(BaseCommand):
         is_delete = options.get("delete", False)
         storage = storages["private"]
 
-        self.stdout.write(self.style.NOTICE("Scanning private storage for submission and material files..."))
+        self.stdout.write(
+            self.style.NOTICE("Scanning private storage for submission and material files...")
+        )
 
         storage_files = set()
         for root_dir in ("submissions", "materials"):
@@ -49,8 +51,12 @@ class Command(BaseCommand):
                 storage_files.add(path)
 
         # Collect referenced files from database
-        referenced_submissions = set(Submission.objects.exclude(file="").values_list("file", flat=True))
-        referenced_materials = set(MaterialItem.objects.exclude(file="").values_list("file", flat=True))
+        referenced_submissions = set(
+            Submission.objects.exclude(file="").values_list("file", flat=True)
+        )
+        referenced_materials = set(
+            MaterialItem.objects.exclude(file="").values_list("file", flat=True)
+        )
         referenced_files = referenced_submissions | referenced_materials
 
         orphaned = storage_files - referenced_files

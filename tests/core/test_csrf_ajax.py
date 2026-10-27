@@ -86,12 +86,16 @@ class TestHttpOnlyCsrfAjaxActions(TestCase):
 
         # Assert cookie is present
         assert "csrftoken" in client.cookies
-        assert client.cookies["csrftoken"]["httponly"] is True, "CSRF cookie must have HttpOnly flag"
+        assert client.cookies["csrftoken"]["httponly"] is True, (
+            "CSRF cookie must have HttpOnly flag"
+        )
 
         # Extract token from DOM <meta name="csrf-token" content="...">
         html = resp.content.decode("utf-8")
         match = re.search(r'<meta\s+name=["\']csrf-token["\']\s+content=["\']([^"\']+)["\']', html)
-        assert match is not None, "Page must include <meta name='csrf-token'> for HttpOnly token extraction"
+        assert match is not None, (
+            "Page must include <meta name='csrf-token'> for HttpOnly token extraction"
+        )
         token = match.group(1)
         assert len(token) > 20
         return client, token
@@ -99,7 +103,10 @@ class TestHttpOnlyCsrfAjaxActions(TestCase):
     def test_lesson_toggle_complete_with_httponly_csrf(self):
         """Student marks lesson complete using token from meta tag via X-CSRFToken header."""
         client, token = self._get_csrf_client(self.student)
-        url = reverse("learn:toggle_complete", kwargs={"course_slug": self.course.slug, "lesson_id": self.lesson.id})
+        url = reverse(
+            "learn:toggle_complete",
+            kwargs={"course_slug": self.course.slug, "lesson_id": self.lesson.id},
+        )
 
         # POST with X-CSRFToken header
         resp = client.post(url, HTTP_X_CSRFTOKEN=token)
@@ -111,7 +118,10 @@ class TestHttpOnlyCsrfAjaxActions(TestCase):
     def test_playback_position_heartbeat_with_httponly_csrf(self):
         """Video player sends playback heartbeat with X-CSRFToken header."""
         client, token = self._get_csrf_client(self.student)
-        url = reverse("learn:playback_position", kwargs={"course_slug": self.course.slug, "lesson_id": self.lesson.id})
+        url = reverse(
+            "learn:playback_position",
+            kwargs={"course_slug": self.course.slug, "lesson_id": self.lesson.id},
+        )
 
         resp = client.post(url, {"position": 145}, HTTP_X_CSRFTOKEN=token)
         assert resp.status_code == 200
@@ -125,7 +135,10 @@ class TestHttpOnlyCsrfAjaxActions(TestCase):
         client, token = self._get_csrf_client(self.student)
 
         # 1. Request download
-        req_url = reverse("learn:material_request", kwargs={"course_slug": self.course.slug, "item_id": self.req_item.id})
+        req_url = reverse(
+            "learn:material_request",
+            kwargs={"course_slug": self.course.slug, "item_id": self.req_item.id},
+        )
         resp_req = client.post(req_url, HTTP_X_CSRFTOKEN=token)
         assert resp_req.status_code == 302
 
@@ -133,7 +146,10 @@ class TestHttpOnlyCsrfAjaxActions(TestCase):
         assert d_req.status == DownloadRequest.Status.PENDING
 
         # 2. Cancel download
-        cancel_url = reverse("learn:material_cancel", kwargs={"course_slug": self.course.slug, "item_id": self.req_item.id})
+        cancel_url = reverse(
+            "learn:material_cancel",
+            kwargs={"course_slug": self.course.slug, "item_id": self.req_item.id},
+        )
         resp_cancel = client.post(cancel_url, HTTP_X_CSRFTOKEN=token)
         assert resp_cancel.status_code == 302
         assert not DownloadRequest.objects.filter(id=d_req.id).exists()
@@ -144,7 +160,11 @@ class TestHttpOnlyCsrfAjaxActions(TestCase):
 
         url = reverse(
             "dashboard:teacher_material_item_policy",
-            kwargs={"slug": self.course.slug, "material_id": self.mat.id, "item_id": self.req_item.id},
+            kwargs={
+                "slug": self.course.slug,
+                "material_id": self.mat.id,
+                "item_id": self.req_item.id,
+            },
         )
         resp = client.post(url, {"target_policy": "open_to_enrolled"}, HTTP_X_CSRFTOKEN=token)
         assert resp.status_code == 302
@@ -155,12 +175,17 @@ class TestHttpOnlyCsrfAjaxActions(TestCase):
     def test_missing_or_tampered_csrf_rejected_with_403(self):
         """Enforces that without valid token, POST actions are strictly rejected with 403."""
         client, _ = self._get_csrf_client(self.student)
-        url = reverse("learn:playback_position", kwargs={"course_slug": self.course.slug, "lesson_id": self.lesson.id})
+        url = reverse(
+            "learn:playback_position",
+            kwargs={"course_slug": self.course.slug, "lesson_id": self.lesson.id},
+        )
 
         # Missing token
         resp_missing = client.post(url, {"position": 50})
         assert resp_missing.status_code == 403
 
         # Tampered token
-        resp_tampered = client.post(url, {"position": 50}, HTTP_X_CSRFTOKEN="invalid-tampered-token-12345")
+        resp_tampered = client.post(
+            url, {"position": 50}, HTTP_X_CSRFTOKEN="invalid-tampered-token-12345"
+        )
         assert resp_tampered.status_code == 403

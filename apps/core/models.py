@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db import OperationalError, ProgrammingError, models, transaction
 from django.utils.translation import gettext_lazy as _
 
@@ -94,20 +95,6 @@ class SiteSettings(TimeStampedModel):
     def __str__(self):
         return f"{self.site_name} Settings"
 
-    def clean(self):
-        super().clean()
-        from apps.core.validators import validate_safe_url
-        errors = {}
-        for field_name in ("github_url", "twitter_url", "linkedin_url", "youtube_url"):
-            val = getattr(self, field_name, "")
-            if val:
-                try:
-                    validate_safe_url(val)
-                except ValidationError as err:
-                    errors[field_name] = err.message if hasattr(err, "message") else str(err)
-        if errors:
-            raise ValidationError(errors)
-
     def save(self, *args, **kwargs):
         old_photo = None
         old_webp = None
@@ -160,6 +147,21 @@ class SiteSettings(TimeStampedModel):
     def delete(self, *args, **kwargs):
         # Prevent deleting the singleton configuration
         pass
+
+    def clean(self):
+        super().clean()
+        from apps.core.validators import validate_safe_url
+
+        errors = {}
+        for field_name in ("github_url", "twitter_url", "linkedin_url", "youtube_url"):
+            val = getattr(self, field_name, "")
+            if val:
+                try:
+                    validate_safe_url(val)
+                except ValidationError as err:
+                    errors[field_name] = err.message if hasattr(err, "message") else str(err)
+        if errors:
+            raise ValidationError(errors)
 
     @classmethod
     def get_solo(cls):
@@ -220,4 +222,3 @@ class FAQItem(TimeStampedModel):
     def delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
         cache.delete(FAQ_CACHE_KEY)
-

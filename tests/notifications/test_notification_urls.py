@@ -8,7 +8,14 @@ from django.utils import timezone
 
 from apps.assignments.models import Assignment, Submission
 from apps.assignments.services.grading import grade_submission
-from apps.courses.models import Course, CourseMaterial, DownloadRequest, Enrollment, Lesson, MaterialItem
+from apps.courses.models import (
+    Course,
+    CourseMaterial,
+    DownloadRequest,
+    Enrollment,
+    Lesson,
+    MaterialItem,
+)
 from apps.courses.services.download_requests import transition_download_request
 from apps.courses.services.enrollments import transition_enrollment_status
 from apps.notifications.models import Notification
@@ -24,7 +31,7 @@ def notification_test_data(db, user_factory):
         slug="notif-systems",
         is_published=True,
     )
-    lesson = Lesson.objects.create(
+    Lesson.objects.create(
         course=course,
         title="Welcome to Notifications",
         order=1,
@@ -39,7 +46,9 @@ def notification_test_data(db, user_factory):
         file=dummy_file,
         download_policy=MaterialItem.DownloadPolicy.REQUEST_REQUIRED,
     )
-    dummy_file2 = SimpleUploadedFile("notes.pdf", b"%PDF-1.4 mock 2", content_type="application/pdf")
+    dummy_file2 = SimpleUploadedFile(
+        "notes.pdf", b"%PDF-1.4 mock 2", content_type="application/pdf"
+    )
     material_item2 = MaterialItem.objects.create(
         material=material,
         title="Course Notes",
@@ -85,10 +94,14 @@ def test_all_six_notification_kinds_resolve_without_404(client, notification_tes
     )
     # Trigger ACTIVE (APPROVED)
     transition_enrollment_status(enrollment.id, Enrollment.Status.ACTIVE, actor=teacher)
-    notif_enr_appr = Notification.objects.filter(recipient=student, kind=Notification.Kind.ENROLLMENT_APPROVED).first()
+    notif_enr_appr = Notification.objects.filter(
+        recipient=student, kind=Notification.Kind.ENROLLMENT_APPROVED
+    ).first()
     if not notif_enr_appr:
-        from apps.notifications.services import create_notification
         from django.urls import reverse
+
+        from apps.notifications.services import create_notification
+
         create_notification(
             recipient=student,
             kind=Notification.Kind.ENROLLMENT_APPROVED,
@@ -96,15 +109,21 @@ def test_all_six_notification_kinds_resolve_without_404(client, notification_tes
             body="Approved!",
             url=reverse("learn:course", kwargs={"course_slug": course.slug}),
         )
-        notif_enr_appr = Notification.objects.get(recipient=student, kind=Notification.Kind.ENROLLMENT_APPROVED)
+        notif_enr_appr = Notification.objects.get(
+            recipient=student, kind=Notification.Kind.ENROLLMENT_APPROVED
+        )
     created_kinds.add(notif_enr_appr.kind)
 
     # Trigger REVOKED
     transition_enrollment_status(enrollment.id, Enrollment.Status.REVOKED, actor=teacher)
-    notif_enr_rev = Notification.objects.filter(recipient=student, kind=Notification.Kind.ENROLLMENT_REVOKED).first()
+    notif_enr_rev = Notification.objects.filter(
+        recipient=student, kind=Notification.Kind.ENROLLMENT_REVOKED
+    ).first()
     if not notif_enr_rev:
-        from apps.notifications.services import create_notification
         from django.urls import reverse
+
+        from apps.notifications.services import create_notification
+
         create_notification(
             recipient=student,
             kind=Notification.Kind.ENROLLMENT_REVOKED,
@@ -112,7 +131,9 @@ def test_all_six_notification_kinds_resolve_without_404(client, notification_tes
             body="Revoked!",
             url=reverse("courses:detail", kwargs={"slug": course.slug}),
         )
-        notif_enr_rev = Notification.objects.get(recipient=student, kind=Notification.Kind.ENROLLMENT_REVOKED)
+        notif_enr_rev = Notification.objects.get(
+            recipient=student, kind=Notification.Kind.ENROLLMENT_REVOKED
+        )
     created_kinds.add(notif_enr_rev.kind)
 
     # Re-activate enrollment for remaining student views
@@ -131,7 +152,9 @@ def test_all_six_notification_kinds_resolve_without_404(client, notification_tes
         decided_by=teacher,
         expires_at=timezone.now() + timezone.timedelta(hours=24),
     )
-    notif_dl_appr = Notification.objects.get(recipient=student, kind=Notification.Kind.DOWNLOAD_APPROVED)
+    notif_dl_appr = Notification.objects.get(
+        recipient=student, kind=Notification.Kind.DOWNLOAD_APPROVED
+    )
     created_kinds.add(notif_dl_appr.kind)
 
     dl_req2 = DownloadRequest.objects.create(
@@ -145,7 +168,9 @@ def test_all_six_notification_kinds_resolve_without_404(client, notification_tes
         decided_by=teacher,
         teacher_note="Please attend the live session first.",
     )
-    notif_dl_den = Notification.objects.get(recipient=student, kind=Notification.Kind.DOWNLOAD_DENIED)
+    notif_dl_den = Notification.objects.get(
+        recipient=student, kind=Notification.Kind.DOWNLOAD_DENIED
+    )
     created_kinds.add(notif_dl_den.kind)
 
     # Transition approved to revoked
@@ -155,7 +180,9 @@ def test_all_six_notification_kinds_resolve_without_404(client, notification_tes
         decided_by=teacher,
         teacher_note="Access expired.",
     )
-    notif_dl_rev = Notification.objects.get(recipient=student, kind=Notification.Kind.DOWNLOAD_REVOKED)
+    notif_dl_rev = Notification.objects.get(
+        recipient=student, kind=Notification.Kind.DOWNLOAD_REVOKED
+    )
     created_kinds.add(notif_dl_rev.kind)
 
     # 6: Submission graded notification
@@ -165,24 +192,40 @@ def test_all_six_notification_kinds_resolve_without_404(client, notification_tes
         content_text="Solution details.",
     )
     from decimal import Decimal
-    grade_submission(submission_id=sub.id, grade=Decimal("95.00"), feedback="Outstanding work.", teacher_user=teacher)
-    notif_graded = Notification.objects.filter(recipient=student, kind=Notification.Kind.SUBMISSION_GRADED).first()
+
+    grade_submission(
+        submission_id=sub.id,
+        grade=Decimal("95.00"),
+        feedback="Outstanding work.",
+        teacher_user=teacher,
+    )
+    notif_graded = Notification.objects.filter(
+        recipient=student, kind=Notification.Kind.SUBMISSION_GRADED
+    ).first()
     if not notif_graded:
-        from apps.notifications.services import create_notification
         from django.urls import reverse
+
+        from apps.notifications.services import create_notification
+
         create_notification(
             recipient=student,
             kind=Notification.Kind.SUBMISSION_GRADED,
             title=f"Assignment Graded: {assignment.title}",
             body="Graded: 95/100",
-            url=reverse("assignments:detail", kwargs={"slug": course.slug, "assignment_id": assignment.id}),
+            url=reverse(
+                "assignments:detail", kwargs={"slug": course.slug, "assignment_id": assignment.id}
+            ),
         )
-        notif_graded = Notification.objects.get(recipient=student, kind=Notification.Kind.SUBMISSION_GRADED)
+        notif_graded = Notification.objects.get(
+            recipient=student, kind=Notification.Kind.SUBMISSION_GRADED
+        )
     created_kinds.add(notif_graded.kind)
 
     # Verify all 6 enum choices are represented
     all_enum_kinds = set(Notification.Kind.values)
-    assert created_kinds == all_enum_kinds, f"Missing tests for kinds: {all_enum_kinds - created_kinds}"
+    assert created_kinds == all_enum_kinds, (
+        f"Missing tests for kinds: {all_enum_kinds - created_kinds}"
+    )
 
     # Now verify every notification's URL resolves when visited by the student
     client.force_login(student)
@@ -191,8 +234,12 @@ def test_all_six_notification_kinds_resolve_without_404(client, notification_tes
 
     for notif in notifications:
         assert notif.url, f"Notification {notif.id} ({notif.kind}) has empty URL"
-        assert notif.url.startswith("/"), f"Notification {notif.id} URL must start with '/': {notif.url}"
-        assert not notif.url.startswith("//"), f"Notification {notif.id} URL must not be protocol-relative: {notif.url}"
+        assert notif.url.startswith("/"), (
+            f"Notification {notif.id} URL must start with '/': {notif.url}"
+        )
+        assert not notif.url.startswith("//"), (
+            f"Notification {notif.id} URL must not be protocol-relative: {notif.url}"
+        )
 
         resp = client.get(notif.url)
         # Must be 200 OK or 302/301 redirect (e.g. learn redirect to lesson), but never 404
@@ -225,7 +272,9 @@ def test_no_services_hardcode_path_strings_for_notifications():
         for node in ast.walk(tree):
             if isinstance(node, ast.Assign):
                 if isinstance(node.value, ast.Call):
-                    func_name = getattr(node.value.func, "id", getattr(node.value.func, "attr", None))
+                    func_name = getattr(
+                        node.value.func, "id", getattr(node.value.func, "attr", None)
+                    )
                     if func_name == "reverse":
                         for target in node.targets:
                             if isinstance(target, ast.Name):
@@ -257,9 +306,11 @@ def test_no_services_hardcode_path_strings_for_notifications():
                     )
 
                     # It must either be a Call to reverse() or a Name assigned to reverse()
-                    is_direct_reverse = isinstance(url_arg, ast.Call) and getattr(
-                        url_arg.func, "id", getattr(url_arg.func, "attr", None)
-                    ) == "reverse"
+                    is_direct_reverse = (
+                        isinstance(url_arg, ast.Call)
+                        and getattr(url_arg.func, "id", getattr(url_arg.func, "attr", None))
+                        == "reverse"
+                    )
                     is_reverse_var = isinstance(url_arg, ast.Name) and url_arg.id in reverse_vars
 
                     assert is_direct_reverse or is_reverse_var, (
@@ -267,4 +318,6 @@ def test_no_services_hardcode_path_strings_for_notifications():
                         f"or variable bound to reverse(), got {ast.dump(url_arg)}"
                     )
 
-    assert checked_calls >= 4, f"Expected to check at least 4 create_notification calls, checked {checked_calls}"
+    assert checked_calls >= 4, (
+        f"Expected to check at least 4 create_notification calls, checked {checked_calls}"
+    )

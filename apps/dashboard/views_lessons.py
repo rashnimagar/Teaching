@@ -52,8 +52,16 @@ def teacher_lesson_create_view(request, slug):
                 lesson.order = max_order + 1
                 lesson.save()
 
-            logger.info("Teacher %s created lesson %s in course %s (ID %s)", request.user.id, lesson.title, course.slug, lesson.id)
-            messages.success(request, _("Lesson '%(title)s' created successfully.") % {"title": lesson.title})
+            logger.info(
+                "Teacher %s created lesson %s in course %s (ID %s)",
+                request.user.id,
+                lesson.title,
+                course.slug,
+                lesson.id,
+            )
+            messages.success(
+                request, _("Lesson '%(title)s' created successfully.") % {"title": lesson.title}
+            )
             return redirect("dashboard:teacher_course_lessons", slug=course.slug)
     else:
         form = TeacherLessonForm(course=course)
@@ -109,7 +117,9 @@ def teacher_lesson_edit_view(request, slug, lesson_id):
             if video_changed and affected_count > 0:
                 messages.success(
                     request,
-                    _("Lesson '%(title)s' updated. Reset playback position for %(count)s student(s) due to video replacement.")
+                    _(
+                        "Lesson '%(title)s' updated. Reset playback position for %(count)s student(s) due to video replacement."
+                    )
                     % {"title": updated_lesson.title, "count": affected_count},
                 )
             else:
@@ -145,12 +155,17 @@ def teacher_lesson_toggle_publish_view(request, slug, lesson_id):
     lesson.save(update_fields=["is_published", "updated_at"])
 
     status_str = "published" if lesson.is_published else "unpublished"
-    logger.info("Teacher %s %s lesson %s (ID %s)", request.user.id, status_str, lesson.title, lesson.id)
+    logger.info(
+        "Teacher %s %s lesson %s (ID %s)", request.user.id, status_str, lesson.title, lesson.id
+    )
 
     messages.success(
         request,
         _("Lesson '%(title)s' is now %(status)s.")
-        % {"title": lesson.title, "status": _("published") if lesson.is_published else _("hidden as draft")},
+        % {
+            "title": lesson.title,
+            "status": _("published") if lesson.is_published else _("hidden as draft"),
+        },
     )
     return redirect("dashboard:teacher_course_lessons", slug=course.slug)
 
@@ -194,7 +209,13 @@ def teacher_lesson_reorder_view(request, slug, lesson_id):
                 les.order = new_order
                 les.save(update_fields=["order", "updated_at"])
 
-        logger.info("Teacher %s reordered lesson ID %s %s in course %s", request.user.id, lesson_id, direction, course.slug)
+        logger.info(
+            "Teacher %s reordered lesson ID %s %s in course %s",
+            request.user.id,
+            lesson_id,
+            direction,
+            course.slug,
+        )
 
     url = reverse("dashboard:teacher_course_lessons", kwargs={"slug": course.slug})
     return redirect(f"{url}?moved={lesson_id}")
@@ -236,7 +257,9 @@ def teacher_lesson_delete_view(request, slug, lesson_id):
 
         messages.error(
             request,
-            _("Cannot delete lesson '%(title)s' because %(reasons)s. You can unpublish it instead to hide it from students.")
+            _(
+                "Cannot delete lesson '%(title)s' because %(reasons)s. You can unpublish it instead to hide it from students."
+            )
             % {"title": lesson.title, "reasons": ", ".join(reasons)},
         )
         return redirect("dashboard:teacher_course_lessons", slug=course.slug)
@@ -251,6 +274,14 @@ def teacher_lesson_delete_view(request, slug, lesson_id):
                 les.order = new_order
                 les.save(update_fields=["order", "updated_at"])
 
-    logger.info("Teacher %s deleted lesson '%s' (ID %s) from course %s", request.user.id, lesson_title, lesson_id, course.slug)
-    messages.success(request, _("Lesson '%(title)s' deleted successfully.") % {"title": lesson_title})
+    logger.info(
+        "Teacher %s deleted lesson '%s' (ID %s) from course %s",
+        request.user.id,
+        lesson_title,
+        lesson_id,
+        course.slug,
+    )
+    messages.success(
+        request, _("Lesson '%(title)s' deleted successfully.") % {"title": lesson_title}
+    )
     return redirect("dashboard:teacher_course_lessons", slug=course.slug)

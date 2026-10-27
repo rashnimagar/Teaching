@@ -17,9 +17,7 @@ def teacher_nav_context(request):
         pending_permissions = DownloadRequest.objects.filter(
             status=DownloadRequest.Status.PENDING
         ).count()
-        pending_enrollments = Enrollment.objects.filter(
-            status=Enrollment.Status.PENDING
-        ).count()
+        pending_enrollments = Enrollment.objects.filter(status=Enrollment.Status.PENDING).count()
         ungraded_submissions = Submission.objects.filter(
             grade__isnull=True,
             assignment__is_published=True,

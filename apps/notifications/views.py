@@ -25,11 +25,15 @@ def notification_list_view(request):
     require_https = request.is_secure()
     for notif in page_obj:
         if notif.url:
-            notif.has_safe_url = url_has_allowed_host_and_scheme(
-                notif.url,
-                allowed_hosts=allowed_hosts,
-                require_https=require_https,
-            ) and notif.url.startswith("/") and not notif.url.startswith("//")
+            notif.has_safe_url = (
+                url_has_allowed_host_and_scheme(
+                    notif.url,
+                    allowed_hosts=allowed_hosts,
+                    require_https=require_https,
+                )
+                and notif.url.startswith("/")
+                and not notif.url.startswith("//")
+            )
         else:
             notif.has_safe_url = False
 
@@ -62,9 +66,14 @@ def mark_notification_read_view(request, notification_id: int):
     ):
         return redirect(next_url)
 
-    if notification.url and url_has_allowed_host_and_scheme(
-        notification.url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
-    ) and notification.url.startswith("/") and not notification.url.startswith("//"):
+    if (
+        notification.url
+        and url_has_allowed_host_and_scheme(
+            notification.url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+        )
+        and notification.url.startswith("/")
+        and not notification.url.startswith("//")
+    ):
         return redirect(notification.url)
 
     return redirect("notifications:list")
@@ -78,7 +87,9 @@ def mark_all_notifications_read_view(request):
     """
     count = request.user.notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
     if count > 0:
-        messages.success(request, f"Marked {count} notification{'s' if count != 1 else ''} as read.")
+        messages.success(
+            request, f"Marked {count} notification{'s' if count != 1 else ''} as read."
+        )
     else:
         messages.info(request, "No unread notifications.")
 

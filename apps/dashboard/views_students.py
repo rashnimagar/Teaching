@@ -22,7 +22,7 @@ from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.models import User
 from apps.accounts.permissions import teacher_required
-from apps.assignments.models import Assignment, Submission
+from apps.assignments.models import Submission
 from apps.courses.models import (
     Course,
     DownloadRequest,
@@ -155,9 +155,7 @@ def teacher_student_detail_view(request, student_id: int):
 
     # Enrollments with detailed course progress
     enrollments = (
-        Enrollment.objects.filter(student=student)
-        .select_related("course")
-        .order_by("-created_at")
+        Enrollment.objects.filter(student=student).select_related("course").order_by("-created_at")
     )
 
     course_data = []
@@ -199,7 +197,9 @@ def teacher_student_detail_view(request, student_id: int):
     # Download requests history
     download_requests = (
         DownloadRequest.objects.filter(student=student)
-        .select_related("material_item", "material_item__material", "material_item__material__course")
+        .select_related(
+            "material_item", "material_item__material", "material_item__material__course"
+        )
         .order_by("-created_at")[:50]
     )
 
@@ -249,7 +249,9 @@ def teacher_student_toggle_active_view(request, student_id: int):
     if student.is_staff or student.is_superuser or student.role != User.Role.STUDENT:
         messages.error(
             request,
-            _("Teachers can only deactivate student accounts. Teacher and administrative accounts are protected."),
+            _(
+                "Teachers can only deactivate student accounts. Teacher and administrative accounts are protected."
+            ),
         )
         return redirect("dashboard:teacher_students")
 

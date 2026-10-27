@@ -72,7 +72,9 @@ def test_submission_clearing_file_clears_file_size(file_submission_setup):
 
 
 @pytest.mark.django_db
-def test_submission_file_size_used_in_teacher_grading_page_without_storage_call(client, file_submission_setup):
+def test_submission_file_size_used_in_teacher_grading_page_without_storage_call(
+    client, file_submission_setup
+):
     teacher, student, course, assignment = file_submission_setup
     payload = b"X" * 1024  # 1.0 KB
     test_file = SimpleUploadedFile("lab_report.pdf", payload, content_type="application/pdf")
@@ -99,7 +101,9 @@ def test_submission_file_size_used_in_teacher_grading_page_without_storage_call(
 def test_backfill_file_sizes_tolerates_missing_files(file_submission_setup, caplog):
     """The migration backfill function must tolerate missing or unreadable files (skip and log)."""
     import importlib
+
     from django.apps import apps
+
     migration_mod = importlib.import_module("apps.assignments.migrations.0005_submission_file_size")
     backfill_file_sizes = migration_mod.backfill_file_sizes
 
@@ -115,9 +119,12 @@ def test_backfill_file_sizes_tolerates_missing_files(file_submission_setup, capl
 
     # Execute backfill
     import logging
+
     with caplog.at_level(logging.WARNING):
         backfill_file_sizes(apps, None)
 
     sub.refresh_from_db()
     assert sub.file_size is None
-    assert any("Skipping file_size backfill for submission" in record.message for record in caplog.records)
+    assert any(
+        "Skipping file_size backfill for submission" in record.message for record in caplog.records
+    )

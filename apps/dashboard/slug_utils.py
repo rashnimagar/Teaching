@@ -25,8 +25,15 @@ def validate_ascii_slug(value: str) -> bool:
     Validates that a slug strictly contains only lowercase ASCII letters,
     numbers, and hyphens (matching Django's <slug:> URL converter).
     """
-    if not value or not ASCII_SLUG_REGEX.match(value) or value.startswith("-") or value.endswith("-"):
+    if (
+        not value
+        or not ASCII_SLUG_REGEX.match(value)
+        or value.startswith("-")
+        or value.endswith("-")
+    ):
         raise ValidationError(
-            _("Slug may only contain lowercase ASCII letters, numbers, and hyphens (e.g. 'django-basics').")
+            _(
+                "Slug may only contain lowercase ASCII letters, numbers, and hyphens (e.g. 'django-basics')."
+            )
         )
     return True

@@ -1,4 +1,3 @@
-
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -68,7 +67,9 @@ class Notification(TimeStampedModel):
         max_length=500,
         blank=True,
         validators=[validate_internal_url],
-        help_text=_("Internal relative URL starting with a single slash (e.g. /learn/python/materials/)."),
+        help_text=_(
+            "Internal relative URL starting with a single slash (e.g. /learn/python/materials/)."
+        ),
     )
     read_at = models.DateTimeField(_("read at"), null=True, blank=True, db_index=True)
 

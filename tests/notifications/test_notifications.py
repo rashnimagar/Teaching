@@ -30,27 +30,39 @@ class TestNotificationValidation:
             validate_internal_url(r"/learn\python/")
 
     def test_urls_with_newlines_rejected(self):
-        with pytest.raises(ValidationError, match="URL must not contain control characters or newlines"):
+        with pytest.raises(
+            ValidationError, match="URL must not contain control characters or newlines"
+        ):
             validate_internal_url("/learn/\npython/")
 
     def test_urls_with_carriage_returns_rejected(self):
-        with pytest.raises(ValidationError, match="URL must not contain control characters or newlines"):
+        with pytest.raises(
+            ValidationError, match="URL must not contain control characters or newlines"
+        ):
             validate_internal_url("/learn/\rpython/")
 
     def test_urls_with_control_characters_rejected(self):
-        with pytest.raises(ValidationError, match="URL must not contain control characters or newlines"):
+        with pytest.raises(
+            ValidationError, match="URL must not contain control characters or newlines"
+        ):
             validate_internal_url("/learn/\x00python/")
 
     def test_external_scheme_rejected(self):
-        with pytest.raises(ValidationError, match="URL must be an internal path starting with a single '/'"):
+        with pytest.raises(
+            ValidationError, match="URL must be an internal path starting with a single '/'"
+        ):
             validate_internal_url("https://malicious.com/phish")
 
     def test_protocol_relative_url_rejected(self):
-        with pytest.raises(ValidationError, match="URL must be an internal path starting with a single '/'"):
+        with pytest.raises(
+            ValidationError, match="URL must be an internal path starting with a single '/'"
+        ):
             validate_internal_url("//malicious.com/phish")
 
     def test_relative_path_without_leading_slash_rejected(self):
-        with pytest.raises(ValidationError, match="URL must be an internal path starting with a single '/'"):
+        with pytest.raises(
+            ValidationError, match="URL must be an internal path starting with a single '/'"
+        ):
             validate_internal_url("learn/materials/")
 
 
@@ -185,7 +197,9 @@ class TestNotificationContextProcessor:
         request = rf.get("/")
         request.user = student
 
-        with patch.object(Notification.objects, "filter", side_effect=DatabaseError("DB connection lost")):
+        with patch.object(
+            Notification.objects, "filter", side_effect=DatabaseError("DB connection lost")
+        ):
             ctx = notifications_context(request)
             assert ctx["unread_notifications_count"] == 0
             assert ctx["unread_notifications_display"] == ""
@@ -259,7 +273,9 @@ class TestNotificationRetentionAndEmail:
         settings.NOTIFY_BY_EMAIL = True
         student = user_factory(email="email_fail_student@example.com")
 
-        with patch("django.core.mail.EmailMultiAlternatives.send", side_effect=Exception("SMTP Down")):
+        with patch(
+            "django.core.mail.EmailMultiAlternatives.send", side_effect=Exception("SMTP Down")
+        ):
             notif = create_notification(
                 recipient=student,
                 kind=Notification.Kind.DOWNLOAD_APPROVED,

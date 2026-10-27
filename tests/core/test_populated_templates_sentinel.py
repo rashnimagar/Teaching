@@ -103,7 +103,9 @@ def populated_platform_data(db, user_factory):
         lesson=lesson1,
         is_published=True,
     )
-    dummy_file = SimpleUploadedFile("architecture_diagram.pdf", b"%PDF-1.4 diagram mockup", content_type="application/pdf")
+    dummy_file = SimpleUploadedFile(
+        "architecture_diagram.pdf", b"%PDF-1.4 diagram mockup", content_type="application/pdf"
+    )
     item_file = MaterialItem.objects.create(
         material=material,
         title="System Architecture Diagram",
@@ -150,7 +152,9 @@ def populated_platform_data(db, user_factory):
     )
 
     # Submission with text + file + grade + event
-    sub_file = SimpleUploadedFile("solution_v1.txt", b"print('domain layer initialized')", content_type="text/plain")
+    sub_file = SimpleUploadedFile(
+        "solution_v1.txt", b"print('domain layer initialized')", content_type="text/plain"
+    )
     submission = Submission.objects.create(
         assignment=assignment,
         student=student,
@@ -179,7 +183,9 @@ def populated_platform_data(db, user_factory):
         kind=Notification.Kind.SUBMISSION_GRADED,
         title="Assignment Graded: Lab 1",
         body="Your submission for 'Lab 1: Domain Modeling' received 94.50/100.",
-        url=reverse("assignments:detail", kwargs={"slug": course.slug, "assignment_id": assignment.id}),
+        url=reverse(
+            "assignments:detail", kwargs={"slug": course.slug, "assignment_id": assignment.id}
+        ),
     )
 
     return {
@@ -208,7 +214,9 @@ class TestPopulatedTemplatesRenderingSentinel:
 
     # --- TEACHER PAGES ---
 
-    def test_teacher_grading_page_renders_with_populated_data(self, client, populated_platform_data):
+    def test_teacher_grading_page_renders_with_populated_data(
+        self, client, populated_platform_data
+    ):
         teacher = populated_platform_data["teacher"]
         sub = populated_platform_data["submission"]
         client.force_login(teacher)
@@ -227,7 +235,9 @@ class TestPopulatedTemplatesRenderingSentinel:
         assert "Superb separation of concerns" in html
         assert "Initial grade awarded" in html
 
-    def test_teacher_student_detail_renders_with_populated_data(self, client, populated_platform_data):
+    def test_teacher_student_detail_renders_with_populated_data(
+        self, client, populated_platform_data
+    ):
         teacher = populated_platform_data["teacher"]
         student = populated_platform_data["student"]
         client.force_login(teacher)
@@ -242,7 +252,9 @@ class TestPopulatedTemplatesRenderingSentinel:
         assert "Lab 1: Domain Modeling" in html
         assert "System Architecture Diagram" in html
 
-    def test_teacher_submissions_queue_renders_with_populated_data(self, client, populated_platform_data):
+    def test_teacher_submissions_queue_renders_with_populated_data(
+        self, client, populated_platform_data
+    ):
         teacher = populated_platform_data["teacher"]
         course = populated_platform_data["course"]
         assignment = populated_platform_data["assignment"]
@@ -286,14 +298,18 @@ class TestPopulatedTemplatesRenderingSentinel:
         html_assigns = resp_assigns.content.decode("utf-8")
         assert "Lab 1: Domain Modeling" in html_assigns
 
-    def test_teacher_materials_permissions_and_history_render(self, client, populated_platform_data):
+    def test_teacher_materials_permissions_and_history_render(
+        self, client, populated_platform_data
+    ):
         teacher = populated_platform_data["teacher"]
         course = populated_platform_data["course"]
         item_file = populated_platform_data["item_file"]
         client.force_login(teacher)
 
         # Materials list
-        resp_mat = client.get(reverse("dashboard:teacher_course_materials", kwargs={"slug": course.slug}))
+        resp_mat = client.get(
+            reverse("dashboard:teacher_course_materials", kwargs={"slug": course.slug})
+        )
         assert resp_mat.status_code == 200
         html_mat = resp_mat.content.decode("utf-8")
         assert "Week 1 Reference Materials" in html_mat
@@ -307,7 +323,9 @@ class TestPopulatedTemplatesRenderingSentinel:
         assert "System Architecture Diagram" in html_perm
 
         # Download history logs
-        resp_hist = client.get(reverse("dashboard:teacher_download_history", kwargs={"item_id": item_file.id}))
+        resp_hist = client.get(
+            reverse("dashboard:teacher_download_history", kwargs={"item_id": item_file.id})
+        )
         assert resp_hist.status_code == 200
         html_hist = resp_hist.content.decode("utf-8")
         assert "student_sentinel@example.com" in html_hist
@@ -325,7 +343,9 @@ class TestPopulatedTemplatesRenderingSentinel:
         assert "Comprehensive Python and Architecture" in html
         assert "An intensive mastery course on enterprise patterns." in html
 
-    def test_student_lesson_learn_view_renders_with_populated_data(self, client, populated_platform_data):
+    def test_student_lesson_learn_view_renders_with_populated_data(
+        self, client, populated_platform_data
+    ):
         student = populated_platform_data["student"]
         course = populated_platform_data["course"]
         lesson1 = populated_platform_data["lesson1"]
@@ -338,7 +358,9 @@ class TestPopulatedTemplatesRenderingSentinel:
         assert "01 Architecture Foundations" in html
         assert "Detailed notes on clean architecture" in html
 
-    def test_student_materials_list_renders_with_populated_data(self, client, populated_platform_data):
+    def test_student_materials_list_renders_with_populated_data(
+        self, client, populated_platform_data
+    ):
         student = populated_platform_data["student"]
         course = populated_platform_data["course"]
         client.force_login(student)
@@ -351,7 +373,9 @@ class TestPopulatedTemplatesRenderingSentinel:
         assert "System Architecture Diagram" in html
         assert "Official Python Documentation" in html
 
-    def test_student_assignment_list_and_detail_render_with_populated_data(self, client, populated_platform_data):
+    def test_student_assignment_list_and_detail_render_with_populated_data(
+        self, client, populated_platform_data
+    ):
         student = populated_platform_data["student"]
         course = populated_platform_data["course"]
         assignment = populated_platform_data["assignment"]
@@ -366,7 +390,9 @@ class TestPopulatedTemplatesRenderingSentinel:
         assert "Max 100 Points" in html_list
 
         # Assignment Detail
-        url_detail = reverse("assignments:detail", kwargs={"slug": course.slug, "assignment_id": assignment.id})
+        url_detail = reverse(
+            "assignments:detail", kwargs={"slug": course.slug, "assignment_id": assignment.id}
+        )
         resp_detail = client.get(url_detail)
         assert resp_detail.status_code == 200
         html_detail = resp_detail.content.decode("utf-8")
@@ -377,7 +403,9 @@ class TestPopulatedTemplatesRenderingSentinel:
         assert "94.50" in html_detail or "94.5" in html_detail
         assert "Superb separation of concerns" in html_detail
 
-    def test_student_notifications_page_renders_with_populated_data(self, client, populated_platform_data):
+    def test_student_notifications_page_renders_with_populated_data(
+        self, client, populated_platform_data
+    ):
         student = populated_platform_data["student"]
         client.force_login(student)
 
@@ -385,4 +413,7 @@ class TestPopulatedTemplatesRenderingSentinel:
         assert resp.status_code == 200
         html = resp.content.decode("utf-8")
         assert "Assignment Graded: Lab 1" in html
-        assert "Your submission for &#x27;Lab 1: Domain Modeling&#x27; received 94.50/100." in html or "94.50/100" in html
+        assert (
+            "Your submission for &#x27;Lab 1: Domain Modeling&#x27; received 94.50/100." in html
+            or "94.50/100" in html
+        )

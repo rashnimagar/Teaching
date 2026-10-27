@@ -225,7 +225,11 @@ class Submission(TimeStampedModel):
                     )
 
             now = timezone.now()
-            if now > self.assignment.due_at and not self.assignment.allow_late and not (was_unlocked or is_unlocked_now):
+            if (
+                now > self.assignment.due_at
+                and not self.assignment.allow_late
+                and not (was_unlocked or is_unlocked_now)
+            ):
                 raise ValidationError(
                     _(
                         "Submissions cannot be edited after the deadline because late submissions are disabled."
@@ -284,8 +288,12 @@ class SubmissionEvent(TimeStampedModel):
         verbose_name=_("actor"),
     )
     action = models.CharField(_("action"), max_length=32)  # "graded", "regraded", "unlocked"
-    old_grade = models.DecimalField(_("previous grade"), max_digits=5, decimal_places=2, null=True, blank=True)
-    new_grade = models.DecimalField(_("new grade"), max_digits=5, decimal_places=2, null=True, blank=True)
+    old_grade = models.DecimalField(
+        _("previous grade"), max_digits=5, decimal_places=2, null=True, blank=True
+    )
+    new_grade = models.DecimalField(
+        _("new grade"), max_digits=5, decimal_places=2, null=True, blank=True
+    )
     note = models.TextField(_("note"), blank=True)
 
     class Meta:

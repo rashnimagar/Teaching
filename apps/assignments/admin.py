@@ -2,7 +2,6 @@ from django import forms
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
@@ -175,7 +174,12 @@ class SubmissionAdmin(admin.ModelAdmin):
         Uses the central grade_submission service so Django admin and teacher
         dashboard execute identical validation, audit logging, and notification rules.
         """
-        if change and form and hasattr(form, "changed_data") and ("grade" in form.changed_data or "feedback" in form.changed_data):
+        if (
+            change
+            and form
+            and hasattr(form, "changed_data")
+            and ("grade" in form.changed_data or "feedback" in form.changed_data)
+        ):
             grade_val = form.cleaned_data.get("grade")
             feedback_val = form.cleaned_data.get("feedback") or ""
             if grade_val is not None:
@@ -208,5 +212,19 @@ class SubmissionAdmin(admin.ModelAdmin):
 class SubmissionEventAdmin(admin.ModelAdmin):
     list_display = ["submission", "actor", "action", "old_grade", "new_grade", "created_at"]
     list_filter = ["action", "created_at"]
-    search_fields = ["submission__student__email", "submission__assignment__title", "actor__email", "note"]
-    readonly_fields = ["submission", "actor", "action", "old_grade", "new_grade", "note", "created_at", "updated_at"]
+    search_fields = [
+        "submission__student__email",
+        "submission__assignment__title",
+        "actor__email",
+        "note",
+    ]
+    readonly_fields = [
+        "submission",
+        "actor",
+        "action",
+        "old_grade",
+        "new_grade",
+        "note",
+        "created_at",
+        "updated_at",
+    ]

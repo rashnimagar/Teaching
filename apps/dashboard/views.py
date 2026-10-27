@@ -175,7 +175,9 @@ def teacher_dashboard(request):
 
     published_courses_count = Course.objects.filter(is_published=True, is_archived=False).count()
     pending_enrollments_count = Enrollment.objects.filter(status=Enrollment.Status.PENDING).count()
-    pending_permissions_count = DownloadRequest.objects.filter(status=DownloadRequest.Status.PENDING).count()
+    pending_permissions_count = DownloadRequest.objects.filter(
+        status=DownloadRequest.Status.PENDING
+    ).count()
 
     # Requirement 9: Ungraded submissions = ungraded submissions of published assignments in non-archived courses
     ungraded_submissions_count = Submission.objects.filter(
@@ -203,13 +205,13 @@ def teacher_dashboard(request):
     )
 
     recent_enrollments = list(
-        Enrollment.objects.select_related("student", "course")
-        .order_by("-created_at")[:5]
+        Enrollment.objects.select_related("student", "course").order_by("-created_at")[:5]
     )
 
     recent_requests = list(
-        DownloadRequest.objects.select_related("student", "material_item", "material_item__material__course")
-        .order_by("-requested_at")[:5]
+        DownloadRequest.objects.select_related(
+            "student", "material_item", "material_item__material__course"
+        ).order_by("-requested_at")[:5]
     )
 
     context = {

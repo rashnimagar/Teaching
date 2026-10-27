@@ -169,7 +169,9 @@ def teacher_enrollments_bulk_action_view(request):
     if success_count > 0 and skipped_count > 0:
         messages.success(
             request,
-            _("Successfully %(action)s %(success)s enrollment(s). %(skipped)s skipped (already in status or invalid).")
+            _(
+                "Successfully %(action)s %(success)s enrollment(s). %(skipped)s skipped (already in status or invalid)."
+            )
             % {"action": action_label, "success": success_count, "skipped": skipped_count},
         )
     elif success_count > 0:
@@ -181,7 +183,9 @@ def teacher_enrollments_bulk_action_view(request):
     else:
         messages.info(
             request,
-            _("No enrollments updated. All %(skipped)s selected enrollment(s) were already in the target status.")
+            _(
+                "No enrollments updated. All %(skipped)s selected enrollment(s) were already in the target status."
+            )
             % {"skipped": skipped_count},
         )
 
@@ -214,7 +218,9 @@ def teacher_enrollment_manual_view(request):
     if not student:
         messages.error(
             request,
-            _("No student account found with email '%(email)s'. A student must create an account first.")
+            _(
+                "No student account found with email '%(email)s'. A student must create an account first."
+            )
             % {"email": student_email},
         )
         return redirect("dashboard:teacher_enrollments")
@@ -237,7 +243,12 @@ def teacher_enrollment_manual_view(request):
                 to_status=Enrollment.Status.ACTIVE,
                 note=_("Manual enrollment added by teacher"),
             )
-            logger.info("Teacher %s manually enrolled student %s in course %s", request.user.id, student.id, course.slug)
+            logger.info(
+                "Teacher %s manually enrolled student %s in course %s",
+                request.user.id,
+                student.id,
+                course.slug,
+            )
             messages.success(
                 request,
                 _("Student '%(email)s' has been enrolled into '%(course)s'.")
@@ -254,7 +265,9 @@ def teacher_enrollment_manual_view(request):
                 )
                 messages.success(
                     request,
-                    _("Student '%(email)s' enrollment in '%(course)s' has been reactivated to Active.")
+                    _(
+                        "Student '%(email)s' enrollment in '%(course)s' has been reactivated to Active."
+                    )
                     % {"email": student.email, "course": course.title},
                 )
             else:

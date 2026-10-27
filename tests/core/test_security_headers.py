@@ -1,23 +1,21 @@
 import base64
 import hashlib
 import re
-from datetime import timedelta
-from pathlib import Path
 import time
-
-from django.utils import timezone
+from pathlib import Path
 
 import pytest
 from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import FileResponse, HttpResponse
 from django.test import Client, RequestFactory
 from django.urls import reverse
+from django.utils import timezone
 
-from django.core.files.uploadedfile import SimpleUploadedFile
 from apps.accounts.models import User
-from apps.courses.models import Course, CourseMaterial, DownloadRequest, Enrollment, MaterialItem
 from apps.core.middleware import SecurityHeadersMiddleware, SessionIdleTimeoutMiddleware
 from apps.core.views import get_500_style_hash, handler500
+from apps.courses.models import Course, CourseMaterial, DownloadRequest, Enrollment, MaterialItem
 
 
 @pytest.mark.django_db
@@ -34,7 +32,9 @@ class TestSecurityHeaders:
             assert "default-src 'self'" in csp
             assert "script-src 'self'" in csp
             assert "style-src 'self'" in csp
-            assert "'unsafe-inline'" not in csp.split("script-src")[1].split(";")[0], "script-src must not allow 'unsafe-inline'"
+            assert "'unsafe-inline'" not in csp.split("script-src")[1].split(";")[0], (
+                "script-src must not allow 'unsafe-inline'"
+            )
             assert "https://www.youtube-nocookie.com" in csp
             assert "https://player.vimeo.com" in csp
             assert "https://iframe.mediadelivery.net" in csp
@@ -48,7 +48,9 @@ class TestSecurityHeaders:
         """
         for path in ["/admin/", "/admin/login/"]:
             resp = client.get(path)
-            assert "Content-Security-Policy" not in resp.headers, f"Admin path {path} must be excluded from CSP"
+            assert "Content-Security-Policy" not in resp.headers, (
+                f"Admin path {path} must be excluded from CSP"
+            )
             assert "Content-Security-Policy-Report-Only" not in resp.headers
 
     def test_permissions_policy_header(self, client: Client):
@@ -94,7 +96,9 @@ class TestSecurityHeaders:
         Enrollment.objects.create(student=student, course=course)
 
         mat = CourseMaterial.objects.create(course=course, title="Sec Section", is_published=True)
-        pdf_file = SimpleUploadedFile("sample.pdf", b"%PDF-1.4 sample pdf content", content_type="application/pdf")
+        pdf_file = SimpleUploadedFile(
+            "sample.pdf", b"%PDF-1.4 sample pdf content", content_type="application/pdf"
+        )
         item = MaterialItem.objects.create(
             material=mat,
             title="View Only Doc",
@@ -105,7 +109,9 @@ class TestSecurityHeaders:
         )
 
         client.force_login(student)
-        preview_url = reverse("learn:material_preview", kwargs={"course_slug": course.slug, "item_id": item.id})
+        preview_url = reverse(
+            "learn:material_preview", kwargs={"course_slug": course.slug, "item_id": item.id}
+        )
         resp = client.get(preview_url)
 
         assert resp.status_code == 200
@@ -130,23 +136,32 @@ class TestSecurityHeaders:
     ):
         """Material preview must return 403 Forbidden for request_required files without approved request."""
         from django.core.files.uploadedfile import SimpleUploadedFile
+
         from apps.courses.models import Course, CourseMaterial, Enrollment, MaterialItem
 
         student = user_factory(role=User.Role.STUDENT)
-        course = Course.objects.create(title="Policy Course", slug="policy-course", is_published=True)
+        course = Course.objects.create(
+            title="Policy Course", slug="policy-course", is_published=True
+        )
         Enrollment.objects.create(student=student, course=course)
-        mat = CourseMaterial.objects.create(course=course, title="Restricted Sec", is_published=True)
+        mat = CourseMaterial.objects.create(
+            course=course, title="Restricted Sec", is_published=True
+        )
         item = MaterialItem.objects.create(
             material=mat,
             title="Restricted PDF",
             item_type=MaterialItem.ItemType.FILE,
-            file=SimpleUploadedFile("req.pdf", b"%PDF-1.4 restricted", content_type="application/pdf"),
+            file=SimpleUploadedFile(
+                "req.pdf", b"%PDF-1.4 restricted", content_type="application/pdf"
+            ),
             download_policy=MaterialItem.DownloadPolicy.REQUEST_REQUIRED,
             is_published=True,
         )
 
         client.force_login(student)
-        url = reverse("learn:material_preview", kwargs={"course_slug": course.slug, "item_id": item.id})
+        url = reverse(
+            "learn:material_preview", kwargs={"course_slug": course.slug, "item_id": item.id}
+        )
         resp = client.get(url)
         assert resp.status_code == 403
 
@@ -163,25 +178,45 @@ class TestSecurityHeaders:
           X-Frame-Options: SAMEORIGIN, CSP frame-ancestors 'self'.
         """
         from django.core.files.uploadedfile import SimpleUploadedFile
-        from apps.courses.models import Course, CourseMaterial, DownloadRequest, Enrollment, MaterialItem
+
+        from apps.courses.models import (
+            Course,
+            CourseMaterial,
+            Enrollment,
+            MaterialItem,
+        )
 
         active_student = user_factory(email="active_matrix@example.com", role=User.Role.STUDENT)
         pending_student = user_factory(email="pending_matrix@example.com", role=User.Role.STUDENT)
         revoked_student = user_factory(email="revoked_matrix@example.com", role=User.Role.STUDENT)
-        non_enrolled_student = user_factory(email="non_enrolled_matrix@example.com", role=User.Role.STUDENT)
+        non_enrolled_student = user_factory(
+            email="non_enrolled_matrix@example.com", role=User.Role.STUDENT
+        )
 
-        course = Course.objects.create(title="Matrix Course", slug="matrix-course", is_published=True)
-        Enrollment.objects.create(student=active_student, course=course, status=Enrollment.Status.ACTIVE)
-        Enrollment.objects.create(student=pending_student, course=course, status=Enrollment.Status.PENDING)
-        Enrollment.objects.create(student=revoked_student, course=course, status=Enrollment.Status.REVOKED)
+        course = Course.objects.create(
+            title="Matrix Course", slug="matrix-course", is_published=True
+        )
+        Enrollment.objects.create(
+            student=active_student, course=course, status=Enrollment.Status.ACTIVE
+        )
+        Enrollment.objects.create(
+            student=pending_student, course=course, status=Enrollment.Status.PENDING
+        )
+        Enrollment.objects.create(
+            student=revoked_student, course=course, status=Enrollment.Status.REVOKED
+        )
 
-        mat = CourseMaterial.objects.create(course=course, title="Matrix Section", is_published=True)
+        mat = CourseMaterial.objects.create(
+            course=course, title="Matrix Section", is_published=True
+        )
 
         view_only_item = MaterialItem.objects.create(
             material=mat,
             title="View Only PDF",
             item_type=MaterialItem.ItemType.FILE,
-            file=SimpleUploadedFile("view_only.pdf", b"%PDF-1.4 view only doc", content_type="application/pdf"),
+            file=SimpleUploadedFile(
+                "view_only.pdf", b"%PDF-1.4 view only doc", content_type="application/pdf"
+            ),
             download_policy=MaterialItem.DownloadPolicy.VIEW_ONLY,
             is_published=True,
         )
@@ -189,7 +224,9 @@ class TestSecurityHeaders:
             material=mat,
             title="Open Enrolled PDF",
             item_type=MaterialItem.ItemType.FILE,
-            file=SimpleUploadedFile("open.pdf", b"%PDF-1.4 open enrolled doc", content_type="application/pdf"),
+            file=SimpleUploadedFile(
+                "open.pdf", b"%PDF-1.4 open enrolled doc", content_type="application/pdf"
+            ),
             download_policy=MaterialItem.DownloadPolicy.OPEN_TO_ENROLLED,
             is_published=True,
         )
@@ -197,7 +234,9 @@ class TestSecurityHeaders:
             material=mat,
             title="Request Required PDF",
             item_type=MaterialItem.ItemType.FILE,
-            file=SimpleUploadedFile("req.pdf", b"%PDF-1.4 request required doc", content_type="application/pdf"),
+            file=SimpleUploadedFile(
+                "req.pdf", b"%PDF-1.4 request required doc", content_type="application/pdf"
+            ),
             download_policy=MaterialItem.DownloadPolicy.REQUEST_REQUIRED,
             is_published=True,
         )
@@ -213,7 +252,10 @@ class TestSecurityHeaders:
         client.force_login(active_student)
 
         # 1a. view_only -> 200 without request
-        url_vo = reverse("learn:material_preview", kwargs={"course_slug": course.slug, "item_id": view_only_item.id})
+        url_vo = reverse(
+            "learn:material_preview",
+            kwargs={"course_slug": course.slug, "item_id": view_only_item.id},
+        )
         resp_vo = client.get(url_vo)
         assert resp_vo.status_code == 200
         assert resp_vo.headers.get("X-Content-Type-Options") == "nosniff"
@@ -222,14 +264,20 @@ class TestSecurityHeaders:
         assert "frame-ancestors 'self'" in resp_vo.headers.get("Content-Security-Policy", "")
 
         # 1b. open_to_enrolled -> 200 without request
-        url_open = reverse("learn:material_preview", kwargs={"course_slug": course.slug, "item_id": open_enrolled_item.id})
+        url_open = reverse(
+            "learn:material_preview",
+            kwargs={"course_slug": course.slug, "item_id": open_enrolled_item.id},
+        )
         resp_open = client.get(url_open)
         assert resp_open.status_code == 200
         assert resp_open.headers.get("X-Content-Type-Options") == "nosniff"
         assert resp_open.headers.get("Cache-Control") == "private, no-store"
 
         # 1c. request_required -> 403 refused even with approved request
-        url_req = reverse("learn:material_preview", kwargs={"course_slug": course.slug, "item_id": request_req_item.id})
+        url_req = reverse(
+            "learn:material_preview",
+            kwargs={"course_slug": course.slug, "item_id": request_req_item.id},
+        )
         resp_req = client.get(url_req)
         assert resp_req.status_code == 403
 
@@ -262,7 +310,9 @@ class TestSecurityHeaders:
         monkeypatch.setenv("DATABASE_URL", "sqlite:///db.sqlite3")
 
         import importlib
+
         import config.settings.prod as prod_settings
+
         importlib.reload(prod_settings)
 
         prod_csp = prod_settings.CONTENT_SECURITY_POLICY
@@ -342,14 +392,22 @@ class TestSecurityHeaders:
                 title=f"Item {filename}",
                 item_type=MaterialItem.ItemType.FILE,
                 file=SimpleUploadedFile(filename, content),
-                download_policy=MaterialItem.DownloadPolicy.VIEW_ONLY if expected_status == 200 else MaterialItem.DownloadPolicy.OPEN_TO_ENROLLED,
+                download_policy=MaterialItem.DownloadPolicy.VIEW_ONLY
+                if expected_status == 200
+                else MaterialItem.DownloadPolicy.OPEN_TO_ENROLLED,
                 is_published=True,
             )
-            url = reverse("learn:material_preview", kwargs={"course_slug": course.slug, "item_id": item.id})
+            url = reverse(
+                "learn:material_preview", kwargs={"course_slug": course.slug, "item_id": item.id}
+            )
             resp = client.get(url)
-            assert resp.status_code == expected_status, f"Expected {expected_status} for {filename}, got {resp.status_code}"
+            assert resp.status_code == expected_status, (
+                f"Expected {expected_status} for {filename}, got {resp.status_code}"
+            )
             if expected_status == 200:
-                assert resp.headers.get("Content-Type") == expected_mime, f"Expected {expected_mime} for {filename}, got {resp.headers.get('Content-Type')}"
+                assert resp.headers.get("Content-Type") == expected_mime, (
+                    f"Expected {expected_mime} for {filename}, got {resp.headers.get('Content-Type')}"
+                )
 
 
 @pytest.mark.django_db
@@ -391,10 +449,12 @@ class TestCrossOriginResourcePolicy:
     """Tests Cross-Origin-Resource-Policy injection on downloads and exports."""
 
     def test_corp_header_on_attachment(self):
-        middleware = SecurityHeadersMiddleware(lambda req: HttpResponse(
-            b"data",
-            headers={"Content-Disposition": 'attachment; filename="export.csv"'},
-        ))
+        middleware = SecurityHeadersMiddleware(
+            lambda req: HttpResponse(
+                b"data",
+                headers={"Content-Disposition": 'attachment; filename="export.csv"'},
+            )
+        )
         rf = RequestFactory()
         resp = middleware(rf.get("/export/"))
         assert resp.headers.get("Cross-Origin-Resource-Policy") == "same-origin"
@@ -408,7 +468,9 @@ class TestCrossOriginResourcePolicy:
         assert resp.headers.get("Cross-Origin-Resource-Policy") == "same-origin"
 
     def test_corp_header_not_on_regular_html(self):
-        middleware = SecurityHeadersMiddleware(lambda req: HttpResponse("<html></html>", content_type="text/html"))
+        middleware = SecurityHeadersMiddleware(
+            lambda req: HttpResponse("<html></html>", content_type="text/html")
+        )
         rf = RequestFactory()
         resp = middleware(rf.get("/"))
         assert "Cross-Origin-Resource-Policy" not in resp.headers
@@ -420,6 +482,7 @@ class TestSessionIdleTimeout:
 
     def test_session_expires_after_inactivity(self, user_factory):
         from importlib import import_module
+
         session_store = import_module(settings.SESSION_ENGINE).SessionStore()
         session_store["_last_activity"] = int(time.time()) - 1000
 
@@ -440,6 +503,7 @@ class TestSessionIdleTimeout:
 
     def test_session_refreshed_on_active_request(self, user_factory):
         from importlib import import_module
+
         session_store = import_module(settings.SESSION_ENGINE).SessionStore()
         now_ts = int(time.time())
         session_store["_last_activity"] = now_ts - 50
@@ -488,9 +552,13 @@ class TestTemplateSecurityRegressions:
                     continue
 
                 if body:
-                    violations.append(f"{path.relative_to(settings.BASE_DIR)}: inline script found: {body[:60]}...")
+                    violations.append(
+                        f"{path.relative_to(settings.BASE_DIR)}: inline script found: {body[:60]}..."
+                    )
 
-        assert not violations, "Found inline executable scripts in templates:\n" + "\n".join(violations)
+        assert not violations, "Found inline executable scripts in templates:\n" + "\n".join(
+            violations
+        )
 
     def test_zero_inline_event_handlers_in_templates(self):
         """Assert zero on* attributes (onclick, onchange, etc.) in non-email templates."""
@@ -508,9 +576,13 @@ class TestTemplateSecurityRegressions:
             for line_no, line in enumerate(content.splitlines(), start=1):
                 match = on_attr_re.search(line)
                 if match:
-                    violations.append(f"{path.relative_to(settings.BASE_DIR)}:L{line_no}: handler '{match.group(1)}' in: {line.strip()}")
+                    violations.append(
+                        f"{path.relative_to(settings.BASE_DIR)}:L{line_no}: handler '{match.group(1)}' in: {line.strip()}"
+                    )
 
-        assert not violations, "Found inline on* event handlers in templates:\n" + "\n".join(violations)
+        assert not violations, "Found inline on* event handlers in templates:\n" + "\n".join(
+            violations
+        )
 
     def test_zero_javascript_pseudo_urls_in_templates(self):
         """Assert zero javascript: URLs in templates."""
@@ -522,7 +594,9 @@ class TestTemplateSecurityRegressions:
             content = path.read_text(encoding="utf-8")
             for line_no, line in enumerate(content.splitlines(), start=1):
                 if js_url_re.search(line):
-                    violations.append(f"{path.relative_to(settings.BASE_DIR)}:L{line_no}: javascript: URL in: {line.strip()}")
+                    violations.append(
+                        f"{path.relative_to(settings.BASE_DIR)}:L{line_no}: javascript: URL in: {line.strip()}"
+                    )
 
         assert not violations, "Found javascript: URLs in templates:\n" + "\n".join(violations)
 
@@ -541,9 +615,13 @@ class TestTemplateSecurityRegressions:
             content = path.read_text(encoding="utf-8")
             for line_no, line in enumerate(content.splitlines(), start=1):
                 if style_attr_re.search(line):
-                    violations.append(f"{path.relative_to(settings.BASE_DIR)}:L{line_no}: inline style in: {line.strip()}")
+                    violations.append(
+                        f"{path.relative_to(settings.BASE_DIR)}:L{line_no}: inline style in: {line.strip()}"
+                    )
 
-        assert not violations, "Found inline style attributes in web templates:\n" + "\n".join(violations)
+        assert not violations, "Found inline style attributes in web templates:\n" + "\n".join(
+            violations
+        )
 
     def test_video_iframes_have_referrerpolicy_and_sandbox(self):
         """Assert all video iframes declare strict-origin-when-cross-origin and sandbox."""
@@ -554,7 +632,8 @@ class TestTemplateSecurityRegressions:
             content = path.read_text(encoding="utf-8")
             for match in iframe_tag_re.finditer(content):
                 attrs = match.group(1)
-                assert 'referrerpolicy="strict-origin-when-cross-origin"' in attrs or "referrerpolicy='strict-origin-when-cross-origin'" in attrs, (
-                    f"{path}: iframe missing referrerpolicy='strict-origin-when-cross-origin'"
-                )
+                assert (
+                    'referrerpolicy="strict-origin-when-cross-origin"' in attrs
+                    or "referrerpolicy='strict-origin-when-cross-origin'" in attrs
+                ), f"{path}: iframe missing referrerpolicy='strict-origin-when-cross-origin'"
                 assert "sandbox=" in attrs, f"{path}: iframe missing sandbox attribute"

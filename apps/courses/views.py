@@ -377,6 +377,7 @@ def lesson_learn_view(request, course_slug, lesson_id):
     )
 
     from apps.courses.views_materials import get_decorated_course_materials
+
     course_materials = get_decorated_course_materials(course, request.user)
 
     context = {

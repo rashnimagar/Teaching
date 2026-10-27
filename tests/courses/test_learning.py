@@ -436,12 +436,20 @@ class TestProgressEndpoints:
         assert client.post(pos_url, {"position": 50}).status_code == 403
 
     def test_user_keyed_rate_limit_does_not_affect_second_user_on_same_ip(
-        self, client, user_factory, active_course, published_lessons
+        self, client, user_factory, active_course, published_lessons, monkeypatch
     ):
         """
         Verify that rate limiting on progress endpoints is keyed by user,
         so a classroom sharing one IP is not throttled together.
         """
+        import time
+
+        from django.core.cache import cache
+
+        cache.clear()
+        fixed_time = 1700000000.0
+        monkeypatch.setattr(time, "time", lambda: fixed_time)
+
         user_a = user_factory(email="user_a@example.com", role=User.Role.STUDENT)
         user_b = user_factory(email="user_b@example.com", role=User.Role.STUDENT)
         Enrollment.objects.create(

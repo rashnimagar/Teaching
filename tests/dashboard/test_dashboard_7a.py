@@ -114,11 +114,26 @@ class TestTeacherDashboardPermissions:
 
         mutating_urls = [
             reverse("dashboard:teacher_course_archive", kwargs={"slug": course.slug}),
-            reverse("dashboard:teacher_lesson_toggle_publish", kwargs={"slug": course.slug, "lesson_id": lesson.id}),
-            reverse("dashboard:teacher_lesson_reorder", kwargs={"slug": course.slug, "lesson_id": lesson.id}),
-            reverse("dashboard:teacher_lesson_delete", kwargs={"slug": course.slug, "lesson_id": lesson.id}),
-            reverse("dashboard:teacher_assignment_toggle_publish", kwargs={"slug": course.slug, "assignment_id": assignment.id}),
-            reverse("dashboard:teacher_assignment_delete", kwargs={"slug": course.slug, "assignment_id": assignment.id}),
+            reverse(
+                "dashboard:teacher_lesson_toggle_publish",
+                kwargs={"slug": course.slug, "lesson_id": lesson.id},
+            ),
+            reverse(
+                "dashboard:teacher_lesson_reorder",
+                kwargs={"slug": course.slug, "lesson_id": lesson.id},
+            ),
+            reverse(
+                "dashboard:teacher_lesson_delete",
+                kwargs={"slug": course.slug, "lesson_id": lesson.id},
+            ),
+            reverse(
+                "dashboard:teacher_assignment_toggle_publish",
+                kwargs={"slug": course.slug, "assignment_id": assignment.id},
+            ),
+            reverse(
+                "dashboard:teacher_assignment_delete",
+                kwargs={"slug": course.slug, "assignment_id": assignment.id},
+            ),
         ]
         for url in mutating_urls:
             resp = client.get(url)
@@ -153,13 +168,19 @@ class TestSlugUtilitiesAndRules:
             validate_ascii_slug("Slug_With_Underscore")
 
     def test_slug_becomes_readonly_when_published(self, teacher_user):
-        course = Course.objects.create(title="Published Course", slug="pub-slug", is_published=True, is_free=True)
+        course = Course.objects.create(
+            title="Published Course", slug="pub-slug", is_published=True, is_free=True
+        )
         form = TeacherCourseForm(instance=course)
         assert form.fields["slug"].disabled is True
 
     def test_slug_becomes_readonly_when_enrollments_exist(self, teacher_user, student_user):
-        course = Course.objects.create(title="Draft Course", slug="draft-slug", is_published=False, is_free=True)
-        Enrollment.objects.create(student=student_user, course=course, status=Enrollment.Status.ACTIVE)
+        course = Course.objects.create(
+            title="Draft Course", slug="draft-slug", is_published=False, is_free=True
+        )
+        Enrollment.objects.create(
+            student=student_user, course=course, status=Enrollment.Status.ACTIVE
+        )
         form = TeacherCourseForm(instance=course)
         assert form.fields["slug"].disabled is True
 
@@ -171,7 +192,9 @@ class TestSlugUtilitiesAndRules:
 class TestDraftAssignmentIsolation:
     @pytest.fixture(autouse=True)
     def setup_data(self, student_user):
-        self.course = Course.objects.create(title="Django Web", slug="django-web", is_published=True, is_free=True)
+        self.course = Course.objects.create(
+            title="Django Web", slug="django-web", is_published=True, is_free=True
+        )
         self.enrollment = Enrollment.objects.create(
             student=student_user, course=self.course, status=Enrollment.Status.ACTIVE
         )
@@ -202,19 +225,27 @@ class TestDraftAssignmentIsolation:
 
     def test_draft_assignment_detail_returns_404_for_student(self, client, student_user):
         client.force_login(student_user)
-        url = reverse("assignments:detail", kwargs={"slug": self.course.slug, "assignment_id": self.draft_assignment.id})
+        url = reverse(
+            "assignments:detail",
+            kwargs={"slug": self.course.slug, "assignment_id": self.draft_assignment.id},
+        )
         resp = client.get(url)
         assert resp.status_code == 404
 
     def test_draft_assignment_submit_post_rejected_with_404(self, client, student_user):
         client.force_login(student_user)
-        url = reverse("assignments:detail", kwargs={"slug": self.course.slug, "assignment_id": self.draft_assignment.id})
+        url = reverse(
+            "assignments:detail",
+            kwargs={"slug": self.course.slug, "assignment_id": self.draft_assignment.id},
+        )
         resp = client.post(url, {"content_text": "Hacked submission"})
         assert resp.status_code == 404
 
     def test_draft_assignment_hidden_on_lesson_learn_tab(self, client, student_user):
         client.force_login(student_user)
-        url = reverse("learn:lesson", kwargs={"course_slug": self.course.slug, "lesson_id": self.lesson.id})
+        url = reverse(
+            "learn:lesson", kwargs={"course_slug": self.course.slug, "lesson_id": self.lesson.id}
+        )
         resp = client.get(url)
         assert resp.status_code == 200
         assert "Draft Homework" not in resp.content.decode("utf-8")
@@ -224,10 +255,14 @@ class TestDraftAssignmentIsolation:
             assignment=self.draft_assignment,
             student=student_user,
             content_text="Sample",
-            file=SimpleUploadedFile("ans.pdf", b"%PDF-1.4 sample content", content_type="application/pdf"),
+            file=SimpleUploadedFile(
+                "ans.pdf", b"%PDF-1.4 sample content", content_type="application/pdf"
+            ),
         )
         client.force_login(student_user)
-        url = reverse("assignments:download", kwargs={"slug": self.course.slug, "submission_id": sub.id})
+        url = reverse(
+            "assignments:download", kwargs={"slug": self.course.slug, "submission_id": sub.id}
+        )
         resp = client.get(url)
         assert resp.status_code == 404
 
@@ -243,8 +278,15 @@ class TestDraftAssignmentIsolation:
             is_published=True,
         )
         # Create graded submissions on both
-        Submission.objects.create(assignment=pub, student=student_user, content_text="Done", grade=Decimal("45.00"))
-        Submission.objects.create(assignment=self.draft_assignment, student=student_user, content_text="Done", grade=Decimal("100.00"))
+        Submission.objects.create(
+            assignment=pub, student=student_user, content_text="Done", grade=Decimal("45.00")
+        )
+        Submission.objects.create(
+            assignment=self.draft_assignment,
+            student=student_user,
+            content_text="Done",
+            grade=Decimal("100.00"),
+        )
 
         client.force_login(student_user)
         resp = client.get(reverse("assignments:list", kwargs={"slug": self.course.slug}))
@@ -262,10 +304,18 @@ class TestDraftAssignmentIsolation:
 class TestAntiIDORProtection:
     @pytest.fixture(autouse=True)
     def setup_data(self):
-        self.course_a = Course.objects.create(title="Course A", slug="course-a", is_published=True, is_free=True)
-        self.course_b = Course.objects.create(title="Course B", slug="course-b", is_published=True, is_free=True)
+        self.course_a = Course.objects.create(
+            title="Course A", slug="course-a", is_published=True, is_free=True
+        )
+        self.course_b = Course.objects.create(
+            title="Course B", slug="course-b", is_published=True, is_free=True
+        )
         self.lesson_a = Lesson.objects.create(
-            course=self.course_a, title="Lesson A", order=1, video_provider="youtube", video_id="dQw4w9WgXcQ"
+            course=self.course_a,
+            title="Lesson A",
+            order=1,
+            video_provider="youtube",
+            video_id="dQw4w9WgXcQ",
         )
         self.assignment_a = Assignment.objects.create(
             course=self.course_a,
@@ -279,21 +329,44 @@ class TestAntiIDORProtection:
         client.force_login(teacher_user)
         # Attempting to mutate lesson_a through course_b's URL
         urls = [
-            reverse("dashboard:teacher_lesson_edit", kwargs={"slug": self.course_b.slug, "lesson_id": self.lesson_a.id}),
-            reverse("dashboard:teacher_lesson_toggle_publish", kwargs={"slug": self.course_b.slug, "lesson_id": self.lesson_a.id}),
-            reverse("dashboard:teacher_lesson_reorder", kwargs={"slug": self.course_b.slug, "lesson_id": self.lesson_a.id}),
-            reverse("dashboard:teacher_lesson_delete", kwargs={"slug": self.course_b.slug, "lesson_id": self.lesson_a.id}),
+            reverse(
+                "dashboard:teacher_lesson_edit",
+                kwargs={"slug": self.course_b.slug, "lesson_id": self.lesson_a.id},
+            ),
+            reverse(
+                "dashboard:teacher_lesson_toggle_publish",
+                kwargs={"slug": self.course_b.slug, "lesson_id": self.lesson_a.id},
+            ),
+            reverse(
+                "dashboard:teacher_lesson_reorder",
+                kwargs={"slug": self.course_b.slug, "lesson_id": self.lesson_a.id},
+            ),
+            reverse(
+                "dashboard:teacher_lesson_delete",
+                kwargs={"slug": self.course_b.slug, "lesson_id": self.lesson_a.id},
+            ),
         ]
         for url in urls:
             resp = client.post(url, {"direction": "up"})
             assert resp.status_code == 404
 
-    def test_assignment_mutating_actions_fail_when_using_wrong_course_slug(self, client, teacher_user):
+    def test_assignment_mutating_actions_fail_when_using_wrong_course_slug(
+        self, client, teacher_user
+    ):
         client.force_login(teacher_user)
         urls = [
-            reverse("dashboard:teacher_assignment_edit", kwargs={"slug": self.course_b.slug, "assignment_id": self.assignment_a.id}),
-            reverse("dashboard:teacher_assignment_toggle_publish", kwargs={"slug": self.course_b.slug, "assignment_id": self.assignment_a.id}),
-            reverse("dashboard:teacher_assignment_delete", kwargs={"slug": self.course_b.slug, "assignment_id": self.assignment_a.id}),
+            reverse(
+                "dashboard:teacher_assignment_edit",
+                kwargs={"slug": self.course_b.slug, "assignment_id": self.assignment_a.id},
+            ),
+            reverse(
+                "dashboard:teacher_assignment_toggle_publish",
+                kwargs={"slug": self.course_b.slug, "assignment_id": self.assignment_a.id},
+            ),
+            reverse(
+                "dashboard:teacher_assignment_delete",
+                kwargs={"slug": self.course_b.slug, "assignment_id": self.assignment_a.id},
+            ),
         ]
         for url in urls:
             resp = client.post(url)
@@ -305,8 +378,12 @@ class TestAntiIDORProtection:
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db
 class TestLessonVideoPositionReset:
-    def test_video_id_change_resets_position_preserves_completed_at(self, client, teacher_user, student_user):
-        course = Course.objects.create(title="Web Dev", slug="web-dev", is_published=True, is_free=True)
+    def test_video_id_change_resets_position_preserves_completed_at(
+        self, client, teacher_user, student_user
+    ):
+        course = Course.objects.create(
+            title="Web Dev", slug="web-dev", is_published=True, is_free=True
+        )
         lesson = Lesson.objects.create(
             course=course,
             title="Intro",
@@ -323,7 +400,9 @@ class TestLessonVideoPositionReset:
         )
 
         client.force_login(teacher_user)
-        edit_url = reverse("dashboard:teacher_lesson_edit", kwargs={"slug": course.slug, "lesson_id": lesson.id})
+        edit_url = reverse(
+            "dashboard:teacher_lesson_edit", kwargs={"slug": course.slug, "lesson_id": lesson.id}
+        )
 
         # Submit change to video_id
         resp = client.post(
@@ -356,7 +435,11 @@ class TestAssignmentLessonCourseValidation:
         course_a = Course.objects.create(title="Course A", slug="course-a", is_free=True)
         course_b = Course.objects.create(title="Course B", slug="course-b", is_free=True)
         lesson_b = Lesson.objects.create(
-            course=course_b, title="Lesson B", order=1, video_provider="youtube", video_id="dQw4w9WgXcQ"
+            course=course_b,
+            title="Lesson B",
+            order=1,
+            video_provider="youtube",
+            video_id="dQw4w9WgXcQ",
         )
 
         form = TeacherAssignmentForm(
@@ -380,9 +463,15 @@ class TestAssignmentLessonCourseValidation:
 # ---------------------------------------------------------------------------
 @pytest.mark.django_db
 class TestSafeguardsAndModals:
-    def test_unpublishing_course_with_active_students_requires_confirmation(self, client, teacher_user, student_user):
-        course = Course.objects.create(title="Active Course", slug="active-c", is_published=True, is_free=True)
-        Enrollment.objects.create(student=student_user, course=course, status=Enrollment.Status.ACTIVE)
+    def test_unpublishing_course_with_active_students_requires_confirmation(
+        self, client, teacher_user, student_user
+    ):
+        course = Course.objects.create(
+            title="Active Course", slug="active-c", is_published=True, is_free=True
+        )
+        Enrollment.objects.create(
+            student=student_user, course=course, status=Enrollment.Status.ACTIVE
+        )
 
         client.force_login(teacher_user)
         edit_url = reverse("dashboard:teacher_course_edit", kwargs={"slug": course.slug})
@@ -440,7 +529,9 @@ class TestSafeguardsAndModals:
         assert resp.status_code == 302
         course.refresh_from_db()
         assert course.title == "Non-archived Course Renamed"
-        assert course.is_archived is False, "is_archived must not be modified via the course edit form"
+        assert course.is_archived is False, (
+            "is_archived must not be modified via the course edit form"
+        )
 
     def test_past_deadline_requires_explicit_confirmation(self):
         course = Course.objects.create(title="Course", slug="crs", is_free=True)
@@ -471,7 +562,9 @@ class TestSafeguardsAndModals:
         assert not form.is_valid()
         assert "price" in form.errors
 
-    def test_raising_max_score_on_graded_assignment_issues_warning(self, client, teacher_user, student_user):
+    def test_raising_max_score_on_graded_assignment_issues_warning(
+        self, client, teacher_user, student_user
+    ):
         from apps.assignments.models import Submission
 
         course = Course.objects.create(title="Graded Course", slug="graded-c", is_free=True)
@@ -501,8 +594,12 @@ class TestSafeguardsAndModals:
             {
                 "title": "Graded Assignment",
                 "instructions": "Do work",
-                "opens_at": (timezone.now() - timedelta(days=2)).astimezone().strftime("%Y-%m-%dT%H:%M:%S"),
-                "due_at": (timezone.now() + timedelta(days=5)).astimezone().strftime("%Y-%m-%dT%H:%M:%S"),
+                "opens_at": (timezone.now() - timedelta(days=2))
+                .astimezone()
+                .strftime("%Y-%m-%dT%H:%M:%S"),
+                "due_at": (timezone.now() + timedelta(days=5))
+                .astimezone()
+                .strftime("%Y-%m-%dT%H:%M:%S"),
                 "max_score": 100,  # Raised from 50 to 100
                 "is_published": "on",
             },
@@ -523,13 +620,21 @@ class TestSafeguardsAndModals:
 class TestLessonReorderLogic:
     def test_reorder_up_and_down_swaps_orders(self, client, teacher_user):
         course = Course.objects.create(title="Reorder Course", slug="reorder-c", is_free=True)
-        l1 = Lesson.objects.create(course=course, title="Lesson 1", order=1, video_provider="youtube", video_id="vid1")
-        l2 = Lesson.objects.create(course=course, title="Lesson 2", order=2, video_provider="youtube", video_id="vid2")
-        Lesson.objects.create(course=course, title="Lesson 3", order=3, video_provider="youtube", video_id="vid3")
+        l1 = Lesson.objects.create(
+            course=course, title="Lesson 1", order=1, video_provider="youtube", video_id="vid1"
+        )
+        l2 = Lesson.objects.create(
+            course=course, title="Lesson 2", order=2, video_provider="youtube", video_id="vid2"
+        )
+        Lesson.objects.create(
+            course=course, title="Lesson 3", order=3, video_provider="youtube", video_id="vid3"
+        )
 
         client.force_login(teacher_user)
         # Move Lesson 2 Up
-        url = reverse("dashboard:teacher_lesson_reorder", kwargs={"slug": course.slug, "lesson_id": l2.id})
+        url = reverse(
+            "dashboard:teacher_lesson_reorder", kwargs={"slug": course.slug, "lesson_id": l2.id}
+        )
         resp = client.post(url, {"direction": "up"})
         assert resp.status_code == 302
         assert f"moved={l2.id}" in resp["Location"]
@@ -565,9 +670,13 @@ class TestBoundedQueryCounts:
     def test_course_list_queries_are_bounded_no_n_plus_one(self, client, teacher_user):
         # Create 10 courses with multiple lessons and assignments
         for i in range(10):
-            c = Course.objects.create(title=f"Course {i}", slug=f"course-{i}", is_free=True, is_published=True)
+            c = Course.objects.create(
+                title=f"Course {i}", slug=f"course-{i}", is_free=True, is_published=True
+            )
             for j in range(3):
-                Lesson.objects.create(course=c, title=f"L {j}", order=j + 1, video_provider="youtube", video_id="xyz")
+                Lesson.objects.create(
+                    course=c, title=f"L {j}", order=j + 1, video_provider="youtube", video_id="xyz"
+                )
             Assignment.objects.create(
                 course=c,
                 title="A1",
