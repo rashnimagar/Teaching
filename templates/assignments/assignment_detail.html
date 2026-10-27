@@ -163,7 +163,12 @@
               <div class="text-xs font-bold text-gray-900 dark:text-white truncate">
                 {{ submission.original_filename|default:submission.file.name }}
               </div>
-              <div class="text-[11px] text-gray-500 dark:text-gray-400">Attached File</div>
+              <div class="text-[11px] text-gray-500 dark:text-gray-400">
+                {% if submission.file_size %}
+                  {{ submission.file_size|filesizeformat }} &bull;
+                {% endif %}
+                Attached File
+              </div>
             </div>
           </div>
           <a href="{% url 'assignments:download' slug=course.slug submission_id=submission.id %}"
@@ -173,14 +178,16 @@
         </div>
       {% endif %}
 
-      {% if submission.content_text %}
-        <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
-          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Your Written Response</span>
+      <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Text response</span>
+        {% if submission.content_text %}
           <div class="mt-2 text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800/30 p-4 rounded-xl break-words">
             {{ submission.content_text|urlize|linebreaksbr }}
           </div>
-        </div>
-      {% endif %}
+        {% else %}
+          <p class="mt-2 text-xs italic text-gray-400">No text response provided.</p>
+        {% endif %}
+      </div>
     </div>
   {% endif %}
 

@@ -15,14 +15,14 @@ Parameters:
         <span class="text-slate-700 dark:text-slate-300">{{ label }}</span>
       {% endif %}
       {% if show_percent %}
-        <span class="text-slate-600 dark:text-slate-400 ml-auto">{{ value|default:0 }}%</span>
+        <span class="text-slate-600 dark:text-slate-400 ml-auto">{% if value %}{{ value }}{% else %}0{% endif %}%</span>
       {% endif %}
     </div>
   {% endif %}
 
   <div
     role="progressbar"
-    aria-valuenow="{{ value|default:0 }}"
+    aria-valuenow="{% if value %}{{ value }}{% else %}0{% endif %}"
     aria-valuemin="0"
     aria-valuemax="100"
     {% if label %}aria-label="{{ label }}"{% endif %}
@@ -44,7 +44,7 @@ Parameters:
       {% else %}
         bg-indigo-600 dark:bg-indigo-500
       {% endif %}"
-      style="width: {{ value|default:0 }}%;"
+      data-progress="{% if value %}{{ value }}{% else %}0{% endif %}"
     ></div>
   </div>
 </div>

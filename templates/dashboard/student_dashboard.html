@@ -89,7 +89,7 @@
               <div class="flex-1 max-w-xs">
                 <div class="w-full bg-white/20 rounded-full h-2 overflow-hidden">
                   <div class="bg-indigo-400 h-2 rounded-full transition-all duration-500"
-                       style="width: {{ continue_learning_hero.progress_percentage }}%;"></div>
+                       data-progress="{{ continue_learning_hero.progress_percentage }}"></div>
                 </div>
               </div>
               <span class="font-bold text-white">{{ continue_learning_hero.progress_percentage }}%</span>
@@ -171,7 +171,7 @@
                     </div>
                     <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
                       <div class="bg-indigo-600 h-2 rounded-full transition-all duration-500 ease-out"
-                           style="width: {{ card.progress_percentage }}%;"></div>
+                           data-progress="{{ card.progress_percentage }}"></div>
                     </div>
                   </div>
                 </div>

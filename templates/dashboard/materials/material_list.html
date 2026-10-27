@@ -162,7 +162,7 @@
                 </button>
               </form>
               <!-- Delete Form (with confirmation) -->
-              <form method="post" action="{% url 'dashboard:teacher_material_delete' slug=course.slug material_id=material.id %}" class="inline" onsubmit="return confirm('Delete this resource post? If it has student download history, deletion will be blocked and you can unpublish instead.');">
+              <form method="post" action="{% url 'dashboard:teacher_material_delete' slug=course.slug material_id=material.id %}" class="inline" data-confirm="Delete this resource post? If it has student download history, deletion will be blocked and you can unpublish instead.">
                 {% csrf_token %}
                 <button
                   type="submit"
@@ -302,7 +302,7 @@
                   </form>
 
                   <!-- Delete Item -->
-                  <form method="post" action="{% url 'dashboard:teacher_material_item_delete' slug=course.slug material_id=material.id item_id=item.id %}" class="inline" onsubmit="return confirm('Delete this item? Note: Items with download request or access history cannot be deleted and should be unpublished instead.');">
+                  <form method="post" action="{% url 'dashboard:teacher_material_item_delete' slug=course.slug material_id=material.id item_id=item.id %}" class="inline" data-confirm="Delete this item? Note: Items with download request or access history cannot be deleted and should be unpublished instead.">
                     {% csrf_token %}
                     <button
                       type="submit"

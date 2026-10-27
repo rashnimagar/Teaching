@@ -89,11 +89,14 @@ class SubmissionAdmin(admin.ModelAdmin):
     ]
     list_select_related = ["assignment", "student", "graded_by", "assignment__course"]
     autocomplete_fields = ["assignment", "student", "graded_by"]
-    # Requirement 16: student, assignment, file and submitted_at read-only
+    # Student, assignment, submitted work (text & file) and timestamps are read-only to preserve submission integrity
     readonly_fields = [
         "student",
         "assignment",
+        "content_text",
+        "original_filename",
         "file",
+        "file_size",
         "submitted_at",
         "is_late",
         "graded_by",
@@ -122,6 +125,7 @@ class SubmissionAdmin(admin.ModelAdmin):
                     "content_text",
                     "original_filename",
                     "file",
+                    "file_size",
                     "file_download_link",
                 )
             },

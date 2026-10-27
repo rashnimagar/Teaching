@@ -8,3 +8,4 @@ django-allauth[socialaccount]==65.20.0
 pyjwt==2.15.1
 cryptography==50.0.2
 requests==2.34.2
+django-csp==4.0

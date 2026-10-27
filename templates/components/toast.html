@@ -12,7 +12,7 @@ Parameters:
   role="status"
   aria-live="polite"
   data-toast
-  data-duration="{{ duration|default:5000 }}"
+  data-duration="{% if duration %}{{ duration }}{% else %}5000{% endif %}"
   class="flex items-center gap-3 p-4 rounded-xl border shadow-lg transition-all duration-300 max-w-sm w-full
   bg-white dark:bg-slate-900
   {% if variant == 'success' %}

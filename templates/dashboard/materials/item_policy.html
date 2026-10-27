@@ -58,7 +58,7 @@
   </div>
 
   <!-- Policy Change Form -->
-  <form method="post" id="policyForm" class="space-y-6">
+  <form method="post" id="policyForm" class="space-y-6" data-current-policy="{{ item.download_policy }}" data-pending-count="{{ pending_count }}" data-approved-count="{{ approved_count }}">
     {% csrf_token %}
 
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
@@ -76,7 +76,6 @@
             value="request_required"
             id="policy_request_required"
             {% if item.download_policy == 'request_required' %}checked{% endif %}
-            onchange="updatePolicyUI()"
             class="mt-1 w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
           >
           <div>
@@ -98,7 +97,6 @@
             value="open_to_enrolled"
             id="policy_open_to_enrolled"
             {% if item.download_policy == 'open_to_enrolled' %}checked{% endif %}
-            onchange="updatePolicyUI()"
             class="mt-1 w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
           >
           <div>
@@ -120,7 +118,6 @@
             value="view_only"
             id="policy_view_only"
             {% if item.download_policy == 'view_only' %}checked{% endif %}
-            onchange="updatePolicyUI()"
             class="mt-1 w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
           >
           <div>
@@ -163,7 +160,7 @@
       {% endif %}
 
       <!-- Contextual Notice: Switching to view_only -->
-      <div id="view_only_warning" style="display: none;" class="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900 text-purple-900 dark:text-purple-200 text-xs space-y-1.5">
+      <div id="view_only_warning" class="hidden p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900 text-purple-900 dark:text-purple-200 text-xs space-y-1.5">
         <p class="font-bold flex items-center gap-1.5 text-purple-800 dark:text-purple-300">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           Important Transition Impact:
@@ -196,35 +193,4 @@
   </form>
 </div>
 
-<script>
-  function updatePolicyUI() {
-    const isViewOnly = document.getElementById('policy_view_only').checked;
-    const isRequestReq = document.getElementById('policy_request_required').checked;
-    const viewOnlyWarning = document.getElementById('view_only_warning');
-    const keepAccessBox = document.getElementById('keep_access_box');
-
-    if (viewOnlyWarning) {
-      viewOnlyWarning.style.display = isViewOnly ? 'block' : 'none';
-    }
-    if (keepAccessBox) {
-      keepAccessBox.style.display = (isViewOnly || isRequestReq) ? 'block' : 'none';
-    }
-  }
-
-  document.getElementById('policyForm').addEventListener('submit', function(e) {
-    const isViewOnly = document.getElementById('policy_view_only').checked;
-    const currentPolicy = '{{ item.download_policy }}';
-    if (isViewOnly && currentPolicy !== 'view_only') {
-      const msg = 'Are you sure you want to switch to View Only?\n\n' +
-                  '• {{ pending_count }} pending request(s) will be denied.\n' +
-                  '• {{ approved_count }} approved request(s) will be revoked.\n' +
-                  '• Each student will be notified.';
-      if (!confirm(msg)) {
-        e.preventDefault();
-      }
-    }
-  });
-
-  document.addEventListener('DOMContentLoaded', updatePolicyUI);
-</script>
 {% endblock dashboard_content %}

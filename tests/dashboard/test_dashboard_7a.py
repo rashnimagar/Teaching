@@ -394,7 +394,6 @@ class TestSafeguardsAndModals:
                 "title": "Active Course",
                 "slug": "active-c",
                 "is_free": "on",
-                "is_archived": False,
                 # is_published not passed -> unpublish attempt
             },
         )
@@ -408,13 +407,40 @@ class TestSafeguardsAndModals:
                 "title": "Active Course",
                 "slug": "active-c",
                 "is_free": "on",
-                "is_archived": False,
                 "confirm_unpublish": "true",
             },
         )
         assert resp2.status_code == 302
         course.refresh_from_db()
         assert course.is_published is False
+
+    def test_crafted_post_to_course_edit_cannot_change_is_archived(self, client, teacher_user):
+        """Crafted POST with is_archived=True to the course edit form cannot modify is_archived."""
+        course = Course.objects.create(
+            title="Non-archived Course",
+            slug="non-archived-c",
+            is_published=True,
+            is_archived=False,
+            is_free=True,
+        )
+        client.force_login(teacher_user)
+        edit_url = reverse("dashboard:teacher_course_edit", kwargs={"slug": course.slug})
+
+        # Submit crafted POST attempting to set is_archived to True
+        resp = client.post(
+            edit_url,
+            {
+                "title": "Non-archived Course Renamed",
+                "slug": "non-archived-c",
+                "is_published": "on",
+                "is_free": "on",
+                "is_archived": "on",  # Crafted parameter omitted from TeacherCourseForm.Meta.fields
+            },
+        )
+        assert resp.status_code == 302
+        course.refresh_from_db()
+        assert course.title == "Non-archived Course Renamed"
+        assert course.is_archived is False, "is_archived must not be modified via the course edit form"
 
     def test_past_deadline_requires_explicit_confirmation(self):
         course = Course.objects.create(title="Course", slug="crs", is_free=True)

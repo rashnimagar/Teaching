@@ -130,6 +130,12 @@ class Submission(TimeStampedModel):
         blank=True,
         null=True,
     )
+    file_size = models.BigIntegerField(
+        _("file size in bytes"),
+        null=True,
+        blank=True,
+        help_text=_("Stored file size in bytes to prevent remote storage requests on list views."),
+    )
     submitted_at = models.DateTimeField(_("submitted at"), default=timezone.now)
     is_late = models.BooleanField(_("is late"), default=False)
     grade = models.DecimalField(_("grade"), max_digits=5, decimal_places=2, null=True, blank=True)
@@ -241,6 +247,19 @@ class Submission(TimeStampedModel):
         # Automatically record graded_at when a grade is first assigned
         if self.grade is not None and not self.graded_at:
             self.graded_at = now
+
+        # Store file size in database from uploaded file object before saving to eliminate storage requests
+        if self.file:
+            try:
+                uploaded = getattr(self.file, "_file", None)
+                if uploaded is not None and hasattr(uploaded, "size"):
+                    self.file_size = uploaded.size
+                elif self.file_size is None and self.file.name:
+                    self.file_size = self.file.storage.size(self.file.name)
+            except (OSError, ValueError, AttributeError):
+                pass
+        else:
+            self.file_size = None
 
         super().save(*args, **kwargs)
 

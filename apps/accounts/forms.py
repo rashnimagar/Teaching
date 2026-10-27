@@ -96,7 +96,7 @@ class CustomSignupForm(SignupForm):
         "email",
         "password1",
         "terms",
-        "website",
+        "organization_code",
     ]
 
     def __init__(self, *args, **kwargs):
@@ -136,10 +136,20 @@ class CustomSignupForm(SignupForm):
                     "spellcheck": "false",
                 }
             )
+        if "organization_code" in self.fields:
+            self.fields["organization_code"].widget.attrs.pop("style", None)
+            self.fields["organization_code"].widget.attrs.update(
+                {
+                    "class": "absolute -left-[9999px] -top-[9999px] opacity-0 pointer-events-none h-0 w-0 overflow-hidden",
+                    "tabindex": "-1",
+                    "autocomplete": "off",
+                    "aria-hidden": "true",
+                }
+            )
 
-    def clean_website(self):
+    def clean_organization_code(self):
         # Additional defensive check on the honeypot field
-        val = self.cleaned_data.get("website")
+        val = self.cleaned_data.get("organization_code")
         if val:
             raise forms.ValidationError(_("Invalid submission."))
         return val

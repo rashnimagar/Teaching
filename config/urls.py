@@ -15,9 +15,11 @@ sitemaps = {
     "courses": CourseSitemap,
 }
 
+admin_path = getattr(settings, "DJANGO_ADMIN_URL", "admin/").strip("/") + "/"
+
 urlpatterns = [
-    path("admin/login/", rate_limited_admin_login_view, name="admin_login"),
-    path("admin/", admin.site.urls),
+    path(f"{admin_path}login/", rate_limited_admin_login_view, name="admin_login"),
+    path(admin_path, admin.site.urls),
     path(
         "favicon.ico",
         RedirectView.as_view(url=f"{settings.STATIC_URL}favicon.ico", permanent=True),
@@ -46,8 +48,16 @@ handler403 = "apps.core.views.handler403"
 handler404 = "apps.core.views.handler404"
 handler500 = "apps.core.views.handler500"
 
-# Debug toolbar & media serving in local development
+# Debug toolbar, media serving, and error page preview in local development
 if settings.DEBUG:
+    from apps.core import views as core_views
+
+    urlpatterns += [
+        path("403/", core_views.handler403, name="error_403"),
+        path("404/", core_views.handler404, name="error_404"),
+        path("500/", core_views.handler500, name="error_500"),
+    ]
+
     if "debug_toolbar" in settings.INSTALLED_APPS:
         import debug_toolbar
 

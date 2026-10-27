@@ -33,7 +33,7 @@
       {% if can_toggle_active %}
         <button
           type="button"
-          onclick="openToggleActiveModal()"
+          data-modal-open="toggle-active-modal"
           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-xs {% if student.is_active %}border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 hover:bg-rose-100{% else %}bg-emerald-600 hover:bg-emerald-700 text-white{% endif %}"
         >
           {% if student.is_active %}
@@ -148,7 +148,7 @@
                 </span>
               </div>
               <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div class="h-full bg-indigo-600 rounded-full transition-all duration-300" style="width: {{ cd.progress_pct }}%"></div>
+                <div class="h-full bg-indigo-600 rounded-full transition-all duration-300" data-progress="{{ cd.progress_pct }}"></div>
               </div>
             </div>
 
@@ -167,6 +167,16 @@
                           <span class="ml-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950 px-1.5 py-0.5 rounded">{% trans "Late" %}</span>
                         {% endif %}
                         <p class="text-[11px] text-slate-400">{{ sub.submitted_at|date:"M j, Y, H:i" }}</p>
+                        {% if sub.content_text %}
+                          <p class="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-1 italic">
+                            "{{ sub.content_text|truncatechars:90 }}"
+                          </p>
+                        {% elif sub.file %}
+                          <p class="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5 font-medium flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                            <span>{{ sub.original_filename|default:sub.file.name|truncatechars:35 }}</span>
+                          </p>
+                        {% endif %}
                       </div>
                       <div class="flex items-center gap-3">
                         {% if sub.grade is not None %}
@@ -314,7 +324,7 @@
         <h3 class="text-lg font-bold text-slate-900 dark:text-white">
           {% if student.is_active %}{% trans "Deactivate Student Account" %}{% else %}{% trans "Reactivate Student Account" %}{% endif %}
         </h3>
-        <button type="button" onclick="closeToggleActiveModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+        <button type="button" data-modal-close="toggle-active-modal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -338,7 +348,7 @@
         <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
           <button
             type="button"
-            onclick="closeToggleActiveModal()"
+            data-modal-close="toggle-active-modal"
             class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
           >
             {% trans "Cancel" %}
@@ -354,13 +364,5 @@
     </div>
   </div>
 
-  <script>
-    function openToggleActiveModal() {
-      document.getElementById('toggle-active-modal').classList.remove('hidden');
-    }
-    function closeToggleActiveModal() {
-      document.getElementById('toggle-active-modal').classList.add('hidden');
-    }
-  </script>
 {% endif %}
 {% endblock %}

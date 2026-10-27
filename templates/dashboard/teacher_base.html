@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block meta %}
 <meta name="robots" content="noindex, nofollow">
@@ -233,18 +234,9 @@
   </div>
 </div>
 
-<!-- Mobile Drawer Script -->
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  const toggle = document.getElementById('teacher-drawer-toggle');
-  const menu = document.getElementById('teacher-sidebar-menu');
-  if (toggle && menu) {
-    toggle.addEventListener('click', function () {
-      const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
-      toggle.setAttribute('aria-expanded', !isExpanded);
-      menu.classList.toggle('hidden');
-    });
-  }
-});
-</script>
 {% endblock content %}
+
+{% block scripts %}
+<!-- Teacher Dashboard Static Script -->
+<script src="{% static 'js/dashboard.js' %}" defer></script>
+{% endblock scripts %}

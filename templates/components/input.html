@@ -16,7 +16,7 @@ Parameters:
 <input
   id="{{ id }}"
   name="{{ name }}"
-  type="{{ type|default:'text' }}"
+  type="{% if type %}{{ type }}{% else %}text{% endif %}"
   {% if value %}value="{{ value }}"{% endif %}
   {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
   {% if required %}required{% endif %}

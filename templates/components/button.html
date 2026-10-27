@@ -53,7 +53,7 @@ Parameters:
   </a>
 {% else %}
   <button
-    type="{{ type|default:'button' }}"
+    type="{% if type %}{{ type }}{% else %}button{% endif %}"
     {% if id %}id="{{ id }}"{% endif %}
     {% if aria_label %}aria-label="{{ aria_label }}"{% endif %}
     {% if disabled or is_loading %}disabled aria-disabled="true"{% endif %}

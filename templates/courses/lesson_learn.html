@@ -501,7 +501,7 @@
               </div>
               <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                 <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300 ease-out course-progress-bar"
-                     style="width: {{ progress_percentage }}%;"></div>
+                     data-progress="{{ progress_percentage }}"></div>
               </div>
             </div>
           </div>
@@ -579,7 +579,7 @@
               <span class="text-indigo-600 dark:text-indigo-400 course-progress-percent">{{ progress_percentage }}%</span>
             </div>
             <div class="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
-              <div class="bg-indigo-600 h-2 rounded-full course-progress-bar" style="width: {{ progress_percentage }}%;"></div>
+              <div class="bg-indigo-600 h-2 rounded-full course-progress-bar" data-progress="{{ progress_percentage }}"></div>
             </div>
           </div>
 

@@ -180,6 +180,7 @@
                 type="button"
                 data-lesson-id="{{ lesson.id }}"
                 data-lesson-title="{{ lesson.title }}"
+                data-delete-url="{% url 'dashboard:teacher_lesson_delete' slug=course.slug lesson_id=lesson.id %}"
                 class="delete-lesson-btn px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition"
               >
                 Delete
@@ -255,52 +256,4 @@
   </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  // 1. Maintain focus and announce after reorder (Requirement 11)
-  const urlParams = new URLSearchParams(window.location.search);
-  const movedId = urlParams.get('moved');
-  if (movedId) {
-    const movedEl = document.getElementById('lesson-item-' + movedId);
-    if (movedEl) {
-      movedEl.focus();
-      movedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const announcer = document.getElementById('reorder-announcer');
-      if (announcer) {
-        const title = movedEl.dataset.lessonTitle || 'Lesson';
-        const order = movedEl.dataset.lessonOrder || '';
-        announcer.textContent = title + ' moved to position ' + order;
-      }
-    }
-  }
-
-  // 2. Delete Lesson Modal
-  const deleteModal = document.getElementById('delete-lesson-modal');
-  const deleteForm = document.getElementById('delete-lesson-form');
-  const deleteCancel = document.getElementById('delete-lesson-modal-cancel');
-  const courseSlug = '{{ course.slug }}';
-
-  document.querySelectorAll('.delete-lesson-btn').forEach(btn => {
-    btn.addEventListener('click', function () {
-      const lessonId = this.dataset.lessonId;
-      const title = this.dataset.lessonTitle;
-      deleteForm.action = '/dashboard/teacher/courses/' + courseSlug + '/lessons/' + lessonId + '/delete/';
-      document.getElementById('delete-lesson-modal-title').textContent = 'Delete Lesson: ' + title;
-      deleteModal.classList.remove('hidden');
-    });
-  });
-
-  if (deleteCancel) {
-    deleteCancel.addEventListener('click', function () {
-      deleteModal.classList.add('hidden');
-    });
-  }
-
-  deleteModal.addEventListener('click', function (e) {
-    if (e.target === deleteModal) {
-      deleteModal.classList.add('hidden');
-    }
-  });
-});
-</script>
 {% endblock dashboard_content %}

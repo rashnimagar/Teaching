@@ -70,7 +70,6 @@
       <select
         name="item_type"
         id="id_item_type"
-        onchange="toggleItemTypeFields()"
         class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
         {% for x, y in form.fields.item_type.choices %}
@@ -251,17 +250,4 @@
   </form>
 </div>
 
-<script>
-  function toggleItemTypeFields() {
-    const itemType = document.getElementById('id_item_type').value;
-    const fileContainer = document.getElementById('file_fields_container');
-    const linkContainer = document.getElementById('link_fields_container');
-    const videoContainer = document.getElementById('video_fields_container');
-
-    if (fileContainer) fileContainer.style.display = (itemType === 'file') ? 'block' : 'none';
-    if (linkContainer) linkContainer.style.display = (itemType === 'link') ? 'block' : 'none';
-    if (videoContainer) videoContainer.style.display = (itemType === 'video') ? 'block' : 'none';
-  }
-  document.addEventListener('DOMContentLoaded', toggleItemTypeFields);
-</script>
 {% endblock dashboard_content %}

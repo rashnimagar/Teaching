@@ -9,9 +9,10 @@ The following items are postponed to the final hardening and production deployme
 - **Failure Resilience:** Comprehensive failure logging, graceful exception handling on SMTP connection drops, and user-friendly error notices on auth forms.
 - **Download Notification Emails (`NOTIFY_BY_EMAIL`):** Enable `NOTIFY_BY_EMAIL=True` in production environment variables once production SMTP and SPF/DKIM records are active. Default is `False` in development and initial deployment.
 
-## 2. Honeypot Field Hardening
-- **Field Name Obfuscation:** Rename `website` to a non-obvious decoy attribute (e.g., `phone_secondary` or `address_line2`).
-- **Accessibility & Bot Traps:** Add `autocomplete="off"`, `tabindex="-1"`, and `aria-hidden="true"` to prevent screen readers and autofill extensions from erroneously filling the hidden field.
+## 2. Honeypot Field Hardening (Completed in Phase 8A)
+- **Field Name Obfuscation:** Renamed `website` to `organization_code`.
+- **Accessibility & Bot Traps:** Added `autocomplete="off"`, `tabindex="-1"`, and `aria-hidden="true"` with off-screen positioning CSS classes (`absolute -left-[9999px] -top-[9999px] opacity-0 pointer-events-none h-0 w-0 overflow-hidden`) to completely hide from screen readers and autofill extensions.
+
 
 ## 3. Google OAuth Consent Screen
 - **Publish to Production:** Transition Google Cloud Console OAuth consent screen status from **Testing** to **In production** so any student Google account can authenticate without being manually added to the GCP test user allowlist.
@@ -22,10 +23,11 @@ The following items are postponed to the final hardening and production deployme
 - **Vendor Library Documentation:** Add source URL, exact version, and open-source license attribution for `static/js/vendor/player.min.js` to `README.md`.
 
 ## 5. Production Settings & Infrastructure Review
-- **Shared Cache:** Deploy and configure Redis (`django-redis` via `CACHE_URL=redis://...`) for multi-worker Gunicorn and distributed rate limit counters.
-- **HTTPS & Security Headers:** Enforce `SECURE_SSL_REDIRECT = True`, `SESSION_COOKIE_SECURE = True`, `CSRF_COOKIE_SECURE = True`, HSTS, and secure proxy headers (`HTTP_X_FORWARDED_FOR` / `HTTP_X_FORWARDED_PROTO`).
-- **Error Monitoring:** Wire Sentry SDK (`sentry-sdk[django]`) with environment-based traces sample rate.
-- **Automated Backups:** Implement automated daily PostgreSQL database backups and media storage snapshot procedures.
+- **Shared Cache:** Deploy and configure Redis (`django-redis` via `CACHE_URL=redis://...`) for multi-worker Gunicorn and distributed rate limit counters (Phase 8C).
+- **HTTPS, CSP & Security Headers (Completed in Phase 8A):** Enforced Content-Security-Policy (CSP), `SECURE_REFERRER_POLICY = "same-origin"`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin` on file downloads, `Permissions-Policy`, `CSRF_COOKIE_HTTPONLY = True`, `SESSION_COOKIE_HTTPONLY = True`, `SECURE_HSTS_SECONDS = 86400`, and silenced `security.W021` for staged rollout (detailed in `SECURITY.md`).
+- **HSTS Phase 2 & 3 Escalation:** After 30 days of clean production operation, escalate HSTS duration to 30 days (`2592000s`), then 1 year (`31536000s`) with `SECURE_HSTS_INCLUDE_SUBDOMAINS = True` and submit for `SECURE_HSTS_PRELOAD = True`.
+- **Error Monitoring:** Wire Sentry SDK (`sentry-sdk[django]`) with environment-based traces sample rate (Phase 8C).
+- **Automated Backups:** Implement automated daily PostgreSQL database backups and media storage snapshot procedures (Phase 8C).
 
 ## 6. File Uploads & Assignment Infrastructure
 - **Web-Server Upload Limits & Worker Timeouts:** Configure reverse proxy (Nginx `client_max_body_size 30M` to match `MATERIAL_MAX_FILE_SIZE_BYTES` default of 25 MB, and Gunicorn `--timeout 90`) so slow client uploads or oversized payloads are rejected early while allowing legitimate 25 MB material uploads.

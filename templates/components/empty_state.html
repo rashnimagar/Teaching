@@ -35,7 +35,7 @@ Parameters:
   </h3>
 
   <p class="text-sm text-slate-600 dark:text-slate-400 max-w-sm mb-6">
-    {{ description }}
+    {% if description %}{{ description }}{% elif message %}{{ message }}{% endif %}
   </p>
 
   {% if action_text and action_url %}

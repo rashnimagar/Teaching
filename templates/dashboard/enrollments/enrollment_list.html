@@ -18,7 +18,7 @@
     <div class="flex items-center gap-3">
       <button
         type="button"
-        onclick="openManualEnrollModal()"
+        data-modal-open="manual-enroll-modal"
         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-xs hover:shadow-sm transition"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,7 +103,7 @@
       <div class="w-full md:w-56">
         <select
           name="course"
-          onchange="this.form.submit()"
+          data-auto-submit
           class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
         >
           <option value="all">{% trans "All Courses" %}</option>
@@ -182,14 +182,14 @@
       <div class="flex items-center gap-2">
         <button
           type="button"
-          onclick="triggerBulkAction('approve')"
+          data-bulk-action="approve"
           class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition"
         >
           {% trans "Approve Selected" %}
         </button>
         <button
           type="button"
-          onclick="triggerBulkAction('revoke')"
+          data-bulk-action="revoke"
           class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs transition"
         >
           {% trans "Revoke Selected" %}
@@ -209,7 +209,6 @@
                   <input
                     type="checkbox"
                     id="select-all-checkbox"
-                    onchange="toggleSelectAll(this)"
                     class="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500"
                   >
                 </th>
@@ -229,7 +228,6 @@
                       type="checkbox"
                       name="enrollment_ids"
                       value="{{ enr.id }}"
-                      onchange="updateSelectionCount()"
                       class="enrollment-checkbox rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500"
                     >
                   </td>
@@ -275,7 +273,8 @@
                         <!-- Approve -->
                         <button
                           type="button"
-                          onclick="submitSingleAction({{ enr.id }}, 'approve')"
+                          data-single-action="approve"
+                          data-enrollment-id="{{ enr.id }}"
                           class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition"
                         >
                           {% trans "Approve" %}
@@ -283,7 +282,8 @@
                         <!-- Revoke -->
                         <button
                           type="button"
-                          onclick="submitSingleAction({{ enr.id }}, 'revoke')"
+                          data-single-action="revoke"
+                          data-enrollment-id="{{ enr.id }}"
                           class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition"
                         >
                           {% trans "Reject" %}
@@ -292,7 +292,8 @@
                         <!-- Revoke -->
                         <button
                           type="button"
-                          onclick="submitSingleAction({{ enr.id }}, 'revoke')"
+                          data-single-action="revoke"
+                          data-enrollment-id="{{ enr.id }}"
                           class="px-2.5 py-1 rounded-lg border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold transition"
                         >
                           {% trans "Revoke" %}
@@ -301,7 +302,8 @@
                         <!-- Reactivate -->
                         <button
                           type="button"
-                          onclick="submitSingleAction({{ enr.id }}, 'approve')"
+                          data-single-action="approve"
+                          data-enrollment-id="{{ enr.id }}"
                           class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition"
                         >
                           {% trans "Reactivate" %}
@@ -334,7 +336,6 @@
                     type="checkbox"
                     name="enrollment_ids"
                     value="{{ enr.id }}"
-                    onchange="updateSelectionCount()"
                     class="enrollment-checkbox rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500"
                   >
                   <div>
@@ -373,14 +374,16 @@
                 {% if enr.status == 'pending' %}
                   <button
                     type="button"
-                    onclick="submitSingleAction({{ enr.id }}, 'approve')"
+                    data-single-action="approve"
+                    data-enrollment-id="{{ enr.id }}"
                     class="flex-1 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold text-center"
                   >
                     {% trans "Approve" %}
                   </button>
                   <button
                     type="button"
-                    onclick="submitSingleAction({{ enr.id }}, 'revoke')"
+                    data-single-action="revoke"
+                    data-enrollment-id="{{ enr.id }}"
                     class="flex-1 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold text-center"
                   >
                     {% trans "Reject" %}
@@ -388,7 +391,8 @@
                 {% elif enr.status == 'active' %}
                   <button
                     type="button"
-                    onclick="submitSingleAction({{ enr.id }}, 'revoke')"
+                    data-single-action="revoke"
+                    data-enrollment-id="{{ enr.id }}"
                     class="flex-1 py-1.5 rounded-xl border border-rose-300 dark:border-rose-800 text-rose-600 text-xs font-bold text-center"
                   >
                     {% trans "Revoke Access" %}
@@ -396,7 +400,8 @@
                 {% elif enr.status == 'revoked' %}
                   <button
                     type="button"
-                    onclick="submitSingleAction({{ enr.id }}, 'approve')"
+                    data-single-action="approve"
+                    data-enrollment-id="{{ enr.id }}"
                     class="flex-1 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold text-center"
                   >
                     {% trans "Reactivate" %}
@@ -472,7 +477,7 @@
       <h3 class="text-lg font-bold text-slate-900 dark:text-white">
         {% trans "Manual Course Enrollment" %}
       </h3>
-      <button type="button" onclick="closeManualEnrollModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+      <button type="button" data-modal-close="manual-enroll-modal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
@@ -518,7 +523,7 @@
       <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
         <button
           type="button"
-          onclick="closeManualEnrollModal()"
+          data-modal-close="manual-enroll-modal"
           class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
         >
           {% trans "Cancel" %}
@@ -534,47 +539,4 @@
   </div>
 </div>
 
-<script>
-  function openManualEnrollModal() {
-    document.getElementById('manual-enroll-modal').classList.remove('hidden');
-  }
-  function closeManualEnrollModal() {
-    document.getElementById('manual-enroll-modal').classList.add('hidden');
-  }
-
-  function submitSingleAction(enrollmentId, action) {
-    const form = document.getElementById('single-enrollment-form');
-    form.action = `/dashboard/teacher/enrollments/action/${enrollmentId}/`;
-    document.getElementById('single-action-input').value = action;
-    form.submit();
-  }
-
-  function toggleSelectAll(master) {
-    const checkboxes = document.querySelectorAll('.enrollment-checkbox');
-    checkboxes.forEach(cb => cb.checked = master.checked);
-    updateSelectionCount();
-  }
-
-  function updateSelectionCount() {
-    const checked = document.querySelectorAll('.enrollment-checkbox:checked');
-    const bar = document.getElementById('bulk-actions-bar');
-    const badge = document.getElementById('selected-count-badge');
-    badge.innerText = checked.length;
-    if (checked.length > 0) {
-      bar.classList.remove('hidden');
-      bar.classList.add('flex');
-    } else {
-      bar.classList.add('hidden');
-      bar.classList.remove('flex');
-    }
-  }
-
-  function triggerBulkAction(action) {
-    const checked = document.querySelectorAll('.enrollment-checkbox:checked');
-    if (checked.length === 0) return;
-    if (!confirm(`Are you sure you want to ${action} ${checked.length} selected enrollment(s)?`)) return;
-    document.getElementById('bulk-action-input').value = action;
-    document.getElementById('bulk-enrollment-form').submit();
-  }
-</script>
 {% endblock %}

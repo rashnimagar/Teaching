@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.db import transaction
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.courses.models import DownloadRequest, MaterialItem
@@ -67,7 +68,7 @@ def transition_download_request(
 
         item = locked_req.material_item
         course = item.material.course
-        materials_url = f"/learn/{course.slug}/materials/"
+        materials_url = reverse("learn:materials", kwargs={"course_slug": course.slug})
 
         if new_status == DownloadRequest.Status.APPROVED:
             locked_req.expires_at = expires_at

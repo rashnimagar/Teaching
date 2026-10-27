@@ -14,7 +14,7 @@ Parameters:
   aria-modal="true"
   aria-labelledby="{{ id }}-title"
   aria-hidden="true"
-  data-dialog-root="{{ type|default:'modal' }}"
+  data-dialog-root="{% if type %}{{ type }}{% else %}modal{% endif %}"
   class="fixed inset-0 z-50 hidden transition-opacity duration-200"
 >
   <!-- Backdrop -->

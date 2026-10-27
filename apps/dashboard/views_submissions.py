@@ -107,6 +107,7 @@ def teacher_course_assignment_submissions_view(request, slug: str, assignment_id
 
     status_filter = request.GET.get("status", "all").strip().lower()
     search_query = request.GET.get("q", "").strip()
+    timeliness_filter = request.GET.get("timeliness", "all").strip().lower()
 
     qs = (
         Submission.objects.select_related("student", "assignment", "assignment__course")
@@ -126,6 +127,11 @@ def teacher_course_assignment_submissions_view(request, slug: str, assignment_id
     elif status_filter == "graded":
         qs = qs.filter(grade__isnull=False)
 
+    if timeliness_filter == "late":
+        qs = qs.filter(is_late=True)
+    elif timeliness_filter == "on_time":
+        qs = qs.filter(is_late=False)
+
     paginator = Paginator(qs, 25)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -133,6 +139,7 @@ def teacher_course_assignment_submissions_view(request, slug: str, assignment_id
     ungraded_count = assignment.submissions.filter(grade__isnull=True).count()
     graded_count = assignment.submissions.filter(grade__isnull=False).count()
     total_count = assignment.submissions.count()
+    late_count = assignment.submissions.filter(is_late=True).count()
 
     # Active students without submission
     now = timezone.now()
@@ -145,14 +152,17 @@ def teacher_course_assignment_submissions_view(request, slug: str, assignment_id
 
     context = {
         "course": course,
+        "course_slug": course.slug,
         "assignment": assignment,
         "page_obj": page_obj,
         "submissions": page_obj,
         "status_filter": status_filter,
+        "timeliness_filter": timeliness_filter,
         "search_query": search_query,
         "ungraded_count": ungraded_count,
         "graded_count": graded_count,
         "total_count": total_count,
+        "late_count": late_count,
         "missed_count": missed_count,
         "is_past_deadline": now > assignment.due_at,
     }

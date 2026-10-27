@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.courses.models import Enrollment, EnrollmentEvent
 from apps.notifications.models import Notification
 from apps.notifications.services import create_notification
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +101,7 @@ def transition_enrollment_status(
                         body=str(_(
                             "Your enrollment for %(title)s has been approved! You now have full access to all lessons and assignments."
                         ) % {"title": course.title}),
-                        url=f"/courses/{course.slug}/learn/",
+                        url=reverse("learn:course", kwargs={"course_slug": course.slug}),
                     )
                 elif new_status == Enrollment.Status.REVOKED:
                     create_notification(
@@ -110,7 +111,7 @@ def transition_enrollment_status(
                         body=str(_(
                             "Your access to %(title)s has been revoked by the instructor."
                         ) % {"title": course.title}),
-                        url=f"/courses/{course.slug}/",
+                        url=reverse("courses:detail", kwargs={"slug": course.slug}),
                     )
             except Exception as exc:  # noqa: BLE001
                 logger.error(

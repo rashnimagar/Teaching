@@ -490,7 +490,7 @@ class MaterialItem(TimeStampedModel):
 
     @property
     def is_image(self) -> bool:
-        return self.file_extension in {"png", "jpg", "jpeg"}
+        return self.file_extension in {"png", "jpg", "jpeg", "webp"}
 
     def clean(self):
         super().clean()

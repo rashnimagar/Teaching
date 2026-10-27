@@ -1,3 +1,5 @@
+import copy
+
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *
@@ -39,13 +41,26 @@ STORAGES["staticfiles"] = {
 SECURE_SSL_REDIRECT = True
 SECURE_REDIRECT_EXEMPT = [r"^healthz/?$"]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# HSTS lifetime starting at 1 day (86400s) from env; includeSubDomains only if enabled; preload off
+SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=86400)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False)
+SECURE_HSTS_PRELOAD = False
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
 SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
+
+PROD_CSP_DIRECTIVES = copy.deepcopy(CSP_DIRECTIVES)
+PROD_CSP_DIRECTIVES["upgrade-insecure-requests"] = True
+
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": PROD_CSP_DIRECTIVES,
+    "EXCLUDE_URL_PREFIXES": [ADMIN_URL_PREFIX],
+}
+CONTENT_SECURITY_POLICY_REPORT_ONLY = None
 
 # Production Shared Cache (Redis or DB Cache via CACHE_URL)
 CACHES = {

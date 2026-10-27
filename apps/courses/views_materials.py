@@ -9,6 +9,7 @@ from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
@@ -153,7 +154,9 @@ def course_materials_view(request, course_slug: str):
         "has_materials": bool(materials),
         "is_staff": is_staff,
     }
-    return render(request, "courses/materials_list.html", context)
+    response = render(request, "courses/materials_list.html", context)
+    response._csp_update = {"frame-src": ["'self'"]}
+    return response
 
 
 @login_required
@@ -329,12 +332,15 @@ def material_download_view(request, course_slug: str, item_id: int):
 
 
 @login_required
+@xframe_options_sameorigin
 @ratelimit(key="user", rate="60/m", block=True)
 def material_preview_view(request, course_slug: str, item_id: int):
     """
     Inline browser preview endpoint strictly for PDF documents and image files.
     Allowed for view_only policy (and open_to_enrolled or staff).
     Strictly refused for request_required policy (which has no inline preview).
+    Configures X-Frame-Options: SAMEORIGIN and CSP frame-ancestors 'self' and
+    frame-src 'self' to support safe, isolated in-browser iframe previews.
     """
     course = get_object_or_404(Course, slug=course_slug)
     item = get_object_or_404(
@@ -353,17 +359,25 @@ def material_preview_view(request, course_slug: str, item_id: int):
     if not is_staff and not item.is_published:
         raise Http404(_("Material item not found."))
 
-    # request_required files have NO inline view (Requirement 13)
+    # request_required files have no in-browser preview (refused even with approved requests)
     if not is_staff and item.download_policy == MaterialItem.DownloadPolicy.REQUEST_REQUIRED:
-        raise PermissionDenied(_("Files with request-required policy do not permit inline viewing."))
+        raise PermissionDenied(_("Request-required files do not support in-browser preview."))
 
-    if not (item.is_pdf or item.is_image):
-        raise PermissionDenied(_("Inline preview is only supported for PDF documents and images."))
+    PREVIEW_MIME_TYPES = {
+        "pdf": "application/pdf",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+        "webp": "image/webp",
+    }
+    ext = (item.file_extension or "").lower().lstrip(".")
+    content_type = PREVIEW_MIME_TYPES.get(ext)
+    if not content_type:
+        raise PermissionDenied(_("Unsupported preview format."))
 
     if not item.file or not item.file.name:
         raise Http404(_("File not found on storage."))
 
-    content_type = "application/pdf" if item.is_pdf else f"image/{item.file_extension}"
     response = FileResponse(
         item.file.open("rb"),
         as_attachment=False,
@@ -371,4 +385,12 @@ def material_preview_view(request, course_slug: str, item_id: int):
     )
     response["Cache-Control"] = "private, no-store"
     response["X-Content-Type-Options"] = "nosniff"
+    response["X-Frame-Options"] = "SAMEORIGIN"
+    # Specific route isolation: only this route allows framing by 'self' and framing 'self'
+    response._csp_replace = {
+        "frame-ancestors": ["'self'"],
+    }
+    response._csp_update = {
+        "frame-src": ["'self'"],
+    }
     return response

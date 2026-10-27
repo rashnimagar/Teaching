@@ -11,7 +11,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("learning-container");
   if (!container) return;
 
-  const csrfToken = container.dataset.csrfToken || "";
+  const csrfToken =
+    (typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "") ||
+    container.dataset.csrfToken ||
+    "";
   const toggleUrl = container.dataset.toggleUrl || "";
   const positionUrl = container.dataset.positionUrl || "";
   const initialPosition = parseInt(container.dataset.lastPosition || "0", 10);

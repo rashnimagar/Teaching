@@ -1,4 +1,9 @@
+import base64
+import functools
+import hashlib
 import logging
+import re
+from pathlib import Path
 
 from django.conf import settings
 from django.core.cache import cache
@@ -124,9 +129,44 @@ def handler404(request, exception=None):
     return render(request, "404.html", status=404)
 
 
+@functools.lru_cache(maxsize=1)
+def get_500_style_hash() -> str:
+    """
+    Computes base64-encoded SHA-256 hash of the <style> block in 500.html.
+    Used strictly to permit the standalone 500.html inline stylesheet via CSP style-src.
+    """
+    template_path = Path(settings.BASE_DIR) / "templates" / "500.html"
+    try:
+        content = template_path.read_text(encoding="utf-8")
+        match = re.search(r"<style>(.*?)</style>", content, re.DOTALL)
+        if match:
+            style_content = match.group(1)
+            digest = hashlib.sha256(style_content.encode("utf-8")).digest()
+            return base64.b64encode(digest).decode("ascii")
+    except Exception as exc:
+        logger.warning("Could not calculate 500.html style hash: %s", exc)
+    return ""
+
+
 def handler500(request):
-    """Custom 500 Internal Server Error view."""
-    return render(request, "500.html", status=500)
+    """
+    Custom 500 Internal Server Error view.
+    Attaches the 500.html inline style SHA-256 hash to style-src specifically on this response.
+    """
+    response = render(request, "500.html", status=500)
+    style_hash = get_500_style_hash()
+    if style_hash:
+        hash_src = f"'sha256-{style_hash}'"
+        # django-csp 4.0 update hooks
+        response._csp_update = {"style-src": [hash_src]}
+        response._csp_update_ro = {"style-src": [hash_src]}
+        # Also append directly if header was already constructed or middleware was bypassed
+        for header_name in ("Content-Security-Policy", "Content-Security-Policy-Report-Only"):
+            if header_name in response:
+                curr_header = response[header_name]
+                if "style-src" in curr_header and hash_src not in curr_header:
+                    response[header_name] = curr_header.replace("style-src ", f"style-src {hash_src} ")
+    return response
 
 
 def csrf_failure(request, reason=""):

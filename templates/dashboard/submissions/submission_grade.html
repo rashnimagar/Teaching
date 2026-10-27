@@ -23,7 +23,7 @@
         {{ submission.student.get_full_name|default:submission.student.email }}
       </h1>
       <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-        {{ submission.student.email }} &bull; {% trans "Submitted:" %} <span class="font-semibold text-slate-700 dark:text-slate-300">{{ submitted_at_npt|date:"M j, Y, H:i" }} NPT</span>
+        {{ submission.student.email }} &bull; {% trans "Submitted:" %} <span class="font-semibold text-slate-700 dark:text-slate-300">{{ submitted_at_npt|date:"M j, Y, H:i" }} (Kathmandu)</span>
       </p>
     </div>
 
@@ -71,7 +71,7 @@
       {% endif %}
 
       <span class="text-xs text-slate-500">
-        {% trans "Deadline was:" %} {{ assignment.due_at|date:"M j, Y, H:i" }}
+        {% trans "Submitted:" %} <strong class="text-slate-700 dark:text-slate-300">{{ submitted_at_npt|date:"M j, Y, H:i" }} (Kathmandu)</strong> &bull; {% trans "Deadline was:" %} {{ assignment.due_at|date:"M j, Y, H:i" }}
       </span>
     </div>
 
@@ -79,7 +79,7 @@
     <div>
       <button
         type="button"
-        onclick="openUnlockModal()"
+        data-modal-open="unlock-modal"
         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 transition"
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,25 +97,25 @@
       <!-- Text Submission Content -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-          {% trans "Submitted Response" %}
+          {% trans "Text response" %}
         </h2>
-        {% if submission.text_content %}
-          <div class="prose dark:prose-invert max-w-none text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-            {{ submission.text_content }}
+        {% if submission.content_text %}
+          <div class="prose dark:prose-invert max-w-none text-sm text-slate-800 dark:text-slate-200 font-sans bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 break-words leading-relaxed">
+            {{ submission.content_text|urlize|linebreaksbr }}
           </div>
         {% else %}
           <p class="text-sm italic text-slate-400">
-            {% trans "No text response provided." %}
+            {% trans "No text response" %}
           </p>
         {% endif %}
       </div>
 
-      <!-- Attached File Download (Requirement 3: Reuses existing permission-checked download) -->
-      {% if submission.file %}
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-            {% trans "Attached Submission File" %}
-          </h2>
+      <!-- Attached File Download -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+          {% trans "Attached file" %}
+        </h2>
+        {% if submission.file %}
           <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
             <div class="flex items-center gap-3 min-w-0">
               <div class="p-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
@@ -128,6 +128,9 @@
                   {{ submission.original_filename|default:submission.file.name }}
                 </p>
                 <p class="text-xs text-slate-400">
+                  {% if submission.file_size %}
+                    <span class="font-semibold text-slate-500">{{ submission.file_size|filesizeformat }}</span> &bull;
+                  {% endif %}
                   {% trans "Private storage file" %}
                 </p>
               </div>
@@ -142,8 +145,12 @@
               <span>{% trans "Download File" %}</span>
             </a>
           </div>
-        </div>
-      {% endif %}
+        {% else %}
+          <p class="text-sm italic text-slate-400">
+            {% trans "No file attached." %}
+          </p>
+        {% endif %}
+      </div>
 
       <!-- Audit History / Events (Requirement 6) -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs">
@@ -301,7 +308,7 @@
       <h3 class="text-lg font-bold text-slate-900 dark:text-white">
         {% trans "Unlock Submission" %}
       </h3>
-      <button type="button" onclick="closeUnlockModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+      <button type="button" data-modal-close="unlock-modal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
@@ -330,7 +337,7 @@
       <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
         <button
           type="button"
-          onclick="closeUnlockModal()"
+          data-modal-close="unlock-modal"
           class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
         >
           {% trans "Cancel" %}
@@ -346,12 +353,4 @@
   </div>
 </div>
 
-<script>
-  function openUnlockModal() {
-    document.getElementById('unlock-modal').classList.remove('hidden');
-  }
-  function closeUnlockModal() {
-    document.getElementById('unlock-modal').classList.add('hidden');
-  }
-</script>
 {% endblock %}

@@ -13,7 +13,7 @@ from apps.assignments.validators import (
     validate_filename_extensions,
 )
 
-VIEW_ONLY_ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg"}
+VIEW_ONLY_ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "webp"}
 
 
 def material_file_path(instance, filename: str) -> str:

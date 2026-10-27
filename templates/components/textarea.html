@@ -15,7 +15,7 @@ Parameters:
 <textarea
   id="{{ id }}"
   name="{{ name }}"
-  rows="{{ rows|default:4 }}"
+  rows="{% if rows %}{{ rows }}{% else %}4{% endif %}"
   {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
   {% if required %}required{% endif %}
   {% if disabled %}disabled aria-disabled="true"{% endif %}
@@ -36,4 +36,4 @@ Parameters:
     opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800
   {% endif %}
   {% if extra_classes %}{{ extra_classes }}{% endif %}"
->{{ value|default:'' }}</textarea>
+>{% if value %}{{ value }}{% endif %}</textarea>

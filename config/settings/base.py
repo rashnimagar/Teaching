@@ -46,10 +46,13 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",  # Right after SecurityMiddleware
+    "csp.middleware.CSPMiddleware",  # django-csp (processes CSP and reports)
+    "apps.core.middleware.SecurityHeadersMiddleware",  # Permissions-Policy, CORP, COOP
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.core.middleware.SessionIdleTimeoutMiddleware",  # Idle session expiration
     "allauth.account.middleware.AccountMiddleware",  # Required by django-allauth
     "apps.core.middleware.RatelimitMiddleware",  # Intercepts 429 Ratelimited
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -112,7 +115,7 @@ ACCOUNT_FORMS = {
     "login": "apps.accounts.forms.CustomLoginForm",
     "signup": "apps.accounts.forms.CustomSignupForm",
 }
-ACCOUNT_SIGNUP_FORM_HONEYPOT_FIELD = "website"
+ACCOUNT_SIGNUP_FORM_HONEYPOT_FIELD = "organization_code"
 
 # Allauth Rate Limits
 ACCOUNT_RATE_LIMITS = {
@@ -231,13 +234,12 @@ MATERIAL_MAX_FILE_SIZE_BYTES = env.int(
     "MATERIAL_MAX_FILE_SIZE_BYTES", default=25 * 1024 * 1024
 )  # 25 MB
 
-# Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Tailwind CLI Configuration
 TAILWIND_CLI_SRC_CSS = "static/css/input.css"
 TAILWIND_CLI_DIST_CSS = "css/dist/tailwind.css"
-SILENCED_SYSTEM_CHECKS = ["django_tailwind_cli.W001"]
+# SILENCED_SYSTEM_CHECKS is consolidated below
 
 # Cache Configuration
 CACHES = {
@@ -290,5 +292,54 @@ BUNNY_STREAM_LIBRARY_ID = env("BUNNY_STREAM_LIBRARY_ID", default="")
 BUNNY_STREAM_TOKEN_KEY = env("BUNNY_STREAM_TOKEN_KEY", default="")
 BUNNY_STREAM_SIGNING_ENABLED = env.bool("BUNNY_STREAM_SIGNING_ENABLED", default=False)
 
-# Custom CSRF Failure View
+# Custom CSRF Failure View & Trusted Origins
 CSRF_FAILURE_VIEW = "apps.core.views.csrf_failure"
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
+# Session Idle Timeout (Inactivity timeout in seconds; 0 = disabled by default)
+SESSION_IDLE_TIMEOUT_SECONDS = env.int("SESSION_IDLE_TIMEOUT_SECONDS", default=0)
+
+# Deliberately silence security.W021 during initial HSTS ramp-up (documented in SECURITY.md)
+# and django_tailwind_cli.W001 (Tailwind input CSS inside static directory)
+SILENCED_SYSTEM_CHECKS = [
+    "django_tailwind_cli.W001",
+    "security.W021",
+]
+
+# Django 6.0 transitional setting: Default URLField scheme in forms to https
+FORMS_URLFIELD_ASSUME_HTTPS = True
+
+# Admin URL configuration (customizable via env, used for routing and CSP exclusion)
+DJANGO_ADMIN_URL = env("DJANGO_ADMIN_URL", default="admin/")
+ADMIN_URL_PREFIX = f"/{DJANGO_ADMIN_URL.strip('/')}/"
+
+# Content Security Policy (django-csp 4.0 configuration)
+CSP_DIRECTIVES = {
+    "default-src": ["'self'"],
+    "script-src": ["'self'"],
+    "style-src": ["'self'"],
+    "img-src": ["'self'", "data:", "https://i.ytimg.com"],
+    "font-src": ["'self'"],
+    "connect-src": ["'self'"],
+    "frame-src": [
+        "https://www.youtube-nocookie.com",
+        "https://player.vimeo.com",
+        "https://iframe.mediadelivery.net",
+    ],
+    "frame-ancestors": ["'none'"],
+    "form-action": ["'self'", "https://accounts.google.com"],
+    "base-uri": ["'self'"],
+    "object-src": ["'none'"],
+}
+
+# Enforce Content Security Policy site-wide (excluding admin using DJANGO_ADMIN_URL prefix)
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": CSP_DIRECTIVES,
+    "EXCLUDE_URL_PREFIXES": [ADMIN_URL_PREFIX],
+}
+CONTENT_SECURITY_POLICY_REPORT_ONLY = None
+
+# Flag controlling registration of direct error preview routes (/403/, /404/, /500/)
+ENABLE_TEST_ERROR_ROUTES = False
+
+

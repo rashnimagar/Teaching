@@ -62,7 +62,7 @@
     <div class="w-full md:w-44">
       <select
         name="status"
-        onchange="this.form.submit()"
+        data-auto-submit
         class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
         <option value="" {% if not status_filter %}selected{% endif %}>All Statuses</option>
@@ -76,7 +76,7 @@
     <div class="w-full md:w-36">
       <select
         name="pricing"
-        onchange="this.form.submit()"
+        data-auto-submit
         class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
         <option value="" {% if not pricing_filter %}selected{% endif %}>All Types</option>
@@ -329,52 +329,4 @@
   </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  const modal = document.getElementById('archive-modal');
-  const modalTitle = document.getElementById('archive-modal-title');
-  const modalDesc = document.getElementById('archive-modal-desc');
-  const modalSubmit = document.getElementById('archive-modal-submit');
-  const form = document.getElementById('archive-form');
-  const cancelBtn = document.getElementById('archive-modal-cancel');
-
-  document.querySelectorAll('.archive-toggle-btn').forEach(btn => {
-    btn.addEventListener('click', function () {
-      const slug = this.dataset.courseSlug;
-      const title = this.dataset.courseTitle;
-      const isArchived = this.dataset.courseArchived === 'true';
-      const activeStudents = parseInt(this.dataset.activeStudents || '0', 10);
-
-      form.action = '/dashboard/teacher/courses/' + slug + '/archive/';
-
-      if (isArchived) {
-        modalTitle.textContent = 'Restore Course: ' + title;
-        modalDesc.textContent = 'Restoring this course will make it visible in the public catalog and search listings again if published.';
-        modalSubmit.textContent = 'Restore Course';
-        modalSubmit.className = 'px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition';
-      } else {
-        modalTitle.textContent = 'Archive Course: ' + title;
-        modalDesc.textContent = 'Archiving hides the course from public catalog and search. Currently ' + activeStudents + ' active student(s) will keep access to learn and submit work. (Requirement 5: Courses cannot be hard-deleted in the dashboard).';
-        modalSubmit.textContent = 'Confirm Archive';
-        modalSubmit.className = 'px-4 py-2 rounded-xl text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 shadow-xs transition';
-      }
-
-      modal.classList.remove('hidden');
-    });
-  });
-
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', function () {
-      modal.classList.add('hidden');
-    });
-  }
-
-  // Close on outside click
-  modal.addEventListener('click', function (e) {
-    if (e.target === modal) {
-      modal.classList.add('hidden');
-    }
-  });
-});
-</script>
 {% endblock dashboard_content %}

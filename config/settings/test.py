@@ -36,3 +36,14 @@ STORAGES["staticfiles"] = {
 GOOGLE_CLIENT_ID = ""
 GOOGLE_CLIENT_SECRET = ""
 SOCIALACCOUNT_PROVIDERS["google"]["APPS"] = []
+
+# Guard against silent template typos in tests
+class InvalidVarSentinel(str):
+    def __mod__(self, missing):
+        raise AttributeError(f"Unresolved template variable: {missing!r}")
+
+TEMPLATES[0]["OPTIONS"]["string_if_invalid"] = InvalidVarSentinel("%s")
+
+# Enable error preview routes in test environment via test URLconf
+ENABLE_TEST_ERROR_ROUTES = True
+ROOT_URLCONF = "config.urls_test"

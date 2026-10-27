@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.assignments.models import Submission, SubmissionEvent
 from apps.notifications.models import Notification
 from apps.notifications.services import create_notification
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ def grade_submission(
                         body=str(_(
                             "Your submission for '%(title)s' has been graded: %(grade)s/%(max)s."
                         ) % {"title": assign_title, "grade": grade_val, "max": max_val}),
-                        url=f"/courses/{course_slug}/assignments/{assign_id}/",
+                        url=reverse("assignments:detail", kwargs={"slug": course_slug, "assignment_id": assign_id}),
                     )
                 except Exception as exc:  # noqa: BLE001
                     logger.error(

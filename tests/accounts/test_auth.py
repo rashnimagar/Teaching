@@ -635,7 +635,7 @@ class TestSignupAndResetAbuseDefenses:
                 "last_name": "Bot",
                 "password1": "SpamBotPassword123!",
                 "terms": True,
-                "website": "https://spam-link.com",
+                "organization_code": "https://spam-link.com",
             },
         )
         assert response.status_code == 200
@@ -650,7 +650,7 @@ class TestSignupAndResetAbuseDefenses:
                 "last_name": "Password",
                 "password1": "SinglePassphrase123!",
                 "terms": True,
-                "website": "",
+                "organization_code": "",
             },
             follow=True,
         )
@@ -666,7 +666,7 @@ class TestSignupAndResetAbuseDefenses:
                 "last_name": "User",
                 "password1": "HackerPassword123!",
                 "terms": True,
-                "website": "",
+                "organization_code": "",
                 "role": User.Role.TEACHER,
                 "is_staff": True,
                 "is_superuser": True,
@@ -727,7 +727,7 @@ class TestAntiEnumerationAndEmailFlows:
                 "password1": "DifferentPassword123!",
                 "password2": "DifferentPassword123!",
                 "terms": True,
-                "website": "",
+                "organization_code": "",
             },
             follow=True,
         )
@@ -766,7 +766,7 @@ class TestStudentRegistrationAndVerification:
                 "password1": "StudentPassword123!",
                 "password2": "StudentPassword123!",
                 "terms": True,
-                "website": "",
+                "organization_code": "",
             },
             follow=True,
         )
@@ -816,7 +816,7 @@ class TestStudentRegistrationAndVerification:
                 "password1": "NepaliPassword123!",
                 "password2": "NepaliPassword123!",
                 "terms": True,
-                "website": "",
+                "organization_code": "",
             },
             follow=True,
         )

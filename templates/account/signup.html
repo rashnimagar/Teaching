@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% load socialaccount %}
 {% load core_tags %}
 
@@ -112,10 +113,10 @@
             <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
           {% endif %}
 
-          <!-- Honeypot anti-spam field -->
-          {% if form.website %}
-            <div style="position: absolute; left: -9999px; top: -9999px; height: 0; width: 0; overflow: hidden;" aria-hidden="true">
-              {{ form.website }}
+          <!-- Honeypot anti-spam field (hidden off-screen, invisible to screen readers) -->
+          {% if form.organization_code %}
+            <div class="absolute -left-[9999px] -top-[9999px] opacity-0 pointer-events-none h-0 w-0 overflow-hidden" aria-hidden="true" tabindex="-1" autocomplete="off">
+              {{ form.organization_code }}
             </div>
           {% endif %}
 
@@ -308,37 +309,8 @@
   </div>
 </div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Focus error summary on failed submit
-    const errorSummary = document.getElementById('error-summary');
-    if (errorSummary) {
-      errorSummary.focus();
-    }
-
-    // Compact live password strength hint
-    const pwd1 = document.getElementById('id_password1');
-    const indicator = document.getElementById('pwd-length-indicator');
-    const hintText = document.getElementById('pwd-hint-text');
-
-    if (pwd1 && indicator && hintText) {
-      pwd1.addEventListener('input', function() {
-        const len = pwd1.value.length;
-        if (len === 0) {
-          indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors';
-          hintText.textContent = 'Minimum 10 characters';
-        } else if (len < 10) {
-          indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-amber-500 transition-colors';
-          hintText.textContent = `${len}/10 characters (too short)`;
-        } else if (len < 16) {
-          indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 transition-colors';
-          hintText.textContent = 'Good password length!';
-        } else {
-          indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 transition-colors';
-          hintText.textContent = 'Strong passphrase!';
-        }
-      });
-    }
-  });
-</script>
 {% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'js/auth.js' %}" defer></script>
+{% endblock scripts %}

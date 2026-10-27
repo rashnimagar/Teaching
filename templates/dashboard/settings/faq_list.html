@@ -126,7 +126,7 @@
               </form>
 
               <!-- Delete -->
-              <form method="post" action="{% url 'dashboard:teacher_faq_delete' faq.id %}" class="inline" onsubmit="return confirm('Delete this FAQ question?');">
+              <form method="post" action="{% url 'dashboard:teacher_faq_delete' faq.id %}" class="inline" data-confirm="Delete this FAQ question?">
                 {% csrf_token %}
                 <button
                   type="submit"

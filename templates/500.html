@@ -99,7 +99,7 @@
         flex-direction: row;
       }
     }
-    a.btn-primary, button.btn-secondary {
+    a.btn-primary, .btn-secondary {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -119,11 +119,11 @@
     a.btn-primary:hover {
       background-color: var(--primary-hover);
     }
-    button.btn-secondary {
+    .btn-secondary {
       background-color: var(--secondary-bg);
       color: var(--secondary-text);
     }
-    button.btn-secondary:hover {
+    .btn-secondary:hover {
       background-color: var(--secondary-hover);
     }
   </style>
@@ -135,7 +135,7 @@
     <p>Something went wrong on our end while processing your request. Please try reloading the page, or return home.</p>
     <div class="actions">
       <a href="/" class="btn-primary">Return Home</a>
-      <button type="button" onclick="window.location.reload()" class="btn-secondary">Try Again</button>
+      <a href="" class="btn-secondary">Try Again</a>
     </div>
   </div>
 </body>
