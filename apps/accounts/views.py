@@ -3,9 +3,8 @@ from allauth.socialaccount.providers.google.views import oauth2_login
 from django.conf import settings
 from django.contrib import admin, messages
 from django.shortcuts import redirect
-from django.utils.decorators import method_decorator
-from django_ratelimit.decorators import ratelimit
 
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.core.utils import get_client_ip
 
 
@@ -17,7 +16,7 @@ def _has_google_credentials() -> bool:
     )
 
 
-@method_decorator(ratelimit(key=get_client_ip, rate="60/m", block=True), name="dispatch")
+@ratelimit(key=get_client_ip, rate="60/m", block=True)
 class RateLimitedLoginView(LoginView):
     """
     Renders the authentication landing page, rate-limited per IP.
@@ -32,7 +31,7 @@ class RateLimitedLoginView(LoginView):
         return context
 
 
-@method_decorator(ratelimit(key=get_client_ip, rate="30/m", block=True), name="dispatch")
+@ratelimit(key=get_client_ip, rate="30/m", block=True)
 class RateLimitedSignupView(SignupView):
     """
     Renders the student signup page, rate-limited per IP.

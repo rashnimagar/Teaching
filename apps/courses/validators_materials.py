@@ -69,7 +69,7 @@ def validate_material_file(file) -> None:
         _validate_pdf_content(file, header)
     elif final_ext in ("png", "jpg", "jpeg"):
         _validate_image_content(file, final_ext, header)
-    elif final_ext in ("docx", "pptx"):
+    elif final_ext in ("docx", "pptx", "xlsx"):
         _validate_office_archive(file, final_ext, header)
     elif final_ext == "txt":
         _validate_text_content(file)

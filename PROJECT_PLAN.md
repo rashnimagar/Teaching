@@ -99,6 +99,9 @@ A Django-based learning platform where a teacher uploads course videos, students
 - [x] Policy transitions: view_only (PDF/image check, deny pending, revoke approved), away from open_to_enrolled with access preservation (7C)
 - [x] Global Site Settings & FAQ CRUD with atomic reordering and instant cache invalidation (7C)
 - [x] Comprehensive Teacher Operational Guide (`TEACHER_GUIDE.md`) (7C)
+- [x] Assignment attachments (handouts, rubrics, starter code) with audit logging & view-only previews
+- [x] Associated lesson links with draft lesson visibility protection and syllabus sidebar markers
+- [x] Resilient deletion architecture preventing ProtectedError with transactional storage cleanup
 
 ## Phase 8 — Security and rate limiting
 - [ ] Rate limits on login, submissions, uploads, and any API endpoints (django-ratelimit or DRF throttling)

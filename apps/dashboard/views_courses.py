@@ -8,10 +8,10 @@ from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_http_methods
-from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.permissions import teacher_required
 from apps.assignments.models import Assignment
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.courses.models import Course, Enrollment, Lesson
 from apps.dashboard.forms_teacher import TeacherCourseForm
 
@@ -101,6 +101,7 @@ def teacher_courses_list_view(request):
 
 @teacher_required
 @require_http_methods(["GET", "POST"])
+@ratelimit(key="user", rate="30/m", block=True, method=["POST"])
 def teacher_course_create_view(request):
     """
     Create a new course offering.
@@ -121,13 +122,16 @@ def teacher_course_create_view(request):
 
     context = {
         "form": form,
+        "course": None,
         "is_create": True,
+        "active_students_count": 0,
     }
     return render(request, "dashboard/courses/course_form.html", context)
 
 
 @teacher_required
 @require_http_methods(["GET", "POST"])
+@ratelimit(key="user", rate="30/m", block=True, method=["POST"])
 def teacher_course_edit_view(request, slug):
     """
     Edit course metadata, pricing, visibility, and approval requirements.
@@ -169,8 +173,8 @@ def teacher_course_edit_view(request, slug):
     return render(request, "dashboard/courses/course_form.html", context)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="30/m", block=True)
 def teacher_course_archive_view(request, slug):
     """

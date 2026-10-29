@@ -5,21 +5,30 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.http import FileResponse, Http404, HttpResponseForbidden
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect, render, resolve_url
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_http_methods
-from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.permissions import is_teacher_user
-from apps.assignments.models import Assignment, Submission, SubmissionEvent
+from apps.assignments.models import (
+    Assignment,
+    AssignmentAttachment,
+    AssignmentAttachmentDownload,
+    Submission,
+    SubmissionEvent,
+)
 from apps.assignments.permissions import check_assignment_access
 from apps.assignments.status import get_assignment_status
 from apps.assignments.validators import (
     sanitize_display_filename,
     validate_submission_file,
 )
+from apps.core.ratelimit import track_ratelimit as ratelimit
+from apps.core.utils import get_client_ip
 from apps.courses.models import Course
 
 logger = logging.getLogger(__name__)
@@ -47,11 +56,14 @@ def course_assignments_view(request, slug):
         return redirect_resp
 
     now = timezone.now()
+    is_teacher = is_teacher_user(request.user)
 
     # Load assignments for the course with lessons
     assign_qs = course.assignments.all()
-    if not request.user.is_staff:
-        assign_qs = assign_qs.filter(is_published=True)
+    if not is_teacher:
+        assign_qs = assign_qs.filter(is_published=True).filter(
+            Q(lesson__isnull=True) | Q(lesson__is_published=True)
+        )
     assignments = list(assign_qs.select_related("lesson").order_by("due_at", "id"))
 
     # Load current student's submissions
@@ -61,8 +73,10 @@ def course_assignments_view(request, slug):
             assignment__course=course,
             student=request.user,
         )
-        if not request.user.is_staff:
-            sub_qs = sub_qs.filter(assignment__is_published=True)
+        if not is_teacher:
+            sub_qs = sub_qs.filter(
+                assignment__is_published=True,
+            ).filter(Q(assignment__lesson__isnull=True) | Q(assignment__lesson__is_published=True))
         student_submissions = sub_qs.select_related("assignment")
         submissions_dict = {sub.assignment_id: sub for sub in student_submissions}
 
@@ -73,14 +87,14 @@ def course_assignments_view(request, slug):
         status_info = get_assignment_status(assign, submission, now=now)
 
         # Requirement 2: Before opens_at, hide instructions and linked unpublished lesson
-        if now < assign.opens_at and not request.user.is_staff:
+        if now < assign.opens_at and not is_teacher:
             display_instructions = ""
             linked_lesson = None
         else:
             display_instructions = assign.instructions
             if assign.lesson:
                 linked_lesson = (
-                    assign.lesson if (assign.lesson.is_published or request.user.is_staff) else None
+                    assign.lesson if (assign.lesson.is_published or is_teacher) else None
                 )
             else:
                 linked_lesson = None
@@ -143,8 +157,12 @@ def assignment_detail_view(request, slug, assignment_id):
         course=course,
     )
 
-    if not request.user.is_staff and not assignment.is_published:
-        raise Http404(_("Assignment not found."))
+    is_teacher = is_teacher_user(request.user)
+    if not is_teacher:
+        if not assignment.is_published:
+            raise Http404(_("Assignment not found."))
+        if assignment.lesson and not assignment.lesson.is_published:
+            raise Http404(_("Assignment not found."))
 
     now = timezone.now()
 
@@ -161,16 +179,14 @@ def assignment_detail_view(request, slug, assignment_id):
     # Requirement 2: Before opens_at, show only title and opening time;
     # hide instructions and any linked unpublished lesson title server-side.
     is_not_open = now < assignment.opens_at
-    if is_not_open and not request.user.is_staff:
+    if is_not_open and not is_teacher:
         display_instructions = ""
         linked_lesson = None
     else:
         display_instructions = assignment.instructions
         if assignment.lesson:
             linked_lesson = (
-                assignment.lesson
-                if (assignment.lesson.is_published or request.user.is_staff)
-                else None
+                assignment.lesson if (assignment.lesson.is_published or is_teacher) else None
             )
         else:
             linked_lesson = None
@@ -426,6 +442,15 @@ def _render_detail(
         and (timezone.now() <= assignment.due_at or assignment.allow_late)
     ) or bool(form_error)
 
+    is_teacher = is_teacher_user(request.user)
+    if is_not_open and not is_teacher:
+        attachments = []
+    else:
+        att_qs = assignment.attachments.all()
+        if not is_teacher:
+            att_qs = att_qs.filter(is_published=True)
+        attachments = list(att_qs.order_by("order", "id"))
+
     context = {
         "course": course,
         "assignment": assignment,
@@ -437,6 +462,7 @@ def _render_detail(
         "can_submit": can_submit,
         "initial_text": initial_text,
         "form_error": form_error,
+        "attachments": attachments,
         "server_time_iso": timezone.now().isoformat(),
         "max_text_len": getattr(settings, "ASSIGNMENT_MAX_TEXT_LENGTH", 20000),
     }
@@ -444,6 +470,7 @@ def _render_detail(
 
 
 @require_http_methods(["GET"])
+@ratelimit(key="user", rate="60/m", block=True)
 def submission_download_view(request, slug, submission_id):
     """
     Permission-checked file download route by submission ID (Requirement 6).
@@ -452,12 +479,15 @@ def submission_download_view(request, slug, submission_id):
     X-Content-Type-Options: nosniff, Cache-Control: private, no-store (Requirement 7).
     """
     course = get_object_or_404(Course, slug=slug)
+    if not request.user.is_authenticated:
+        login_url = f"{resolve_url(settings.LOGIN_URL)}?next={request.path}"
+        return redirect(login_url)
     is_allowed, redirect_resp = check_assignment_access(request, course, is_api=True)
     if not is_allowed:
         return redirect_resp
 
     submission = get_object_or_404(
-        Submission.objects.select_related("assignment__course", "student"),
+        Submission.objects.select_related("assignment__course", "assignment__lesson", "student"),
         pk=submission_id,
         assignment__course=course,
     )
@@ -468,8 +498,11 @@ def submission_download_view(request, slug, submission_id):
             _("You do not have permission to download this submission file.")
         )
 
-    if not is_teacher_user(request.user) and not submission.assignment.is_published:
-        raise Http404(_("Assignment not found."))
+    if not is_teacher_user(request.user):
+        if not submission.assignment.is_published:
+            raise Http404(_("Assignment not found."))
+        if submission.assignment.lesson and not submission.assignment.lesson.is_published:
+            raise Http404(_("Assignment not found."))
 
     if not submission.file:
         raise Http404(_("No file is attached to this submission."))
@@ -492,4 +525,148 @@ def submission_download_view(request, slug, submission_id):
     )
     response["X-Content-Type-Options"] = "nosniff"
     response["Cache-Control"] = "private, no-store"
+    return response
+
+
+@require_http_methods(["GET"])
+@ratelimit(key="user", rate="60/m", block=True)
+def attachment_download_view(request, slug, attachment_id):
+    """
+    Permission-checked download endpoint for assignment attachments.
+    Re-checks enrollment, published status, opening time, and view-only policy.
+    Audits downloads in AssignmentAttachmentDownload via trusted proxy helper.
+    """
+    course = get_object_or_404(Course, slug=slug)
+    if not request.user.is_authenticated:
+        login_url = f"{resolve_url(settings.LOGIN_URL)}?next={request.path}"
+        return redirect(login_url)
+
+    is_allowed, redirect_resp = check_assignment_access(request, course, is_api=True)
+    if not is_allowed:
+        return redirect_resp
+
+    attachment = get_object_or_404(
+        AssignmentAttachment.objects.select_related("assignment__course", "assignment__lesson"),
+        pk=attachment_id,
+        assignment__course=course,
+    )
+    assignment = attachment.assignment
+
+    is_staff = is_teacher_user(request.user)
+
+    if not is_staff:
+        if not assignment.is_published or not attachment.is_published:
+            raise Http404(_("Attachment not found."))
+        if assignment.lesson and not assignment.lesson.is_published:
+            raise Http404(_("Attachment not found."))
+        if timezone.now() < assignment.opens_at:
+            raise Http404(_("Attachment not available yet."))
+        if attachment.download_policy == AssignmentAttachment.DownloadPolicy.VIEW_ONLY:
+            return HttpResponseForbidden(
+                _("This attachment is marked as view-only and cannot be downloaded.")
+            )
+
+    if not attachment.file or not attachment.file.name:
+        raise Http404(_("Attachment file could not be located."))
+
+    # Log download if authenticated student (staff downloads are not audited as student downloads)
+    if request.user.is_authenticated and not is_staff:
+        client_ip = get_client_ip(None, request)
+        AssignmentAttachmentDownload.objects.create(
+            attachment=attachment,
+            student=request.user,
+            downloaded_at=timezone.now(),
+            ip_address=client_ip,
+        )
+
+    filename = (
+        attachment.original_filename
+        or f"attachment_{attachment.id}{Path(attachment.file.name).suffix}"
+    )
+
+    try:
+        file_obj = attachment.file.open("rb")
+    except (FileNotFoundError, OSError):
+        raise Http404(_("The attachment file could not be located on storage.")) from None
+
+    response = FileResponse(
+        file_obj,
+        as_attachment=True,
+        filename=filename,
+        content_type="application/octet-stream",
+    )
+    response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
+@require_http_methods(["GET"])
+@xframe_options_sameorigin
+@ratelimit(key="user", rate="60/m", block=True)
+def attachment_preview_view(request, slug, attachment_id):
+    """
+    Inline browser preview endpoint for PDF and image attachments.
+    Uses isolated-frame pattern: SAMEORIGIN, frame-ancestors 'self', nosniff, Cache-Control private no-store.
+    No CSP sandbox applied so Chrome PDF viewer can render properly.
+    """
+    course = get_object_or_404(Course, slug=slug)
+    if not request.user.is_authenticated:
+        login_url = f"{resolve_url(settings.LOGIN_URL)}?next={request.path}"
+        return redirect(login_url)
+
+    is_allowed, redirect_resp = check_assignment_access(request, course, is_api=True)
+    if not is_allowed:
+        return redirect_resp
+
+    attachment = get_object_or_404(
+        AssignmentAttachment.objects.select_related("assignment__course", "assignment__lesson"),
+        pk=attachment_id,
+        assignment__course=course,
+    )
+    assignment = attachment.assignment
+
+    is_staff = is_teacher_user(request.user)
+
+    if not is_staff:
+        if not assignment.is_published or not attachment.is_published:
+            raise Http404(_("Attachment not found."))
+        if assignment.lesson and not assignment.lesson.is_published:
+            raise Http404(_("Attachment not found."))
+        if timezone.now() < assignment.opens_at:
+            raise Http404(_("Attachment not available yet."))
+
+    PREVIEW_MIME_TYPES = {
+        "pdf": "application/pdf",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+        "webp": "image/webp",
+    }
+    ext = (attachment.file_extension or "").lower().lstrip(".")
+    content_type = PREVIEW_MIME_TYPES.get(ext)
+    if not content_type:
+        return HttpResponseForbidden(_("Unsupported preview format."))
+
+    if not attachment.file or not attachment.file.name:
+        raise Http404(_("Attachment file could not be located."))
+
+    try:
+        file_obj = attachment.file.open("rb")
+    except (FileNotFoundError, OSError):
+        raise Http404(_("The attachment file could not be located on storage.")) from None
+
+    response = FileResponse(
+        file_obj,
+        as_attachment=False,
+        content_type=content_type,
+    )
+    response["Cache-Control"] = "private, no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+    response["X-Frame-Options"] = "SAMEORIGIN"
+    response._csp_replace = {
+        "frame-ancestors": ["'self'"],
+    }
+    response._csp_update = {
+        "frame-src": ["'self'"],
+    }
     return response

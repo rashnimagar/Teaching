@@ -7,9 +7,9 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_http_methods
-from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.permissions import teacher_required
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.courses.models import Course, CourseMaterial, DownloadLog, DownloadRequest, MaterialItem
 from apps.courses.services.download_requests import (
     approve_for_all_enrolled,
@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 @teacher_required
+@require_http_methods(["GET"])
 def teacher_materials_course_picker_view(request):
     """
     Landing picker for managing materials across courses.
@@ -48,6 +49,7 @@ def teacher_materials_course_picker_view(request):
 
 
 @teacher_required
+@require_http_methods(["GET"])
 def teacher_materials_list_view(request, slug):
     """
     Materials & resources list for a course.
@@ -101,6 +103,8 @@ def teacher_materials_list_view(request, slug):
 
 
 @teacher_required
+@require_http_methods(["GET", "POST"])
+@ratelimit(key="user", rate="30/m", block=True, method=["POST"])
 def teacher_material_create_view(request, slug):
     """Create a new CourseMaterial container."""
     course = get_object_or_404(Course, slug=slug)
@@ -119,6 +123,7 @@ def teacher_material_create_view(request, slug):
 
     context = {
         "course": course,
+        "material": None,
         "form": form,
         "is_create": True,
     }
@@ -126,6 +131,8 @@ def teacher_material_create_view(request, slug):
 
 
 @teacher_required
+@require_http_methods(["GET", "POST"])
+@ratelimit(key="user", rate="30/m", block=True, method=["POST"])
 def teacher_material_edit_view(request, slug, material_id):
     """Edit an existing CourseMaterial container."""
     course = get_object_or_404(Course, slug=slug)
@@ -152,8 +159,8 @@ def teacher_material_edit_view(request, slug, material_id):
     return render(request, "dashboard/materials/material_form.html", context)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="60/m", block=True)
 def teacher_material_toggle_publish_view(request, slug, material_id):
     """Toggle published state of a CourseMaterial post."""
@@ -172,8 +179,8 @@ def teacher_material_toggle_publish_view(request, slug, material_id):
     return redirect("dashboard:teacher_course_materials", slug=course.slug)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="60/m", block=True)
 def teacher_material_archive_view(request, slug, material_id):
     """Toggle archived state of a CourseMaterial post."""
@@ -192,8 +199,8 @@ def teacher_material_archive_view(request, slug, material_id):
     return redirect("dashboard:teacher_course_materials", slug=course.slug)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="30/m", block=True)
 def teacher_material_delete_view(request, slug, material_id):
     """
@@ -235,6 +242,8 @@ def teacher_material_delete_view(request, slug, material_id):
 
 
 @teacher_required
+@require_http_methods(["GET", "POST"])
+@ratelimit(key="user", rate="30/m", block=True, method=["POST"])
 def teacher_material_item_create_view(request, slug, material_id):
     """Add a new item (file, link, video) inside a CourseMaterial."""
     course = get_object_or_404(Course, slug=slug)
@@ -255,6 +264,7 @@ def teacher_material_item_create_view(request, slug, material_id):
     context = {
         "course": course,
         "material": material,
+        "item": None,
         "form": form,
         "is_create": True,
     }
@@ -262,6 +272,8 @@ def teacher_material_item_create_view(request, slug, material_id):
 
 
 @teacher_required
+@require_http_methods(["GET", "POST"])
+@ratelimit(key="user", rate="30/m", block=True, method=["POST"])
 def teacher_material_item_edit_view(request, slug, material_id, item_id):
     """
     Edit an existing MaterialItem.
@@ -304,8 +316,8 @@ def teacher_material_item_edit_view(request, slug, material_id, item_id):
     return render(request, "dashboard/materials/item_form.html", context)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="60/m", block=True)
 def teacher_material_item_toggle_publish_view(request, slug, material_id, item_id):
     """Toggle published state of an individual MaterialItem."""
@@ -324,8 +336,8 @@ def teacher_material_item_toggle_publish_view(request, slug, material_id, item_i
     return redirect("dashboard:teacher_course_materials", slug=course.slug)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="30/m", block=True)
 def teacher_material_item_delete_view(request, slug, material_id, item_id):
     """
@@ -362,8 +374,8 @@ def teacher_material_item_delete_view(request, slug, material_id, item_id):
     return redirect("dashboard:teacher_course_materials", slug=course.slug)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="60/m", block=True)
 def teacher_material_item_reorder_view(request, slug, material_id, item_id):
     """
@@ -406,6 +418,8 @@ def teacher_material_item_reorder_view(request, slug, material_id, item_id):
 
 
 @teacher_required
+@require_http_methods(["GET", "POST"])
+@ratelimit(key="user", rate="30/m", block=True, method=["POST"])
 def teacher_material_item_policy_view(request, slug, material_id, item_id):
     """
     Manage download policy transitions for a MaterialItem:
@@ -539,6 +553,7 @@ def teacher_material_item_policy_view(request, slug, material_id, item_id):
 
 
 @teacher_required
+@require_http_methods(["GET"])
 def teacher_material_item_history_view(request, slug, material_id, item_id):
     """
     Display download history for a specific material item.

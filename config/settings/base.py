@@ -155,7 +155,11 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-# Rate Limiting Configuration
+# Rate Limiting & Trusted Proxy Configuration
+NUM_PROXIES = env.int("NUM_PROXIES", default=0)
+TRUSTED_CLIENT_IP_HEADER = env("TRUSTED_CLIENT_IP_HEADER", default="") or None
+ALLAUTH_TRUSTED_PROXY_COUNT = NUM_PROXIES
+ALLAUTH_TRUSTED_CLIENT_IP_HEADER = TRUSTED_CLIENT_IP_HEADER
 RATELIMIT_IP_META_KEY = env("RATELIMIT_IP_META_KEY", default="REMOTE_ADDR")
 
 # Password validation: min 10 chars, no composition rules, allows long passphrases

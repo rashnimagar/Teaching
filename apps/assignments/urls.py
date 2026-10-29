@@ -12,4 +12,14 @@ urlpatterns = [
         views.submission_download_view,
         name="download",
     ),
+    path(
+        "attachments/<int:attachment_id>/download/",
+        views.attachment_download_view,
+        name="attachment_download",
+    ),
+    path(
+        "attachments/<int:attachment_id>/preview/",
+        views.attachment_preview_view,
+        name="attachment_preview",
+    ),
 ]

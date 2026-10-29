@@ -93,6 +93,61 @@
     {% endif %}
   </div>
 
+  <!-- Attachments & Handouts Card -->
+  {% if attachments %}
+    <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-gray-800 shadow-sm mb-6">
+      <h2 class="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">
+        Attachments &amp; Starter Files ({{ attachments|length }})
+      </h2>
+      <div class="space-y-3">
+        {% for att in attachments %}
+          <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <div class="text-sm font-bold text-gray-900 dark:text-white truncate">
+                  {{ att.title }}
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2 mt-0.5">
+                  <span>{{ att.original_filename|default:"Attachment" }}</span>
+                  {% if att.file_size %}
+                    <span>&bull; {{ att.file_size|filesizeformat }}</span>
+                  {% endif %}
+                  {% if att.download_policy == 'view_only' %}
+                    <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                      View Only
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+              {% if att.is_previewable %}
+                <a href="{% url 'assignments:attachment_preview' slug=course.slug attachment_id=att.id %}"
+                   target="_blank"
+                   rel="noopener"
+                   class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 border border-gray-200 dark:border-gray-700 transition">
+                  Preview
+                </a>
+              {% endif %}
+              {% if att.download_policy != 'view_only' %}
+                <a href="{% url 'assignments:attachment_download' slug=course.slug attachment_id=att.id %}"
+                   class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs">
+                  Download
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
   <!-- Graded Feedback Card (If Graded) -->
   {% if submission and submission.grade is not None %}
     <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 border border-emerald-200 dark:border-emerald-800 shadow-sm mb-6 relative overflow-hidden">
@@ -231,21 +286,51 @@
 
         <!-- File Attachment Field -->
         <div>
-          <label for="file_upload" class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
-            Attach Document / Image <span class="text-gray-400 normal-case font-normal">(Optional if text provided)</span>
-          </label>
-          <input type="file"
-                 id="file_upload"
-                 name="file"
-                 accept=".pdf,.docx,.pptx,.txt,.png,.jpg,.jpeg"
-                 class="block w-full text-xs text-gray-500 dark:text-gray-400
-                        file:mr-4 file:py-2.5 file:px-4
-                        file:rounded-xl file:border-0
-                        file:text-xs file:font-bold
-                        file:bg-indigo-50 file:text-indigo-700
-                        hover:file:bg-indigo-100
-                        dark:file:bg-indigo-950/60 dark:file:text-indigo-300
-                        cursor-pointer border border-gray-200 dark:border-gray-700 rounded-xl p-2 bg-gray-50/50 dark:bg-gray-800/40">
+          <div class="flex items-center justify-between mb-2">
+            <label for="file_upload" class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              Attach Document / Image <span class="text-gray-400 normal-case font-normal">(Optional if text provided)</span>
+            </label>
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Limit: 10 MB &bull; Single file
+            </span>
+          </div>
+
+          <div id="file-chooser-container" class="relative">
+            <input type="file"
+                   id="file_upload"
+                   name="file"
+                   accept=".pdf,.docx,.pptx,.txt,.png,.jpg,.jpeg"
+                   class="block w-full text-xs text-gray-500 dark:text-gray-400
+                          file:mr-4 file:py-2.5 file:px-4
+                          file:rounded-xl file:border-0
+                          file:text-xs file:font-bold
+                          file:bg-indigo-50 file:text-indigo-700
+                          hover:file:bg-indigo-100
+                          dark:file:bg-indigo-950/60 dark:file:text-indigo-300
+                          cursor-pointer border border-gray-200 dark:border-gray-700 rounded-xl p-2 bg-gray-50/50 dark:bg-gray-800/40">
+
+            <!-- Chosen File Card -->
+            <div id="selected-file-card" class="hidden mt-3 p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <div class="min-w-0">
+                  <p id="selected-filename" class="text-xs font-bold text-gray-900 dark:text-white truncate"></p>
+                  <p id="selected-filesize" class="text-[11px] text-gray-500 dark:text-gray-400"></p>
+                </div>
+              </div>
+              <button type="button" id="clear-selected-file-btn" class="p-1 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer" title="Remove selected file">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Client-side File Error Box -->
+            <div id="client-file-error" class="hidden mt-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-xs font-semibold text-rose-700 dark:text-rose-300"></div>
+          </div>
+
           <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
             Allowed formats: <strong>PDF, DOCX, PPTX, TXT, PNG, JPG</strong> (Maximum 10 MB).
             {% if submission and submission.file %}

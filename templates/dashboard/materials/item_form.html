@@ -87,7 +87,7 @@
     <div id="file_fields_container" class="space-y-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
       <h3 class="text-sm font-bold text-slate-900 dark:text-white">File Configuration</h3>
 
-      {% if item.file %}
+      {% if item and item.file %}
         <div class="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
           <p class="font-semibold text-slate-900 dark:text-white mb-1">Current Stored File:</p>
           <span class="font-mono text-indigo-600 dark:text-indigo-400">{{ item.original_filename|default:item.file.name }}</span>
@@ -101,7 +101,7 @@
 
       <div>
         <label for="id_file" class="block text-sm font-semibold text-slate-900 dark:text-white mb-1.5">
-          {% if item.file %}Replace File (Optional){% else %}Upload File <span class="text-rose-500">*</span>{% endif %}
+          {% if item and item.file %}Replace File (Optional){% else %}Upload File <span class="text-rose-500">*</span>{% endif %}
         </label>
         <input
           type="file"

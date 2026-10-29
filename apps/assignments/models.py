@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.storage import storages
@@ -6,8 +9,14 @@ from django.db.models import F, Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from apps.assignments.validators import submission_file_path, validate_submission_file
+from apps.assignments.validators import (
+    assignment_attachment_path,
+    sanitize_display_filename,
+    submission_file_path,
+    validate_submission_file,
+)
 from apps.core.models import TimeStampedModel
+from apps.courses.validators_materials import VIEW_ONLY_ALLOWED_EXTENSIONS, validate_material_file
 
 
 def get_private_storage():
@@ -303,6 +312,142 @@ class SubmissionEvent(TimeStampedModel):
 
     def __str__(self):
         return f"Submission {self.submission_id} [{self.action}] by {self.actor}"
+
+
+class AssignmentAttachment(TimeStampedModel):
+    """
+    Teacher attachment tied to an assignment (handouts, rubrics, sample datasets, starter code).
+    Supports open download for enrolled students or view-only in-browser previews.
+    """
+
+    class DownloadPolicy(models.TextChoices):
+        OPEN_TO_ENROLLED = "open_to_enrolled", _("Open to Enrolled Students")
+        VIEW_ONLY = "view_only", _("View Only (In-browser preview only)")
+
+    assignment = models.ForeignKey(
+        Assignment,
+        on_delete=models.PROTECT,
+        related_name="attachments",
+        verbose_name=_("assignment"),
+    )
+    title = models.CharField(_("title"), max_length=255)
+    file = models.FileField(
+        _("file"),
+        storage=get_private_storage,
+        upload_to=assignment_attachment_path,
+        validators=[validate_material_file],
+    )
+    original_filename = models.CharField(_("original filename"), max_length=255, blank=True)
+    file_size = models.PositiveBigIntegerField(_("file size"), null=True, blank=True)
+    order = models.PositiveIntegerField(_("order"), default=0)
+    download_policy = models.CharField(
+        _("download policy"),
+        max_length=20,
+        choices=DownloadPolicy.choices,
+        default=DownloadPolicy.OPEN_TO_ENROLLED,
+    )
+    is_published = models.BooleanField(
+        _("is published"),
+        default=True,
+        db_index=True,
+        help_text=_("Hidden attachments are not visible or downloadable by students."),
+    )
+
+    class Meta:
+        verbose_name = _("assignment attachment")
+        verbose_name_plural = _("assignment attachments")
+        ordering = ["order", "id"]
+        indexes = [
+            models.Index(fields=["assignment", "is_published", "order"]),
+        ]
+
+    def __str__(self):
+        return f"{self.assignment.title} — {self.title}"
+
+    @property
+    def file_extension(self) -> str:
+        if self.original_filename:
+            return Path(self.original_filename).suffix.lower().lstrip(".")
+        if self.file and self.file.name:
+            return Path(self.file.name).suffix.lower().lstrip(".")
+        return ""
+
+    @property
+    def is_previewable(self) -> bool:
+        return self.file_extension in VIEW_ONLY_ALLOWED_EXTENSIONS
+
+    @property
+    def has_been_downloaded(self) -> bool:
+        return self.downloads.exists()
+
+    def clean(self):
+        super().clean()
+        ext = self.file_extension
+        if (
+            self.download_policy == self.DownloadPolicy.VIEW_ONLY
+            and ext
+            and ext not in VIEW_ONLY_ALLOWED_EXTENSIONS
+        ):
+            raise ValidationError(
+                {
+                    "download_policy": _(
+                        "Only PDF documents and image files (PDF, PNG, JPG) can be marked as view-only."
+                    )
+                }
+            )
+
+    def save(self, *args, **kwargs):
+        if self.file:
+            # Set original_filename if missing
+            if not self.original_filename:
+                raw_name = getattr(self.file, "name", "")
+                self.original_filename = sanitize_display_filename(os.path.basename(raw_name))
+
+            # Store file_size before saving
+            try:
+                uploaded = getattr(self.file, "_file", None)
+                if uploaded is not None and hasattr(uploaded, "size"):
+                    self.file_size = uploaded.size
+                elif self.file_size is None and hasattr(self.file, "size"):
+                    self.file_size = self.file.size
+            except (OSError, ValueError, AttributeError):
+                pass
+
+        super().save(*args, **kwargs)
+
+
+class AssignmentAttachmentDownload(models.Model):
+    """
+    Audit log of student downloads for assignment attachments.
+    Displayed to teachers with timestamp and student identity without exposing IP addresses.
+    """
+
+    attachment = models.ForeignKey(
+        AssignmentAttachment,
+        on_delete=models.CASCADE,
+        related_name="downloads",
+        verbose_name=_("attachment"),
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="assignment_attachment_downloads",
+        verbose_name=_("student"),
+    )
+    downloaded_at = models.DateTimeField(_("downloaded at"), default=timezone.now, db_index=True)
+    ip_address = models.GenericIPAddressField(_("IP address"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("assignment attachment download")
+        verbose_name_plural = _("assignment attachment downloads")
+        ordering = ["-downloaded_at"]
+        indexes = [
+            models.Index(fields=["attachment", "-downloaded_at"]),
+            models.Index(fields=["student", "-downloaded_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.student} downloaded {self.attachment} at {self.downloaded_at}"
 
 
 from django.db.models.signals import post_delete  # noqa: E402

@@ -4,15 +4,16 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.clickjacking import xframe_options_sameorigin
-from django.views.decorators.http import require_POST
-from django_ratelimit.decorators import ratelimit
+from django.views.decorators.http import require_http_methods, require_POST
 
+from apps.accounts.permissions import is_teacher_user
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.core.utils import get_client_ip
 from apps.courses.models import Course, CourseMaterial, DownloadLog, DownloadRequest, MaterialItem
 from apps.courses.permissions import check_material_access
@@ -25,7 +26,7 @@ def get_decorated_course_materials(course, user, lesson=None):
     download policies, cooldown calculations, and video embed previews.
     Executes in bounded O(1) queries using prefetching.
     """
-    is_staff = user.is_authenticated and (user.is_staff or getattr(user, "is_teacher", False))
+    is_staff = is_teacher_user(user)
 
     from django.db.models import Prefetch
 
@@ -133,7 +134,7 @@ def get_decorated_course_materials(course, user, lesson=None):
     return materials
 
 
-@login_required
+@require_http_methods(["GET"])
 def course_materials_view(request, course_slug: str):
     """
     Renders the dedicated Materials page for an enrolled course.
@@ -145,7 +146,7 @@ def course_materials_view(request, course_slug: str):
     if not is_allowed:
         return response
 
-    is_staff = request.user.is_staff or getattr(request.user, "is_teacher", False)
+    is_staff = is_teacher_user(request.user)
     materials = get_decorated_course_materials(course, request.user)
 
     context = {
@@ -159,8 +160,8 @@ def course_materials_view(request, course_slug: str):
     return response
 
 
-@login_required
 @require_POST
+@login_required
 @ratelimit(key="user", rate="15/m", block=True)
 def material_request_download_view(request, course_slug: str, item_id: int):
     """
@@ -179,10 +180,7 @@ def material_request_download_view(request, course_slug: str, item_id: int):
         item_type=MaterialItem.ItemType.FILE,
     )
 
-    if (
-        not (request.user.is_staff or getattr(request.user, "is_teacher", False))
-        and not item.is_published
-    ):
+    if not is_teacher_user(request.user) and not item.is_published:
         raise Http404(_("Material item not found."))
 
     if item.download_policy != MaterialItem.DownloadPolicy.REQUEST_REQUIRED:
@@ -210,12 +208,13 @@ def material_request_download_view(request, course_slug: str, item_id: int):
 
     # Create pending request or handle racing requests gracefully
     try:
-        DownloadRequest.objects.create(
-            student=request.user,
-            material_item=item,
-            status=DownloadRequest.Status.PENDING,
-            requested_at=timezone.now(),
-        )
+        with transaction.atomic():
+            DownloadRequest.objects.create(
+                student=request.user,
+                material_item=item,
+                status=DownloadRequest.Status.PENDING,
+                requested_at=timezone.now(),
+            )
         messages.success(
             request,
             f"Download request for '{item.title}' submitted. You will be notified once reviewed.",
@@ -235,13 +234,17 @@ def material_request_download_view(request, course_slug: str, item_id: int):
     return redirect("learn:materials", course_slug=course.slug)
 
 
-@login_required
 @require_POST
+@login_required
+@ratelimit(key="user", rate="30/m", block=True)
 def material_cancel_request_view(request, course_slug: str, item_id: int):
     """
     Allows a student to cancel their own pending download request.
     """
     course = get_object_or_404(Course, slug=course_slug)
+    is_allowed, response = check_material_access(request, course, is_api=True)
+    if not is_allowed:
+        return response
     item = get_object_or_404(MaterialItem, id=item_id, material__course=course)
 
     deleted_count, _ = DownloadRequest.objects.filter(
@@ -259,6 +262,7 @@ def material_cancel_request_view(request, course_slug: str, item_id: int):
 
 
 @login_required
+@require_http_methods(["GET"])
 @ratelimit(key="user", rate="60/m", block=True)
 def material_download_view(request, course_slug: str, item_id: int):
     """
@@ -274,6 +278,10 @@ def material_download_view(request, course_slug: str, item_id: int):
     - Audit logging into DownloadLog
     """
     course = get_object_or_404(Course, slug=course_slug)
+    is_allowed, response = check_material_access(request, course, is_api=True)
+    if not is_allowed:
+        return response
+
     item = get_object_or_404(
         MaterialItem,
         id=item_id,
@@ -287,7 +295,7 @@ def material_download_view(request, course_slug: str, item_id: int):
     if not is_allowed:
         return response
 
-    is_staff = request.user.is_staff or getattr(request.user, "is_teacher", False)
+    is_staff = is_teacher_user(request.user)
 
     # 1. Staff bypass grants immediate download
     if not is_staff:
@@ -339,6 +347,7 @@ def material_download_view(request, course_slug: str, item_id: int):
 
 
 @login_required
+@require_http_methods(["GET"])
 @xframe_options_sameorigin
 @ratelimit(key="user", rate="60/m", block=True)
 def material_preview_view(request, course_slug: str, item_id: int):
@@ -350,6 +359,10 @@ def material_preview_view(request, course_slug: str, item_id: int):
     frame-src 'self' to support safe, isolated in-browser iframe previews.
     """
     course = get_object_or_404(Course, slug=course_slug)
+    is_allowed, response = check_material_access(request, course, is_api=True)
+    if not is_allowed:
+        return response
+
     item = get_object_or_404(
         MaterialItem,
         id=item_id,
@@ -363,7 +376,7 @@ def material_preview_view(request, course_slug: str, item_id: int):
     if not is_allowed:
         return response
 
-    is_staff = request.user.is_staff or getattr(request.user, "is_teacher", False)
+    is_staff = is_teacher_user(request.user)
 
     if not is_staff and not item.is_published:
         raise Http404(_("Material item not found."))

@@ -98,14 +98,108 @@
     });
   }
 
+  // 3. Client-Side File Chooser UX & Validation (Single file, size limit, type checks)
+  function initFileChooser() {
+    var fileInput = document.getElementById("file_upload");
+    var fileCard = document.getElementById("selected-file-card");
+    var filenameEl = document.getElementById("selected-filename");
+    var filesizeEl = document.getElementById("selected-filesize");
+    var clearBtn = document.getElementById("clear-selected-file-btn");
+    var errorBox = document.getElementById("client-file-error");
+
+    if (!fileInput || !fileCard || !filenameEl || !filesizeEl) return;
+
+    var ALLOWED_EXTENSIONS = ["pdf", "docx", "pptx", "txt", "png", "jpg", "jpeg"];
+    var MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      var kb = bytes / 1024;
+      if (kb < 1024) return kb.toFixed(1) + " KB";
+      var mb = kb / 1024;
+      return mb.toFixed(1) + " MB";
+    }
+
+    function showError(msg) {
+      if (errorBox) {
+        errorBox.textContent = msg;
+        errorBox.classList.remove("hidden");
+      }
+    }
+
+    function clearError() {
+      if (errorBox) {
+        errorBox.textContent = "";
+        errorBox.classList.add("hidden");
+      }
+    }
+
+    function resetFile() {
+      fileInput.value = "";
+      fileCard.classList.add("hidden");
+      filenameEl.textContent = "";
+      filesizeEl.textContent = "";
+      clearError();
+    }
+
+    fileInput.addEventListener("change", function () {
+      clearError();
+
+      if (!fileInput.files || !fileInput.files.length) {
+        resetFile();
+        return;
+      }
+
+      var file = fileInput.files[0];
+      var name = file.name || "";
+      var ext = "";
+      var dotIdx = name.lastIndexOf(".");
+      if (dotIdx !== -1) {
+        ext = name.slice(dotIdx + 1).toLowerCase();
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        showError(
+          "File exceeds the 10 MB limit (" +
+            formatFileSize(file.size) +
+            "). Please choose a smaller file."
+        );
+        resetFile();
+        return;
+      }
+
+      if (ALLOWED_EXTENSIONS.indexOf(ext) === -1) {
+        showError(
+          "Unsupported format: ." +
+            ext.toUpperCase() +
+            ". Allowed formats: PDF, DOCX, PPTX, TXT, PNG, JPG."
+        );
+        resetFile();
+        return;
+      }
+
+      filenameEl.textContent = name;
+      filesizeEl.textContent = formatFileSize(file.size);
+      fileCard.classList.remove("hidden");
+    });
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", function () {
+        resetFile();
+      });
+    }
+  }
+
   // DOM Content Loaded Handler
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
       initDeadlineCountdowns();
       initSubmissionForm();
+      initFileChooser();
     });
   } else {
     initDeadlineCountdowns();
     initSubmissionForm();
+    initFileChooser();
   }
 })();

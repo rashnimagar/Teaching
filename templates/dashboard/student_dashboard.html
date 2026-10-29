@@ -179,10 +179,17 @@
 
               <!-- Footer CTA -->
               <div class="px-6 pb-6 pt-3 border-t border-gray-50 dark:border-gray-800/60 flex items-center justify-between">
-                <a href="{% url 'courses:detail' slug=card.course.slug %}"
-                   class="text-xs font-semibold text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition">
-                  Syllabus
-                </a>
+                <div class="flex items-center gap-3">
+                  <a href="{% url 'courses:detail' slug=card.course.slug %}"
+                     class="text-xs font-semibold text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition">
+                    Syllabus
+                  </a>
+                  <span class="text-gray-300 dark:text-gray-700">&bull;</span>
+                  <a href="{% url 'assignments:list' slug=card.course.slug %}"
+                     class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition">
+                    Assignments
+                  </a>
+                </div>
                 {% if card.continue_lesson %}
                   <a href="{% url 'learn:lesson' course_slug=card.course.slug lesson_id=card.continue_lesson.id %}"
                      class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">

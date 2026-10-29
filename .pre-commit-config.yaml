@@ -1,11 +1,17 @@
+exclude: ^static/js/vendor/
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        entry: python -m pre_commit_hooks.trailing_whitespace_fixer
       - id: end-of-file-fixer
+        entry: python -m pre_commit_hooks.end_of_file_fixer
       - id: check-yaml
+        entry: python -m pre_commit_hooks.check_yaml
       - id: check-added-large-files
+        entry: python -m pre_commit_hooks.check_added_large_files
         args: ['--maxkb=1000']
 
   - repo: https://github.com/astral-sh/ruff-pre-commit

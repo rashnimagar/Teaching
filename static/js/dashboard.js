@@ -343,6 +343,49 @@
         form.submit();
       });
     }
+
+    // Attachment Panel toggle and edit controls
+    const toggleBtn = document.getElementById('toggle-add-attachment-btn');
+    const cancelBtn = document.getElementById('cancel-add-attachment-btn');
+    const addPanel = document.getElementById('add-attachment-panel');
+    if (toggleBtn && addPanel) {
+      toggleBtn.addEventListener('click', function () {
+        addPanel.classList.toggle('hidden');
+      });
+    }
+    if (cancelBtn && addPanel) {
+      cancelBtn.addEventListener('click', function () {
+        addPanel.classList.add('hidden');
+      });
+    }
+
+    document.querySelectorAll('.edit-attachment-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const targetId = btn.getAttribute('data-target');
+        const row = document.getElementById(targetId);
+        if (row) {
+          row.classList.toggle('hidden');
+        }
+      });
+    });
+
+    document.querySelectorAll('.cancel-edit-att').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const targetId = btn.getAttribute('data-target');
+        const row = document.getElementById(targetId);
+        if (row) {
+          row.classList.add('hidden');
+        }
+      });
+    });
+
+    document.querySelectorAll('.delete-attachment-form').forEach(function (delForm) {
+      delForm.addEventListener('submit', function (e) {
+        if (!window.confirm('Delete or hide this attachment?')) {
+          e.preventDefault();
+        }
+      });
+    });
   }
 
   // 8. Material Item Policy Form

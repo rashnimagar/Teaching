@@ -174,6 +174,37 @@ urlpatterns = [
         views_assignments.teacher_assignment_delete_view,
         name="teacher_course_assignment_delete",
     ),
+    # Assignment Attachments
+    path(
+        "teacher/courses/<slug:slug>/assignments/<int:assignment_id>/attachments/add/",
+        views_assignments.teacher_assignment_attachment_add_view,
+        name="teacher_assignment_attachment_add",
+    ),
+    path(
+        "teacher/courses/<slug:slug>/assignments/<int:assignment_id>/attachments/<int:attachment_id>/edit/",
+        views_assignments.teacher_assignment_attachment_edit_view,
+        name="teacher_assignment_attachment_edit",
+    ),
+    path(
+        "teacher/courses/<slug:slug>/assignments/<int:assignment_id>/attachments/<int:attachment_id>/toggle-publish/",
+        views_assignments.teacher_assignment_attachment_toggle_publish_view,
+        name="teacher_assignment_attachment_toggle_publish",
+    ),
+    path(
+        "teacher/courses/<slug:slug>/assignments/<int:assignment_id>/attachments/<int:attachment_id>/reorder/",
+        views_assignments.teacher_assignment_attachment_reorder_view,
+        name="teacher_assignment_attachment_reorder",
+    ),
+    path(
+        "teacher/courses/<slug:slug>/assignments/<int:assignment_id>/attachments/<int:attachment_id>/delete/",
+        views_assignments.teacher_assignment_attachment_delete_view,
+        name="teacher_assignment_attachment_delete",
+    ),
+    path(
+        "teacher/courses/<slug:slug>/assignments/<int:assignment_id>/attachments/<int:attachment_id>/downloads/",
+        views_assignments.teacher_assignment_attachment_downloads_view,
+        name="teacher_assignment_attachment_downloads",
+    ),
     # Enrollments (Phase 7B)
     path(
         "teacher/enrollments/",

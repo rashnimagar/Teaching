@@ -8,16 +8,18 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.http import require_POST
-from django_ratelimit.decorators import ratelimit
+from django.views.decorators.http import require_http_methods, require_POST
 
+from apps.accounts.permissions import is_teacher_user
 from apps.core.models import SiteSettings
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.core.utils import serialize_json_ld
 from apps.courses.models import Course, Enrollment, Lesson, LessonProgress
 from apps.courses.permissions import check_lesson_access
 from apps.courses.services.video import build_safe_video_embed_url
 
 
+@require_http_methods(["GET"])
 def course_list_view(request):
     """
     Public catalog of published, non-archived courses with search and filtering.
@@ -58,6 +60,7 @@ def course_list_view(request):
     return render(request, "courses/course_list.html", context)
 
 
+@require_http_methods(["GET"])
 def course_detail_view(request, slug):
     """
     Public overview and syllabus of a single published course.
@@ -71,7 +74,7 @@ def course_detail_view(request, slug):
                 student=request.user, course=course, status=Enrollment.Status.ACTIVE
             ).exists()
         )
-        if not (request.user.is_authenticated and (request.user.is_staff or is_active_student)):
+        if not (is_teacher_user(request.user) or is_active_student):
             raise Http404(_("Course not found."))
 
     lessons = course.lessons.filter(is_published=True).order_by("order", "id")
@@ -139,6 +142,7 @@ def course_detail_view(request, slug):
 
 @require_POST
 @login_required
+@ratelimit(key="user", rate="20/m", block=True)
 def course_enroll_view(request, slug):
     """
     Handles student enrollment requests for free courses.
@@ -185,6 +189,7 @@ def course_enroll_view(request, slug):
     return redirect("courses:detail", slug=course.slug)
 
 
+@require_http_methods(["GET"])
 def course_learn_redirect_view(request, course_slug):
     """
     Redirects student to their current learning milestone in the course:
@@ -238,6 +243,7 @@ def course_learn_redirect_view(request, course_slug):
     return redirect("learn:lesson", course_slug=course.slug, lesson_id=target_lesson.id)
 
 
+@require_http_methods(["GET"])
 def lesson_learn_view(request, course_slug, lesson_id):
     """
     Main lesson viewing interface with embedded video player, lesson syllabus,
@@ -252,7 +258,7 @@ def lesson_learn_view(request, course_slug, lesson_id):
         return redirect_resp
 
     # Lessons available in the syllabus sidebar
-    if request.user.is_authenticated and request.user.is_staff:
+    if is_teacher_user(request.user):
         all_syllabus_lessons = list(course.lessons.all().order_by("order", "id"))
     else:
         all_syllabus_lessons = list(
@@ -301,11 +307,21 @@ def lesson_learn_view(request, course_slug, lesson_id):
 
     # User enrollment status for syllabus lock indicators
     is_active_enrolled = request.user.is_authenticated and (
-        request.user.is_staff
+        is_teacher_user(request.user)
         or Enrollment.objects.filter(
             student=request.user, course=course, status=Enrollment.Status.ACTIVE
         ).exists()
     )
+
+    # Course assignments with student submission status
+    now = timezone.now()
+    assign_qs = course.assignments.all()
+    if not is_teacher_user(request.user):
+        assign_qs = assign_qs.filter(is_published=True).filter(
+            Q(lesson__isnull=True) | Q(lesson__is_published=True)
+        )
+    raw_assignments = list(assign_qs.select_related("lesson").order_by("due_at", "id"))
+    lessons_with_assignments = {a.lesson_id for a in raw_assignments if a.lesson_id}
 
     # Format syllabus lessons: NEVER leak video_id or embed URL of other lessons
     sidebar_items = []
@@ -324,15 +340,10 @@ def lesson_learn_view(request, course_slug, lesson_id):
                 "is_current": les.id == lesson.id,
                 "is_completed": is_completed,
                 "is_accessible": is_accessible,
+                "has_assignment": les.id in lessons_with_assignments,
             }
         )
 
-    # Course assignments with student submission status
-    now = timezone.now()
-    assign_qs = course.assignments.all()
-    if not (request.user.is_authenticated and request.user.is_staff):
-        assign_qs = assign_qs.filter(is_published=True)
-    raw_assignments = list(assign_qs.select_related("lesson").order_by("due_at"))
     student_submissions = {}
     if request.user.is_authenticated:
         from apps.assignments.models import Submission
@@ -344,19 +355,20 @@ def lesson_learn_view(request, course_slug, lesson_id):
 
     from apps.assignments.status import get_assignment_status
 
+    is_teacher = is_teacher_user(request.user)
     assignments_data = []
     for assign in raw_assignments:
         sub = student_submissions.get(assign.id)
         status_info = get_assignment_status(assign, sub, now=now)
         # Requirement 2: Server-side hide instructions if not open for non-staff
-        if now < assign.opens_at and not request.user.is_staff:
+        if now < assign.opens_at and not is_teacher:
             display_instructions = ""
             linked_lesson = None
         else:
             display_instructions = assign.instructions
             if assign.lesson:
                 linked_lesson = (
-                    assign.lesson if (assign.lesson.is_published or request.user.is_staff) else None
+                    assign.lesson if (assign.lesson.is_published or is_teacher) else None
                 )
             else:
                 linked_lesson = None
@@ -372,9 +384,8 @@ def lesson_learn_view(request, course_slug, lesson_id):
             }
         )
 
-    is_teacher = request.user.is_authenticated and (
-        getattr(request.user, "role", None) == "teacher" or request.user.is_staff
-    )
+    lesson_assignments = [a for a in assignments_data if a["assignment"].lesson_id == lesson.id]
+    course_wide_assignments = [a for a in assignments_data if a["assignment"].lesson_id is None]
 
     from apps.courses.views_materials import get_decorated_course_materials
 
@@ -390,6 +401,8 @@ def lesson_learn_view(request, course_slug, lesson_id):
         "is_current_completed": is_current_completed,
         "sidebar_items": sidebar_items,
         "assignments": assignments_data,
+        "lesson_assignments": lesson_assignments,
+        "course_wide_assignments": course_wide_assignments,
         "materials": course_materials,
         "total_published": total_published,
         "completed_count": completed_count,

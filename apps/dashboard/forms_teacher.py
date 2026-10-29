@@ -1,5 +1,6 @@
 import zoneinfo
 from datetime import timedelta
+from pathlib import Path
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -8,7 +9,7 @@ from django.utils import timezone
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 
-from apps.assignments.models import Assignment
+from apps.assignments.models import Assignment, AssignmentAttachment
 from apps.core.models import FAQItem, SiteSettings
 from apps.core.validators import validate_image_file, validate_safe_url
 from apps.courses.models import Course, CourseMaterial, Lesson, MaterialItem
@@ -343,6 +344,9 @@ class TeacherAssignmentForm(forms.ModelForm):
                 "order", "id"
             )
             self.fields["lesson"].empty_label = _("None (Course-wide Assignment)")
+            self.fields["lesson"].label_from_instance = lambda obj: (
+                f"{obj.order}. {obj.title}" + (_(" (Draft)") if not obj.is_published else "")
+            )
 
         # Convert UTC datetimes to Asia/Kathmandu formatted for datetime-local
         if self.instance.pk:
@@ -433,6 +437,67 @@ class TeacherAssignmentForm(forms.ModelForm):
         if commit:
             assignment.save()
         return assignment
+
+
+class TeacherAssignmentAttachmentForm(forms.ModelForm):
+    """
+    Form for adding, replacing, and editing assignment attachments (handouts, rubrics, starter files).
+    Enforces material file validators, size setting, and view-only policy format restrictions.
+    """
+
+    file = forms.FileField(
+        required=False,
+        validators=[validate_material_file],
+        label=_("Attachment File"),
+        help_text=_(
+            "PDF, Office docs (DOCX, PPTX, XLSX), plain text, or images (PNG, JPG) up to 25 MB."
+        ),
+    )
+
+    class Meta:
+        model = AssignmentAttachment
+        fields = [
+            "title",
+            "file",
+            "download_policy",
+            "is_published",
+        ]
+        widgets = {
+            "title": forms.TextInput(attrs={"placeholder": "e.g. Lab 2 Starter Code & Handout"}),
+            "download_policy": forms.Select(),
+        }
+
+    def __init__(self, *args, assignment=None, **kwargs):
+        self.assignment = assignment
+        super().__init__(*args, **kwargs)
+        if not (self.instance and self.instance.pk):
+            self.fields["file"].required = True
+
+    def clean_title(self):
+        return escape(self.cleaned_data.get("title", "").strip())
+
+    def clean(self):
+        cleaned_data = super().clean()
+        file = cleaned_data.get("file")
+        policy = cleaned_data.get("download_policy")
+
+        ext = ""
+        if file and hasattr(file, "name"):
+            ext = Path(file.name).suffix.lower().lstrip(".")
+        elif self.instance and self.instance.pk:
+            ext = self.instance.file_extension
+
+        if policy == AssignmentAttachment.DownloadPolicy.VIEW_ONLY:
+            if ext and ext not in VIEW_ONLY_ALLOWED_EXTENSIONS:
+                raise ValidationError(
+                    {
+                        "download_policy": _(
+                            "View-only mode is supported only for PDF documents and image files (PDF, PNG, JPG)."
+                        )
+                    }
+                )
+
+        return cleaned_data
 
 
 class TeacherMaterialForm(forms.ModelForm):

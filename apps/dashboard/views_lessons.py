@@ -2,15 +2,15 @@ import logging
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Count, Max
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_http_methods
-from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.permissions import teacher_required
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.courses.models import Course, CourseMaterial, Lesson, LessonProgress
 from apps.dashboard.forms_teacher import TeacherLessonForm
 
@@ -22,10 +22,14 @@ logger = logging.getLogger(__name__)
 def teacher_lessons_list_view(request, slug):
     """
     List all sequential video lessons for a course with accessible
-    reordering controls, video provider badges, and preview toggles.
+    reordering controls, video provider badges, preview toggles, and assignment counts.
     """
     course = get_object_or_404(Course, slug=slug)
-    lessons = list(course.lessons.all().order_by("order", "id"))
+    lessons = list(
+        course.lessons.all()
+        .annotate(assignments_count=Count("assignments"))
+        .order_by("order", "id")
+    )
 
     context = {
         "course": course,
@@ -37,6 +41,7 @@ def teacher_lessons_list_view(request, slug):
 
 @teacher_required
 @require_http_methods(["GET", "POST"])
+@ratelimit(key="user", rate="30/m", block=True, method=["POST"])
 def teacher_lesson_create_view(request, slug):
     """
     Add a new lesson to a course with automatic order calculation.
@@ -69,13 +74,16 @@ def teacher_lesson_create_view(request, slug):
     context = {
         "form": form,
         "course": course,
+        "lesson": None,
         "is_create": True,
+        "student_progress_count": 0,
     }
     return render(request, "dashboard/lessons/lesson_form.html", context)
 
 
 @teacher_required
 @require_http_methods(["GET", "POST"])
+@ratelimit(key="user", rate="30/m", block=True, method=["POST"])
 def teacher_lesson_edit_view(request, slug, lesson_id):
     """
     Edit an existing lesson. If video ID or provider is changed,
@@ -137,12 +145,13 @@ def teacher_lesson_edit_view(request, slug, lesson_id):
         "course": course,
         "lesson": lesson,
         "is_create": False,
+        "student_progress_count": lesson.progress.count(),
     }
     return render(request, "dashboard/lessons/lesson_form.html", context)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="60/m", block=True)
 def teacher_lesson_toggle_publish_view(request, slug, lesson_id):
     """
@@ -170,8 +179,8 @@ def teacher_lesson_toggle_publish_view(request, slug, lesson_id):
     return redirect("dashboard:teacher_course_lessons", slug=course.slug)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="60/m", block=True)
 def teacher_lesson_reorder_view(request, slug, lesson_id):
     """
@@ -221,8 +230,8 @@ def teacher_lesson_reorder_view(request, slug, lesson_id):
     return redirect(f"{url}?moved={lesson_id}")
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="30/m", block=True)
 def teacher_lesson_delete_view(request, slug, lesson_id):
     """
@@ -234,18 +243,18 @@ def teacher_lesson_delete_view(request, slug, lesson_id):
     lesson = get_object_or_404(Lesson, pk=lesson_id, course=course)
 
     # Check dependents
-    has_progress = lesson.progress_records.exists()
+    has_progress = lesson.progress.exists()
     has_assignments = lesson.assignments.exists()
     has_materials = CourseMaterial.objects.filter(lesson=lesson).exists()
 
     if has_progress or has_assignments or has_materials:
         reasons = []
         if has_progress:
-            reasons.append(_("student watch progress records exist"))
+            reasons.append(str(_("student watch progress records exist")))
         if has_assignments:
-            reasons.append(_("linked assignments exist"))
+            reasons.append(str(_("linked assignments exist")))
         if has_materials:
-            reasons.append(_("linked course materials exist"))
+            reasons.append(str(_("linked course materials exist")))
 
         logger.warning(
             "Teacher %s attempted to delete lesson %s (ID %s) but was blocked: %s",

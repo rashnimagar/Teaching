@@ -1,8 +1,10 @@
 from django.conf import settings
 from django.http import Http404
 from django.shortcuts import render
+from django.views.decorators.http import require_http_methods
 
 
+@require_http_methods(["GET"])
 def styleguide_view(request):
     """
     DEBUG-only styleguide showcasing all UI/UX components, variants,

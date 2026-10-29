@@ -32,6 +32,16 @@ jobs:
         run: |
           ruff format --check .
 
+      - name: Run Production Deployment Checks
+        env:
+          SECRET_KEY: "ci-production-check-strong-random-secret-key-value-32chars"
+          ALLOWED_HOSTS: "teaching.example.com"
+          DATABASE_URL: "sqlite:///db.sqlite3"
+          CACHE_URL: "dbcache://django_cache_table"
+          DJANGO_ADMIN_URL: "secret-admin-portal/"
+        run: |
+          python manage.py check --deploy --settings=config.settings.prod --fail-level ERROR
+
       - name: Run Pytest
         env:
           SECRET_KEY: "ci-secret-key-not-for-production-use"

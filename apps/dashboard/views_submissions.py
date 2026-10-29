@@ -10,11 +10,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_http_methods
-from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.permissions import teacher_required
 from apps.assignments.models import Assignment, Submission
 from apps.assignments.services.grading import grade_submission, unlock_submission
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.courses.models import Course, Enrollment
 
 logger = logging.getLogger(__name__)
@@ -315,8 +315,8 @@ def teacher_submission_grade_view(request, submission_id: int):
     return render(request, "dashboard/submissions/submission_grade.html", context)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="30/m", block=True)
 def teacher_submission_unlock_view(request, submission_id: int):
     """

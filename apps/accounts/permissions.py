@@ -32,7 +32,7 @@ def teacher_required(view_func):
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect("account_login")
-        if not (request.user.is_teacher or request.user.is_staff):
+        if not is_teacher_user(request.user):
             raise PermissionDenied("You do not have permission to access the teacher dashboard.")
         return view_func(request, *args, **kwargs)
 

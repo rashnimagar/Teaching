@@ -18,11 +18,11 @@ from django.db.models.functions import Coalesce, Greatest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_http_methods
-from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.models import User
 from apps.accounts.permissions import teacher_required
 from apps.assignments.models import Submission
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.courses.models import (
     Course,
     DownloadRequest,
@@ -228,8 +228,8 @@ def teacher_student_detail_view(request, student_id: int):
     return render(request, "dashboard/students/student_detail.html", context)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="30/m", block=True)
 def teacher_student_toggle_active_view(request, student_id: int):
     """

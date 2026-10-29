@@ -301,7 +301,7 @@
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
               <div>
                 <h2 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                  Course Assignments &amp; Tasks
+                  Assignments &amp; Tasks
                 </h2>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   Deadlines evaluated in Asia/Kathmandu time.
@@ -309,86 +309,168 @@
               </div>
               <a href="{% url 'assignments:list' slug=course.slug %}"
                  class="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition">
-                <span>View all course assignments</span>
+                <span>View all course assignments ({{ assignments|length }})</span>
                 <span aria-hidden="true">&rarr;</span>
               </a>
             </div>
 
-            {% if assignments %}
-              <div class="space-y-4">
-                {% for item in assignments %}
-                  <div class="p-5 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 flex flex-col gap-3">
-                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                      <div class="min-w-0 flex-1">
-                        <div class="flex flex-wrap items-center gap-2 mb-1.5">
-                          {% include "components/badge.html" with variant=item.status.badge_variant text=item.status.label dot=True %}
-                          {% if item.linked_lesson %}
-                            <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200/70 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300">
-                              Lesson {{ item.linked_lesson.order }}
+            <!-- Lesson's Own Assignments -->
+            <div class="mb-8">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-3">
+                Lesson Assignments ({{ lesson_assignments|length }})
+              </h3>
+              {% if lesson_assignments %}
+                <div class="space-y-4">
+                  {% for item in lesson_assignments %}
+                    <div class="p-5 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 flex flex-col gap-3">
+                      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div class="min-w-0 flex-1">
+                          <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            {% include "components/badge.html" with variant=item.status.badge_variant text=item.status.label dot=True %}
+                            <span class="text-xs font-semibold text-gray-400">
+                              &bull; Max {{ item.assignment.max_score }} pts
                             </span>
-                          {% endif %}
-                          <span class="text-xs font-semibold text-gray-400">
-                            • Max {{ item.assignment.max_score }} pts
-                          </span>
+                          </div>
+
+                          <h4 class="text-base font-bold text-gray-900 dark:text-white">
+                            <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                              {{ item.assignment.title }}
+                            </a>
+                          </h4>
                         </div>
 
-                        <h3 class="text-base font-bold text-gray-900 dark:text-white">
-                          <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition">
-                            {{ item.assignment.title }}
-                          </a>
-                        </h3>
+                        <!-- Action CTA Button -->
+                        <div class="shrink-0">
+                          {% if item.is_not_open %}
+                            <span class="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-400">
+                              Opens {{ item.assignment.opens_at|date:"M j" }}
+                            </span>
+                          {% elif item.status.code == 'graded' %}
+                            <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}"
+                               class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 transition">
+                              View Feedback &rarr;
+                            </a>
+                          {% elif item.status.code == 'submitted' or item.status.code == 'late' %}
+                            <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}"
+                               class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-50 border border-gray-200 dark:border-gray-700 transition">
+                              View / Edit Submission &rarr;
+                            </a>
+                          {% else %}
+                            <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}"
+                               class="inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs">
+                              Submit Assignment &rarr;
+                            </a>
+                          {% endif %}
+                        </div>
                       </div>
 
-                      <!-- Action CTA Button -->
-                      <div class="shrink-0">
-                        {% if item.is_not_open %}
-                          <span class="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-400">
-                            Opens {{ item.assignment.opens_at|date:"M j" }}
-                          </span>
-                        {% elif item.status.code == 'graded' %}
-                          <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}"
-                             class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 transition">
-                            View Feedback &rarr;
-                          </a>
-                        {% elif item.status.code == 'submitted' or item.status.code == 'late' %}
-                          <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}"
-                             class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-50 border border-gray-200 dark:border-gray-700 transition">
-                            View / Edit Submission &rarr;
-                          </a>
-                        {% else %}
-                          <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}"
-                             class="inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs">
-                            Submit Assignment &rarr;
-                          </a>
-                        {% endif %}
+                      {% if item.instructions %}
+                        <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-800/80 break-words line-clamp-2">
+                          {{ item.instructions }}
+                        </div>
+                      {% elif item.is_not_open %}
+                        <div class="text-xs text-gray-400 italic pt-2 border-t border-gray-100 dark:border-gray-800/80">
+                          Instructions will be revealed on {{ item.assignment.opens_at|date:"M j, Y, g:i A" }}.
+                        </div>
+                      {% endif %}
+
+                      <!-- Timing and Live Countdown Footer -->
+                      <div class="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800/60">
+                        <span>Due: {{ item.assignment.due_at|date:"M j, Y, g:i A" }}</span>
+                        <span class="font-semibold text-indigo-600 dark:text-indigo-400" data-countdown-due="{{ item.assignment.due_at.isoformat }}">
+                          Calculating countdown...
+                        </span>
                       </div>
                     </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="p-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 text-center text-xs text-gray-500 dark:text-gray-400">
+                  No assignments specifically attached to this lesson.
+                </div>
+              {% endif %}
+            </div>
 
-                    {% if item.instructions %}
-                      <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-800/80 break-words line-clamp-2">
-                        {{ item.instructions }}
-                      </div>
-                    {% elif item.is_not_open %}
-                      <div class="text-xs text-gray-400 italic pt-2 border-t border-gray-100 dark:border-gray-800/80">
-                        Instructions will be revealed on {{ item.assignment.opens_at|date:"M j, Y, g:i A" }}.
-                      </div>
-                    {% endif %}
+            <!-- Course-wide Assignments -->
+            <div class="pt-6 border-t border-gray-100 dark:border-gray-800">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                  Course-wide Assignments ({{ course_wide_assignments|length }})
+                </h3>
+              </div>
+              {% if course_wide_assignments %}
+                <div class="space-y-4">
+                  {% for item in course_wide_assignments %}
+                    <div class="p-5 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 flex flex-col gap-3">
+                      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div class="min-w-0 flex-1">
+                          <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                            {% include "components/badge.html" with variant=item.status.badge_variant text=item.status.label dot=True %}
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200/70 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300">
+                              Course-wide
+                            </span>
+                            <span class="text-xs font-semibold text-gray-400">
+                              &bull; Max {{ item.assignment.max_score }} pts
+                            </span>
+                          </div>
 
-                    <!-- Timing and Live Countdown Footer -->
-                    <div class="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800/60">
-                      <span>Due: {{ item.assignment.due_at|date:"M j, Y, g:i A" }}</span>
-                      <span class="font-semibold text-indigo-600 dark:text-indigo-400" data-countdown-due="{{ item.assignment.due_at.isoformat }}">
-                        Calculating countdown...
-                      </span>
+                          <h4 class="text-base font-bold text-gray-900 dark:text-white">
+                            <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                              {{ item.assignment.title }}
+                            </a>
+                          </h4>
+                        </div>
+
+                        <!-- Action CTA Button -->
+                        <div class="shrink-0">
+                          {% if item.is_not_open %}
+                            <span class="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-400">
+                              Opens {{ item.assignment.opens_at|date:"M j" }}
+                            </span>
+                          {% elif item.status.code == 'graded' %}
+                            <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}"
+                               class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 transition">
+                              View Feedback &rarr;
+                            </a>
+                          {% elif item.status.code == 'submitted' or item.status.code == 'late' %}
+                            <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}"
+                               class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-50 border border-gray-200 dark:border-gray-700 transition">
+                              View / Edit Submission &rarr;
+                            </a>
+                          {% else %}
+                            <a href="{% url 'assignments:detail' slug=course.slug assignment_id=item.assignment.id %}"
+                               class="inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs">
+                              Submit Assignment &rarr;
+                            </a>
+                          {% endif %}
+                        </div>
+                      </div>
+
+                      {% if item.instructions %}
+                        <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 pt-2 border-t border-gray-100 dark:border-gray-800/80 break-words line-clamp-2">
+                          {{ item.instructions }}
+                        </div>
+                      {% elif item.is_not_open %}
+                        <div class="text-xs text-gray-400 italic pt-2 border-t border-gray-100 dark:border-gray-800/80">
+                          Instructions will be revealed on {{ item.assignment.opens_at|date:"M j, Y, g:i A" }}.
+                        </div>
+                      {% endif %}
+
+                      <div class="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800/60">
+                        <span>Due: {{ item.assignment.due_at|date:"M j, Y, g:i A" }}</span>
+                        <span class="font-semibold text-indigo-600 dark:text-indigo-400" data-countdown-due="{{ item.assignment.due_at.isoformat }}">
+                          Calculating countdown...
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                {% endfor %}
-              </div>
-            {% else %}
-              <div class="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
-                No assignments have been posted for this course yet.
-              </div>
-            {% endif %}
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="p-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 text-center text-xs text-gray-500 dark:text-gray-400">
+                  No general course-wide assignments.
+                </div>
+              {% endif %}
+            </div>
           </div>
 
           <!-- TAB PANEL 3: Materials -->
@@ -530,9 +612,17 @@
                   </div>
                   <div class="flex-1 min-w-0">
                     <span class="line-clamp-2 leading-snug">{{ item.title }}</span>
-                    {% if item.is_preview and not is_active_enrolled %}
-                      <span class="inline-block mt-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">Preview</span>
-                    {% endif %}
+                    <div class="flex items-center gap-2 mt-0.5">
+                      {% if item.is_preview and not is_active_enrolled %}
+                        <span class="inline-block text-[10px] font-semibold text-amber-600 dark:text-amber-400">Preview</span>
+                      {% endif %}
+                      {% if item.has_assignment %}
+                        <span class="inline-flex items-center gap-0.5 text-[10px] font-medium text-indigo-600 dark:text-indigo-400" title="Includes assignment">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                          <span>Assignment</span>
+                        </span>
+                      {% endif %}
+                    </div>
                   </div>
                 </a>
               {% else %}
@@ -606,6 +696,14 @@
                   </div>
                   <div class="flex-1 min-w-0">
                     <span class="line-clamp-2">{{ item.title }}</span>
+                    {% if item.has_assignment %}
+                      <div class="mt-0.5">
+                        <span class="inline-flex items-center gap-0.5 text-[10px] font-medium text-indigo-600 dark:text-indigo-400" title="Includes assignment">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                          <span>Assignment</span>
+                        </span>
+                      </div>
+                    {% endif %}
                   </div>
                 </a>
               {% else %}

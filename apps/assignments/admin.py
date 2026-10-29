@@ -152,7 +152,7 @@ class SubmissionAdmin(admin.ModelAdmin):
     def file_download_link(self, obj):
         """Generates an authenticated download link to the private submission file."""
         if not obj.file:
-            return format_html('<span style="color: #9ca3af;">—</span>')
+            return format_html('<span style="color: #9ca3af;">{}</span>', "—")
         try:
             download_url = reverse(
                 "assignments:download",
@@ -165,7 +165,7 @@ class SubmissionAdmin(admin.ModelAdmin):
                 display_name,
             )
         except Exception:
-            return format_html('<span style="color: #ef4444;">Error generating link</span>')
+            return format_html('<span style="color: #ef4444;">{}</span>', "Error generating link")
 
     file_download_link.short_description = _("Download File")
 

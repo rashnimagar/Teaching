@@ -53,15 +53,27 @@ Inside each course, you structure your curriculum through sequential video lesso
 Assignments allow students to practice what they learn, upload homework, and receive grades and constructive feedback.
 
 - **Creating an Assignment:**
-  - From your course, click **Assignments**, then click **Create Assignment**.
+  - From your course, click **Assignments**, then click **Create Assignment** (or click **+ Add Assignment** directly next to any lesson in the Lessons list to pre-select that lesson).
   - Enter an assignment title, detailed instructions, and the **Maximum Score** (e.g. 100).
-  - Optionally link the assignment to a specific lesson, or leave it blank for a course-wide project.
+  - Select an associated syllabus lesson from the dropdown (draft lessons are clearly marked with `(Draft)`), or choose `None (Course-wide Assignment)`.
   - Specify the **Opens At** and **Due Date & Time** in Nepal Time (NPT).
   - Decide whether to **Allow Late Submissions**. If disabled, students cannot turn in work once the deadline passes (unless granted an unlock).
+  - When saving a new assignment, you are automatically redirected to the Edit page where you can upload starter files, handouts, or rubrics.
 
-- **Safeguards on Scores and Publishing:**
+- **Assignment Attachments & Handouts:**
+  - On the assignment edit page, manage attachments in the **Attachments & Starter Files** panel.
+  - Upload starter code, lab guides, or rubric documents up to 25 MB in size.
+  - Choose between two access policies:
+    1. **Open to Enrolled Students (Default):** Enrolled students can download the file.
+    2. **View Only (PDF and images only):** Direct downloading is disabled; students can only view the file directly in their browser.
+  - Reorder attachments using the up/down controls, toggle visibility between Published and Hidden, or edit titles.
+  - **Replacing Files:** If you replace an attachment's file, the student download history is fully preserved, and the old physical file is safely removed from storage.
+  - **Download Audit:** Click the download count on any attachment to view student download records (timestamp and student identity are shown; student IP addresses are omitted for privacy).
+
+- **Safeguards on Scores, Publishing, and Deletion:**
   - You cannot lower the maximum score below a grade that has already been awarded to a student.
   - If an assignment already contains student submissions, unpublishing requires a special confirmation to prevent accidentally hiding student grades and feedback.
+  - If student submissions exist, deleting the assignment is blocked to preserve student academic records (you can unpublish it instead). If no submissions exist, attachments and their storage files are safely deleted before removing the assignment.
 
 ---
 

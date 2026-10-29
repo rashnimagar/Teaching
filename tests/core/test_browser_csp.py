@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import User
-from apps.assignments.models import Assignment, Submission
+from apps.assignments.models import Assignment, AssignmentAttachment, Submission
 from apps.courses.models import Course, CourseMaterial, Enrollment, Lesson, MaterialItem
 from apps.notifications.models import Notification
 from config.settings.base import CSP_DIRECTIVES
@@ -134,6 +134,16 @@ class TestBrowserCSPViolations:
             title="Enrollment Confirmed",
             body="Welcome to the security course.",
         )
+        att_pdf_file = SimpleUploadedFile(
+            "rubric.pdf", b"%PDF-1.4 sample rubric content", content_type="application/pdf"
+        )
+        att_pdf = AssignmentAttachment.objects.create(
+            assignment=assignment_unsubmitted,
+            title="Lab Rubric",
+            file=att_pdf_file,
+            download_policy=AssignmentAttachment.DownloadPolicy.VIEW_ONLY,
+            is_published=True,
+        )
         return (
             teacher,
             student,
@@ -146,6 +156,7 @@ class TestBrowserCSPViolations:
             submission,
             material,
             pdf_item,
+            att_pdf,
         )
 
     def test_zero_csp_violations_across_roles(self, live_server, user_factory, settings):
@@ -172,6 +183,7 @@ class TestBrowserCSPViolations:
             submission,
             material,
             pdf_item,
+            att_pdf,
         ) = self._setup_test_data(user_factory)
 
         chrome_exe = (
@@ -457,6 +469,18 @@ class TestBrowserCSPViolations:
                 assignment=assignment_unsubmitted, student=student
             ).exists(), "Student submission must exist in database"
 
+            # 2e-ii. Course Assignments List & Attachment Preview
+            assign_list_path = reverse("assignments:list", kwargs={"slug": course.slug})
+            assign_list_url = f"{live_server.url}{assign_list_path}"
+            visit_and_assert(assign_list_url, 200, "Student", "assignments:list")
+
+            att_preview_path = reverse(
+                "assignments:attachment_preview",
+                kwargs={"slug": course.slug, "attachment_id": att_pdf.id},
+            )
+            att_preview_url = f"{live_server.url}{att_preview_path}"
+            visit_and_assert(att_preview_url, 200, "Student", "assignments:attachment_preview")
+
             # 2f. Course Materials List & Inline Preview Modal
             materials_path = reverse("learn:materials", kwargs={"course_slug": course.slug})
             materials_url = f"{live_server.url}{materials_path}"
@@ -546,6 +570,32 @@ class TestBrowserCSPViolations:
             file_section_header = page.locator("h2", has_text="Attached file")
             file_section_header.wait_for(state="visible", timeout=5000)
             check_violations("Teacher Grading Page Text Visibility", grading_url)
+
+            # Teacher Assignment Edit (Attachments Panel) and Attachment Downloads History
+            assign_edit_path = reverse(
+                "dashboard:teacher_course_assignment_edit",
+                kwargs={"slug": course.slug, "assignment_id": assignment_unsubmitted.id},
+            )
+            assign_edit_url = f"{live_server.url}{assign_edit_path}"
+            visit_and_assert(
+                assign_edit_url, 200, "Teacher", "dashboard:teacher_course_assignment_edit"
+            )
+
+            att_downloads_path = reverse(
+                "dashboard:teacher_assignment_attachment_downloads",
+                kwargs={
+                    "slug": course.slug,
+                    "assignment_id": assignment_unsubmitted.id,
+                    "attachment_id": att_pdf.id,
+                },
+            )
+            att_downloads_url = f"{live_server.url}{att_downloads_path}"
+            visit_and_assert(
+                att_downloads_url,
+                200,
+                "Teacher",
+                "dashboard:teacher_assignment_attachment_downloads",
+            )
 
             # Settings, FAQs, Permissions
             visit_and_assert(

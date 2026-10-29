@@ -7,10 +7,10 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
-from django.views.decorators.http import require_POST
-from django_ratelimit.decorators import ratelimit
+from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.accounts.permissions import teacher_required
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.courses.models import Course, DownloadLog, DownloadRequest, MaterialItem
 from apps.courses.services.download_requests import (
     approve_for_all_enrolled,
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 @teacher_required
+@require_http_methods(["GET"])
 def teacher_permissions_view(request):
     """
     Teacher Permissions & Download Requests Queue.
@@ -100,9 +101,9 @@ def teacher_permissions_view(request):
     return render(request, "dashboard/teacher_permissions.html", context)
 
 
-@teacher_required
 @require_POST
-@ratelimit(key="user_or_ip", rate="60/m", block=True)
+@teacher_required
+@ratelimit(key="user", rate="60/m", block=True)
 def teacher_permission_action_view(request, request_id):
     """
     Execute state transition on a single DownloadRequest row.
@@ -194,9 +195,9 @@ def teacher_permission_action_view(request, request_id):
     return redirect(next_url)
 
 
-@teacher_required
 @require_POST
-@ratelimit(key="user_or_ip", rate="30/m", block=True)
+@teacher_required
+@ratelimit(key="user", rate="30/m", block=True)
 def teacher_permissions_bulk_action_view(request):
     """
     Bulk state transitions for selected rows on the current page.
@@ -283,9 +284,9 @@ def teacher_permissions_bulk_action_view(request):
     return redirect(next_url)
 
 
-@teacher_required
 @require_POST
-@ratelimit(key="user_or_ip", rate="30/m", block=True)
+@teacher_required
+@ratelimit(key="user", rate="30/m", block=True)
 def teacher_approve_for_all_view(request, item_id):
     """
     Approve for all enrolled students: switches material item download policy
@@ -312,6 +313,7 @@ def teacher_approve_for_all_view(request, item_id):
 
 
 @teacher_required
+@require_http_methods(["GET"])
 def teacher_download_history_view(request, item_id):
     """
     Display per-file download history from DownloadLog (who, when, IP).

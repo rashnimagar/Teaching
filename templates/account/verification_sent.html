@@ -6,7 +6,7 @@
 <div class="min-h-[75vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
   <div class="sm:mx-auto sm:w-full sm:max-w-md">
     <div class="bg-white dark:bg-gray-900 py-8 px-6 shadow-sm border border-gray-100 dark:border-gray-800 rounded-2xl sm:px-10 text-center">
-      
+
       <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-4 ring-1 ring-indigo-500/20">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -28,23 +28,6 @@
           <li>Make sure you entered your email address correctly.</li>
           <li>Wait a minute or two for the message to arrive.</li>
         </ul>
-      </div>
-
-      <!-- Resend Verification Form -->
-      <div class="mt-6">
-        <form method="post" action="{% url 'account_email' %}">
-          {% csrf_token %}
-          {% if email %}
-            <input type="hidden" name="email" value="{{ email }}">
-          {% endif %}
-          <button
-            type="submit"
-            name="action_send"
-            class="w-full inline-flex justify-center items-center py-2.5 px-4 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition shadow-sm"
-          >
-            Resend verification email
-          </button>
-        </form>
       </div>
 
       <div class="mt-6 text-center">

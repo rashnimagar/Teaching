@@ -3,10 +3,16 @@ import logging
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.core.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from allauth.socialaccount.providers.base import AuthError
+from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import gettext_lazy as _
+
+from apps.accounts.permissions import is_teacher_user
+from apps.core.utils import get_client_ip as resolve_trusted_client_ip
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -17,6 +23,13 @@ class CustomAccountAdapter(DefaultAccountAdapter):
     Custom account adapter enabling local password signups for students,
     enforcing role safety, and directing users to role-specific dashboard views.
     """
+
+    def get_client_ip(self, request) -> str:
+        """
+        Ensure allauth rate limits and security logs use the exact same trusted-proxy
+        client IP resolution (with safe REMOTE_ADDR fallback) as our project views.
+        """
+        return resolve_trusted_client_ip(None, request)
 
     def is_open_for_signup(self, request) -> bool:
         # Standard email/password signup is open for students
@@ -44,10 +57,17 @@ class CustomAccountAdapter(DefaultAccountAdapter):
 
         # Direct authenticated teachers/staff to teacher dashboard, students to student dashboard
         user = request.user
-        if user.is_authenticated and (user.is_teacher or user.is_staff):
+        if is_teacher_user(user):
             return reverse("dashboard:teacher")
 
         return reverse("dashboard:student")
+
+    def respond_user_inactive(self, request, user):
+        messages.error(
+            request,
+            _("This account is currently inactive. Please contact the teacher for assistance."),
+        )
+        return redirect("account_login")
 
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
@@ -56,6 +76,26 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     guaranteeing student role defaults, preventing privilege escalation, and
     mitigating pre-hijacking by invalidating passwords on unverified accounts.
     """
+
+    def on_authentication_error(
+        self,
+        request,
+        provider,
+        error=None,
+        exception=None,
+        extra_context=None,
+    ):
+        super().on_authentication_error(
+            request,
+            provider,
+            error=error,
+            exception=exception,
+            extra_context=extra_context,
+        )
+        if error == AuthError.CANCELLED:
+            raise ImmediateHttpResponse(
+                render(request, "socialaccount/login_cancelled.html", status=200)
+            )
 
     def is_open_for_signup(self, request, sociallogin) -> bool:
         # Allow brand-new Google users to sign up

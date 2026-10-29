@@ -6,16 +6,18 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_http_methods
-from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.permissions import teacher_required
 from apps.core.models import FAQItem, SiteSettings
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.dashboard.forms_teacher import TeacherFAQForm, TeacherSiteSettingsForm
 
 logger = logging.getLogger(__name__)
 
 
 @teacher_required
+@require_http_methods(["GET", "POST"])
+@ratelimit(key="user", rate="30/m", block=True, method=["POST"])
 def teacher_settings_view(request):
     """
     Teacher Portal: Global Site Settings configuration view.
@@ -41,6 +43,7 @@ def teacher_settings_view(request):
 
 
 @teacher_required
+@require_http_methods(["GET"])
 def teacher_faqs_list_view(request):
     """
     Teacher Portal: FAQ management list view.
@@ -56,6 +59,8 @@ def teacher_faqs_list_view(request):
 
 
 @teacher_required
+@require_http_methods(["GET", "POST"])
+@ratelimit(key="user", rate="30/m", block=True, method=["POST"])
 def teacher_faq_create_view(request):
     """Create a new FAQ item. Order defaults to max(order) + 1."""
     if request.method == "POST":
@@ -71,6 +76,7 @@ def teacher_faq_create_view(request):
         form = TeacherFAQForm()
 
     context = {
+        "faq": None,
         "form": form,
         "is_create": True,
     }
@@ -78,6 +84,8 @@ def teacher_faq_create_view(request):
 
 
 @teacher_required
+@require_http_methods(["GET", "POST"])
+@ratelimit(key="user", rate="30/m", block=True, method=["POST"])
 def teacher_faq_edit_view(request, faq_id):
     """Edit an existing FAQ item."""
     faq = get_object_or_404(FAQItem, pk=faq_id)
@@ -102,8 +110,8 @@ def teacher_faq_edit_view(request, faq_id):
     return render(request, "dashboard/settings/faq_form.html", context)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="60/m", block=True)
 def teacher_faq_toggle_publish_view(request, faq_id):
     """Toggle the published state of an FAQ item."""
@@ -119,8 +127,8 @@ def teacher_faq_toggle_publish_view(request, faq_id):
     return redirect("dashboard:teacher_faqs")
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="60/m", block=True)
 def teacher_faq_reorder_view(request, faq_id):
     """
@@ -156,8 +164,8 @@ def teacher_faq_reorder_view(request, faq_id):
     return redirect("dashboard:teacher_faqs")
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="30/m", block=True)
 def teacher_faq_delete_view(request, faq_id):
     """Delete an FAQ item."""

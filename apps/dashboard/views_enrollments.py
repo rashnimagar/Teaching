@@ -7,10 +7,10 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_http_methods
-from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.models import User
 from apps.accounts.permissions import teacher_required
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.courses.models import Course, Enrollment, EnrollmentEvent
 from apps.courses.services.enrollments import transition_enrollment_status
 
@@ -78,8 +78,8 @@ def teacher_enrollments_list_view(request):
     return render(request, "dashboard/enrollments/enrollment_list.html", context)
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="60/m", block=True)
 def teacher_enrollment_action_view(request, enrollment_id: int):
     """
@@ -118,8 +118,8 @@ def teacher_enrollment_action_view(request, enrollment_id: int):
     return redirect("dashboard:teacher_enrollments")
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="30/m", block=True)
 def teacher_enrollments_bulk_action_view(request):
     """
@@ -152,7 +152,7 @@ def teacher_enrollments_bulk_action_view(request):
             continue
 
         try:
-            _, success, _ = transition_enrollment_status(
+            _enrollment, success, _msg = transition_enrollment_status(
                 enrollment_id=eid,
                 new_status=target_status,
                 actor=request.user,
@@ -195,8 +195,8 @@ def teacher_enrollments_bulk_action_view(request):
     return redirect("dashboard:teacher_enrollments")
 
 
-@teacher_required
 @require_http_methods(["POST"])
+@teacher_required
 @ratelimit(key="user", rate="30/m", block=True)
 def teacher_enrollment_manual_view(request):
     """

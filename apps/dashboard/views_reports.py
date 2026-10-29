@@ -3,9 +3,9 @@ import logging
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
-from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.permissions import teacher_required
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.courses.models import Course
 from apps.dashboard.reports import (
     stream_course_grades_csv,

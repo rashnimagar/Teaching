@@ -137,11 +137,11 @@ def late_allowed_assignment(db, course, lesson):
 
 
 @pytest.fixture
-def future_assignment(db, course, unpublished_lesson):
+def future_assignment(db, course, lesson):
     now = timezone.now()
     return Assignment.objects.create(
         course=course,
-        lesson=unpublished_lesson,
+        lesson=lesson,
         title="Homework 3: Advanced Optimization",
         instructions="Secret instructions not visible before opening.",
         opens_at=now + timedelta(days=3),

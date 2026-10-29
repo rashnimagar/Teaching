@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_http_methods
 
 from apps.accounts.models import User
 from apps.accounts.permissions import teacher_required
@@ -12,6 +13,7 @@ from apps.courses.models import Course, DownloadRequest, Enrollment, Lesson, Les
 
 
 @login_required
+@require_http_methods(["GET"])
 def student_dashboard(request):
     """
     Student dashboard displaying active enrolled courses with progress tracking,
@@ -156,6 +158,7 @@ def student_dashboard(request):
 
 
 @teacher_required
+@require_http_methods(["GET"])
 def teacher_dashboard(request):
     """
     Teacher administration portal shell displaying real live metrics,

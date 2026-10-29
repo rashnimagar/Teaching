@@ -4,6 +4,7 @@ from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import redirect, resolve_url
 from django.utils.translation import gettext_lazy as _
 
+from apps.accounts.permissions import is_teacher_user
 from apps.courses.models import Course, Enrollment, Lesson
 
 
@@ -30,7 +31,7 @@ def check_lesson_access(
     """
     # 1. Unpublished course check
     if not course.is_published:
-        if not (request.user.is_authenticated and request.user.is_staff):
+        if not is_teacher_user(request.user):
             raise Http404(_("Course not found."))
 
     # 2. Archived course check: only active enrollments or staff retain access
@@ -39,18 +40,18 @@ def check_lesson_access(
             is_active_student = Enrollment.objects.filter(
                 student=request.user, course=course, status=Enrollment.Status.ACTIVE
             ).exists()
-            if not (request.user.is_staff or is_active_student):
+            if not (is_teacher_user(request.user) or is_active_student):
                 raise Http404(_("Course not found."))
         else:
             raise Http404(_("Course not found."))
 
     # 3. Unpublished lesson check
     if lesson is not None and not lesson.is_published:
-        if not (request.user.is_authenticated and request.user.is_staff):
+        if not is_teacher_user(request.user):
             raise Http404(_("Lesson not found."))
 
     # 4. Teacher / Staff bypass
-    if request.user.is_authenticated and request.user.is_staff:
+    if is_teacher_user(request.user):
         return True, None
 
     # 5. Anonymous user
@@ -110,10 +111,7 @@ def check_material_access(request, course: Course, material=None, is_api: bool =
     """
     # 1. Unpublished course check
     if not course.is_published:
-        if not (
-            request.user.is_authenticated
-            and (request.user.is_staff or getattr(request.user, "is_teacher", False))
-        ):
+        if not is_teacher_user(request.user):
             raise Http404(_("Course not found."))
 
     # 2. Archived course check
@@ -122,11 +120,7 @@ def check_material_access(request, course: Course, material=None, is_api: bool =
             is_active_student = Enrollment.objects.filter(
                 student=request.user, course=course, status=Enrollment.Status.ACTIVE
             ).exists()
-            if not (
-                request.user.is_staff
-                or getattr(request.user, "is_teacher", False)
-                or is_active_student
-            ):
+            if not (is_teacher_user(request.user) or is_active_student):
                 raise Http404(_("Course not found."))
         else:
             raise Http404(_("Course not found."))
@@ -134,16 +128,11 @@ def check_material_access(request, course: Course, material=None, is_api: bool =
     # 3. Material visibility
     if material is not None:
         if not material.is_published or material.is_archived:
-            if not (
-                request.user.is_authenticated
-                and (request.user.is_staff or getattr(request.user, "is_teacher", False))
-            ):
+            if not is_teacher_user(request.user):
                 raise Http404(_("Material not found."))
 
     # 4. Teacher / Staff bypass
-    if request.user.is_authenticated and (
-        request.user.is_staff or getattr(request.user, "is_teacher", False)
-    ):
+    if is_teacher_user(request.user):
         return True, None
 
     # 5. Anonymous user

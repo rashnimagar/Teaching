@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 import zipfile
@@ -8,11 +9,14 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from PIL import Image, UnidentifiedImageError
 
+logger = logging.getLogger(__name__)
+
 # Strictly allowed final extensions (legacy .doc and .ppt dropped per Requirement 8)
 ALLOWED_EXTENSIONS = {
     "pdf",
     "docx",
     "pptx",
+    "xlsx",
     "txt",
     "png",
     "jpg",
@@ -133,6 +137,21 @@ def submission_file_path(instance, filename: str) -> str:
     return os.path.join("submissions", random_filename)
 
 
+def assignment_attachment_path(instance, filename: str) -> str:
+    """
+    Generates a secure, collision-resistant storage path for assignment attachments:
+    assignments/assignment_<id>/<uuid4>_<sanitized_name>
+    """
+    clean_name = sanitize_display_filename(filename)
+    unique_id = uuid.uuid4().hex
+    assignment_id = (
+        instance.assignment_id
+        if hasattr(instance, "assignment_id") and instance.assignment_id
+        else "temp"
+    )
+    return f"assignments/assignment_{assignment_id}/{unique_id}_{clean_name}"
+
+
 def validate_submission_file(file) -> None:
     """
     Validates submission file size, extension allowlist, dangerous intermediate
@@ -168,7 +187,7 @@ def validate_submission_file(file) -> None:
         _validate_pdf_content(file, header)
     elif final_ext in ("png", "jpg", "jpeg"):
         _validate_image_content(file, final_ext, header)
-    elif final_ext in ("docx", "pptx"):
+    elif final_ext in ("docx", "pptx", "xlsx"):
         _validate_office_archive(file, final_ext, header)
     elif final_ext == "txt":
         _validate_text_content(file)
@@ -178,8 +197,19 @@ def validate_submission_file(file) -> None:
 
 
 def _validate_pdf_content(file, header: bytes) -> None:
-    """Verify that file starts with %PDF-."""
-    if not header.startswith(b"%PDF-"):
+    """
+    Verify that file contains %PDF- within the first 1024 bytes (ISO 32000-1 §7.5.2).
+    Tolerates optional leading UTF-8 BOM, whitespace, newlines, and comments.
+    """
+    idx = header[:1024].find(b"%PDF-")
+    if idx == -1:
+        filename = getattr(file, "name", "unknown")
+        file_size = getattr(file, "size", 0)
+        logger.warning(
+            "PDF validation failed: missing %%PDF- marker in first 1024 bytes. filename=%s, size=%s",
+            filename,
+            file_size,
+        )
         raise ValidationError(_("File content does not match a valid PDF document."))
 
 
@@ -282,6 +312,9 @@ def _validate_office_archive(file, ext: str, header: bytes) -> None:
                 raise ValidationError(
                     _("Invalid PowerPoint presentation: missing ppt/presentation.xml.")
                 )
+
+            if ext == "xlsx" and "xl/workbook.xml" not in names_set:
+                raise ValidationError(_("Invalid Excel workbook: missing xl/workbook.xml."))
     except zipfile.BadZipFile as exc:
         raise ValidationError(_("Invalid or corrupted Office document file.")) from exc
     finally:

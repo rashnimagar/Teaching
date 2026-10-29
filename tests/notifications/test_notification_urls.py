@@ -78,7 +78,9 @@ def notification_test_data(db, user_factory):
 
 
 @pytest.mark.django_db
-def test_all_six_notification_kinds_resolve_without_404(client, notification_test_data):
+def test_all_six_notification_kinds_resolve_without_404(
+    client, notification_test_data, django_capture_on_commit_callbacks
+):
     teacher = notification_test_data["teacher"]
     student = notification_test_data["student"]
     course = notification_test_data["course"]
@@ -93,47 +95,19 @@ def test_all_six_notification_kinds_resolve_without_404(client, notification_tes
         course=course, student=student, status=Enrollment.Status.PENDING
     )
     # Trigger ACTIVE (APPROVED)
-    transition_enrollment_status(enrollment.id, Enrollment.Status.ACTIVE, actor=teacher)
-    notif_enr_appr = Notification.objects.filter(
+    with django_capture_on_commit_callbacks(execute=True):
+        transition_enrollment_status(enrollment.id, Enrollment.Status.ACTIVE, actor=teacher)
+    notif_enr_appr = Notification.objects.get(
         recipient=student, kind=Notification.Kind.ENROLLMENT_APPROVED
-    ).first()
-    if not notif_enr_appr:
-        from django.urls import reverse
-
-        from apps.notifications.services import create_notification
-
-        create_notification(
-            recipient=student,
-            kind=Notification.Kind.ENROLLMENT_APPROVED,
-            title=f"Enrollment Approved: {course.title}",
-            body="Approved!",
-            url=reverse("learn:course", kwargs={"course_slug": course.slug}),
-        )
-        notif_enr_appr = Notification.objects.get(
-            recipient=student, kind=Notification.Kind.ENROLLMENT_APPROVED
-        )
+    )
     created_kinds.add(notif_enr_appr.kind)
 
     # Trigger REVOKED
-    transition_enrollment_status(enrollment.id, Enrollment.Status.REVOKED, actor=teacher)
-    notif_enr_rev = Notification.objects.filter(
+    with django_capture_on_commit_callbacks(execute=True):
+        transition_enrollment_status(enrollment.id, Enrollment.Status.REVOKED, actor=teacher)
+    notif_enr_rev = Notification.objects.get(
         recipient=student, kind=Notification.Kind.ENROLLMENT_REVOKED
-    ).first()
-    if not notif_enr_rev:
-        from django.urls import reverse
-
-        from apps.notifications.services import create_notification
-
-        create_notification(
-            recipient=student,
-            kind=Notification.Kind.ENROLLMENT_REVOKED,
-            title=f"Enrollment Revoked: {course.title}",
-            body="Revoked!",
-            url=reverse("courses:detail", kwargs={"slug": course.slug}),
-        )
-        notif_enr_rev = Notification.objects.get(
-            recipient=student, kind=Notification.Kind.ENROLLMENT_REVOKED
-        )
+    )
     created_kinds.add(notif_enr_rev.kind)
 
     # Re-activate enrollment for remaining student views
@@ -146,12 +120,13 @@ def test_all_six_notification_kinds_resolve_without_404(client, notification_tes
         material_item=material_item,
         status=DownloadRequest.Status.PENDING,
     )
-    transition_download_request(
-        dl_req,
-        DownloadRequest.Status.APPROVED,
-        decided_by=teacher,
-        expires_at=timezone.now() + timezone.timedelta(hours=24),
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        transition_download_request(
+            dl_req,
+            DownloadRequest.Status.APPROVED,
+            decided_by=teacher,
+            expires_at=timezone.now() + timezone.timedelta(hours=24),
+        )
     notif_dl_appr = Notification.objects.get(
         recipient=student, kind=Notification.Kind.DOWNLOAD_APPROVED
     )
@@ -162,24 +137,26 @@ def test_all_six_notification_kinds_resolve_without_404(client, notification_tes
         material_item=material_item2,
         status=DownloadRequest.Status.PENDING,
     )
-    transition_download_request(
-        dl_req2,
-        DownloadRequest.Status.DENIED,
-        decided_by=teacher,
-        teacher_note="Please attend the live session first.",
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        transition_download_request(
+            dl_req2,
+            DownloadRequest.Status.DENIED,
+            decided_by=teacher,
+            teacher_note="Please attend the live session first.",
+        )
     notif_dl_den = Notification.objects.get(
         recipient=student, kind=Notification.Kind.DOWNLOAD_DENIED
     )
     created_kinds.add(notif_dl_den.kind)
 
     # Transition approved to revoked
-    transition_download_request(
-        dl_req,
-        DownloadRequest.Status.REVOKED,
-        decided_by=teacher,
-        teacher_note="Access expired.",
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        transition_download_request(
+            dl_req,
+            DownloadRequest.Status.REVOKED,
+            decided_by=teacher,
+            teacher_note="Access expired.",
+        )
     notif_dl_rev = Notification.objects.get(
         recipient=student, kind=Notification.Kind.DOWNLOAD_REVOKED
     )
@@ -193,32 +170,16 @@ def test_all_six_notification_kinds_resolve_without_404(client, notification_tes
     )
     from decimal import Decimal
 
-    grade_submission(
-        submission_id=sub.id,
-        grade=Decimal("95.00"),
-        feedback="Outstanding work.",
-        teacher_user=teacher,
-    )
-    notif_graded = Notification.objects.filter(
+    with django_capture_on_commit_callbacks(execute=True):
+        grade_submission(
+            submission_id=sub.id,
+            grade=Decimal("95.00"),
+            feedback="Outstanding work.",
+            teacher_user=teacher,
+        )
+    notif_graded = Notification.objects.get(
         recipient=student, kind=Notification.Kind.SUBMISSION_GRADED
-    ).first()
-    if not notif_graded:
-        from django.urls import reverse
-
-        from apps.notifications.services import create_notification
-
-        create_notification(
-            recipient=student,
-            kind=Notification.Kind.SUBMISSION_GRADED,
-            title=f"Assignment Graded: {assignment.title}",
-            body="Graded: 95/100",
-            url=reverse(
-                "assignments:detail", kwargs={"slug": course.slug, "assignment_id": assignment.id}
-            ),
-        )
-        notif_graded = Notification.objects.get(
-            recipient=student, kind=Notification.Kind.SUBMISSION_GRADED
-        )
+    )
     created_kinds.add(notif_graded.kind)
 
     # Verify all 6 enum choices are represented

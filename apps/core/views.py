@@ -12,6 +12,7 @@ from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
+from django.views.decorators.http import require_http_methods
 
 from apps.core.constants import FAQ_CACHE_KEY
 from apps.core.models import FAQItem, SiteSettings
@@ -21,6 +22,7 @@ from apps.courses.models import Course
 logger = logging.getLogger(__name__)
 
 
+@require_http_methods(["GET"])
 def home_view(request):
     """
     Public home landing page.
@@ -62,6 +64,7 @@ def home_view(request):
     return render(request, "core/home.html", context)
 
 
+@require_http_methods(["GET"])
 def robots_txt_view(request):
     """
     Serves plain-text robots.txt disallowing sensitive private paths and pointing to sitemap.
@@ -77,16 +80,19 @@ def robots_txt_view(request):
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 
+@require_http_methods(["GET"])
 def privacy_view(request):
     """Static Privacy Policy page."""
     return render(request, "core/privacy.html")
 
 
+@require_http_methods(["GET"])
 def terms_view(request):
     """Static Terms of Service page."""
     return render(request, "core/terms.html")
 
 
+@require_http_methods(["GET"])
 def health_check_view(request):
     """
     Health check endpoint returning HTTP 200 when the application

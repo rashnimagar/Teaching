@@ -28,7 +28,7 @@ def check_assignment_access(request, course: Course, is_api: bool = False):
     """
     # 1. Unpublished course check
     if not course.is_published:
-        if not (request.user.is_authenticated and is_teacher_user(request.user)):
+        if not is_teacher_user(request.user):
             raise Http404(_("Course not found."))
 
     # 2. Archived course check: only active enrollments or staff retain access
@@ -43,7 +43,7 @@ def check_assignment_access(request, course: Course, is_api: bool = False):
             raise Http404(_("Course not found."))
 
     # 3. Teacher / Staff bypass
-    if request.user.is_authenticated and is_teacher_user(request.user):
+    if is_teacher_user(request.user):
         return True, None
 
     # 4. Anonymous user

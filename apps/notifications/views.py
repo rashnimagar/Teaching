@@ -4,12 +4,14 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
+from apps.core.ratelimit import track_ratelimit as ratelimit
 from apps.notifications.models import Notification
 
 
 @login_required
+@require_http_methods(["GET"])
 def notification_list_view(request):
     """
     Displays paginated list of notifications for the authenticated user (newest first).
@@ -47,8 +49,9 @@ def notification_list_view(request):
     )
 
 
-@login_required
 @require_POST
+@login_required
+@ratelimit(key="user", rate="60/m", block=True)
 def mark_notification_read_view(request, notification_id: int):
     """
     Marks a single notification as read.
@@ -79,8 +82,9 @@ def mark_notification_read_view(request, notification_id: int):
     return redirect("notifications:list")
 
 
-@login_required
 @require_POST
+@login_required
+@ratelimit(key="user", rate="30/m", block=True)
 def mark_all_notifications_read_view(request):
     """
     Marks all unread notifications of the authenticated user as read.
